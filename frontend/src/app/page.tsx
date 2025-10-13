@@ -193,9 +193,9 @@ export default function Home() {
               <br className="hidden sm:block" />
               <span className="block sm:inline"> The Assistant with Attitude</span>
             </h2>
-            <p className="text-lg sm:text-xl text-gray-700 dark:text-white/70 max-w-3xl mx-auto">
-              She's witty, sharp, and brutally efficient. Try her demo — she'll probably roast you, but she'll also run your HR smoother than anyone you've ever hired.
-            </p>
+              <p className="text-lg sm:text-xl text-gray-700 dark:text-white/70 max-w-3xl mx-auto">
+              She&apos;s witty, sharp, and brutally efficient. Try her demo — she&apos;ll probably roast you, but she&apos;ll also run your HR smoother than anyone you&apos;ve ever hired.
+              </p>
           </div>
 
           <div className="max-w-2xl mx-auto text-center">
@@ -210,13 +210,13 @@ export default function Home() {
 
               <div className="space-y-3 text-left">
                 <div className="p-3 sm:p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg">
-                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 "Who's our top performer this month?"</p>
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 &ldquo;Who&apos;s our top performer this month?&rdquo;</p>
                 </div>
                 <div className="p-3 sm:p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg">
-                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 "Hire a new content manager."</p>
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 &ldquo;Hire a new content manager.&rdquo;</p>
                 </div>
                 <div className="p-3 sm:p-4 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg">
-                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 "How efficient am I?"</p>
+                  <p className="text-xs sm:text-sm text-gray-700 dark:text-white/80">💬 &ldquo;How efficient am I?&rdquo;</p>
                 </div>
               </div>
             </div>
@@ -244,10 +244,10 @@ export default function Home() {
                 Behind the AI
               </h2>
               <p className="text-lg sm:text-xl text-gray-700 dark:text-white/70 mb-4 sm:mb-6">
-                AskTrabaajo isn't just AI — it's built by people who've been frustrated by HR bloat, endless forms, and poor hiring tools.
+                AskTrabaajo isn&apos;t just AI — it&apos;s built by people who&apos;ve been frustrated by HR bloat, endless forms, and poor hiring tools.
               </p>
               <p className="text-base sm:text-lg text-gray-600 dark:text-white/60 mb-6 sm:mb-8">
-                We've just automated the parts that waste your time, so you can focus on what truly matters: building great teams and meaningful relationships.
+                We&apos;ve just automated the parts that waste your time, so you can focus on what truly matters: building great teams and meaningful relationships.
               </p>
               <Link
                 href="/about"

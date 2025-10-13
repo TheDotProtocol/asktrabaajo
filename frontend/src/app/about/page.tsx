@@ -16,7 +16,7 @@ export default function About() {
               Behind the AI
             </h1>
             <p className="text-xl text-gray-600 dark:text-white/70 max-w-3xl mx-auto">
-              We're not just building software — we're solving problems that have frustrated HR professionals for decades.
+              We&apos;re not just building software — we&apos;re solving problems that have frustrated HR professionals for decades.
             </p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export default function About() {
               </div>
               <h3 className="text-xl font-semibold mb-3">Passion-Fueled</h3>
               <p className="text-gray-600 dark:text-white/70">
-                We're not just building software — we're building the future of work.
+                We&apos;re not just building software — we&apos;re building the future of work.
               </p>
             </div>
           </div>
@@ -117,9 +117,9 @@ export default function About() {
           <h2 className="text-3xl sm:text-4xl font-bold mb-6">
             Ready to Join the <span className="text-[#D4AF37]">Revolution</span>?
           </h2>
-          <p className="text-xl text-gray-600 dark:text-white/70 mb-8">
-            Be part of the movement that's transforming HR from a cost center into a strategic advantage.
-          </p>
+            <p className="text-xl text-gray-600 dark:text-white/70 mb-8">
+              Be part of the movement that&apos;s transforming HR from a cost center into a strategic advantage.
+            </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/contact"
