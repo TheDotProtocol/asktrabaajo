@@ -3,9 +3,13 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function Login() {
+  const router = useRouter();
+  const { signIn } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -19,12 +23,15 @@ export default function Login() {
     setIsLoading(true);
     setErrors({});
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      // For demo purposes, redirect to dashboard
-      window.location.href = '/dashboard';
-    }, 1000);
+    const { error } = await signIn(formData.email, formData.password);
+    
+    if (error) {
+      setErrors({ general: error.message });
+    } else {
+      router.push('/dashboard');
+    }
+    
+    setIsLoading(false);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
