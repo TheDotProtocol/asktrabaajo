@@ -7,8 +7,8 @@ import { ArrowRight, Zap, Shield } from 'lucide-react';
 
 // Mock data
 const heroImages = [
-  "https://images.unsplash.com/photo-1522071820081-009f0129c71c",
-  "https://images.unsplash.com/photo-1522202176988-66273c2fd55f"
+  "/team-meeting.jpg",
+  "/team-collaboration.jpg"
 ];
 
 const dashboardImages = [

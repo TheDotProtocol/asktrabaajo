@@ -167,7 +167,7 @@ export default function Leadership() {
             </div>
             <div className="relative">
               <Image
-                src="https://images.unsplash.com/photo-1522071820081-009f0129c71c"
+                src="/team-meeting.jpg"
                 alt="Team collaboration"
                 width={600}
                 height={400}
