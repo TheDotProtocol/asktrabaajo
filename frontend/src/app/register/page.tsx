@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { User, Building, Users, Shield, Globe, ArrowRight, Check, Eye, EyeOff } from 'lucide-react';
+import { User, Building, Users, Shield, Globe, Check, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
 export default function Register() {
@@ -22,7 +22,7 @@ export default function Register() {
   const [selectedRole, setSelectedRole] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<{general?: string; email?: string; password?: string; confirmPassword?: string}>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const roles = [

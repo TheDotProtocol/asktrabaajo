@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://xpssahosgsrosixchbgh.supabase.co'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhwc3NhaG9zZ3Nyb3NpeGNoYmdoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjAzMzk5NTcsImV4cCI6MjA3NTkxNTk1N30.jYsL69aGHcRwiAQKn-v6Lbtj3ELWup7vP0a6kMmn19M'
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
@@ -17,9 +17,9 @@ export interface Profile {
   location?: string
   bio?: string
   skills?: string[]
-  experience?: any[]
-  education?: any[]
-  certifications?: any[]
+  experience?: Record<string, unknown>[]
+  education?: Record<string, unknown>[]
+  certifications?: Record<string, unknown>[]
   desired_salary?: string
   preferred_locations?: string[]
   remote_preference?: boolean
@@ -75,7 +75,7 @@ export interface Interview {
   status?: 'scheduled' | 'in-progress' | 'completed' | 'cancelled'
   meeting_link?: string
   notes?: string
-  feedback?: any
+  feedback?: Record<string, unknown>
   created_at?: string
   updated_at?: string
 }
@@ -87,7 +87,7 @@ export interface TestResult {
   test_type: string
   score?: number
   max_score?: number
-  results?: any
+  results?: Record<string, unknown>
   completed_at?: string
 }
 
@@ -110,7 +110,7 @@ export interface Notification {
   message: string
   type?: 'info' | 'success' | 'warning' | 'error'
   read?: boolean
-  data?: any
+  data?: Record<string, unknown>
   created_at?: string
 }
 

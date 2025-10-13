@@ -1,29 +1,24 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Video, 
   VideoOff, 
   Mic, 
   MicOff, 
-  Phone, 
   PhoneOff, 
   Settings, 
-  Users,
   MessageCircle,
   Send,
-  Clock,
-  CheckCircle,
-  AlertCircle
+  Clock
 } from 'lucide-react';
 
 interface InterviewRoomProps {
-  interviewId: string;
   isEmployer?: boolean;
   onEndInterview?: () => void;
 }
 
-export default function InterviewRoom({ interviewId, isEmployer = false, onEndInterview }: InterviewRoomProps) {
+export default function InterviewRoom({ isEmployer = false, onEndInterview }: InterviewRoomProps) {
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [isAudioOn, setIsAudioOn] = useState(true);
   const [isConnected, setIsConnected] = useState(false);
@@ -39,20 +34,7 @@ export default function InterviewRoom({ interviewId, isEmployer = false, onEndIn
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    initializeInterview();
-    startTimer();
-
-    return () => {
-      cleanup();
-    };
-  }, []);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatMessages]);
-
-  const initializeInterview = async () => {
+  const initializeInterview = useCallback(async () => {
     try {
       // Get user media
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -79,7 +61,7 @@ export default function InterviewRoom({ interviewId, isEmployer = false, onEndIn
       console.error('Error accessing media devices:', error);
       setConnectionStatus('disconnected');
     }
-  };
+  }, []);
 
   const initializePeerConnection = async () => {
     const configuration = {
@@ -113,6 +95,19 @@ export default function InterviewRoom({ interviewId, isEmployer = false, onEndIn
       }
     };
   };
+
+  useEffect(() => {
+    initializeInterview();
+    startTimer();
+
+    return () => {
+      cleanup();
+    };
+  }, [initializeInterview]);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
 
   const startTimer = () => {
     const timer = setInterval(() => {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, AlertCircle, CheckCircle } from 'lucide-react';
@@ -10,9 +10,9 @@ import { Interview } from '@/lib/supabase';
 import InterviewRoom from '@/components/InterviewRoom';
 
 interface InterviewPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function InterviewPage({ params }: InterviewPageProps) {
@@ -22,20 +22,10 @@ export default function InterviewPage({ params }: InterviewPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
-
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      fetchInterview();
-    }
-  }, [user, authLoading, router, params.id]);
-
-  const fetchInterview = async () => {
+  
+  const fetchInterview = useCallback(async () => {
     try {
+      const resolvedParams = await params;
       const { data, error } = await supabase
         .from('interviews')
         .select(`
@@ -50,7 +40,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
             )
           )
         `)
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .single();
 
       if (error) throw error;
@@ -69,11 +59,23 @@ export default function InterviewPage({ params }: InterviewPageProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user, params]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      fetchInterview();
+    }
+  }, [user, authLoading, router, params, fetchInterview]);
 
   const startInterview = async () => {
     setIsStarting(true);
     try {
+      const resolvedParams = await params;
       // Update interview status to in-progress
       const { error } = await supabase
         .from('interviews')
@@ -81,7 +83,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
           status: 'in-progress',
           started_at: new Date().toISOString()
         })
-        .eq('id', params.id);
+        .eq('id', resolvedParams.id);
 
       if (error) throw error;
 
@@ -96,6 +98,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
 
   const endInterview = async () => {
     try {
+      const resolvedParams = await params;
       // Update interview status to completed
       const { error } = await supabase
         .from('interviews')
@@ -103,12 +106,12 @@ export default function InterviewPage({ params }: InterviewPageProps) {
           status: 'completed',
           ended_at: new Date().toISOString()
         })
-        .eq('id', params.id);
+        .eq('id', resolvedParams.id);
 
       if (error) throw error;
 
       // Redirect to interview analysis
-      router.push(`/interview/${params.id}/analysis`);
+      router.push(`/interview/${resolvedParams.id}/analysis`);
     } catch (error) {
       console.error('Error ending interview:', error);
     }
@@ -148,7 +151,6 @@ export default function InterviewPage({ params }: InterviewPageProps) {
   if (interview.status === 'in-progress') {
     return (
       <InterviewRoom
-        interviewId={params.id}
         isEmployer={profile?.role === 'employer'}
         onEndInterview={endInterview}
       />
@@ -174,10 +176,10 @@ export default function InterviewPage({ params }: InterviewPageProps) {
         {/* Interview Details */}
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">
-            {interview.jobs?.title || 'Interview'}
+            Interview
           </h1>
           <p className="text-xl text-white/70 mb-8">
-            with {interview.jobs?.profiles?.company_name || 'Company'}
+            with Company
           </p>
 
           <div className="flex items-center justify-center space-x-8 text-white/70">
@@ -213,7 +215,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
             }`}>
               {interview.status === 'scheduled' ? <CheckCircle className="h-4 w-4 mr-2" /> : null}
               <span className="capitalize">{interview.status}</span>
-            </div>
+      </div>
 
             {interview.status === 'scheduled' && (
               <div className="space-y-4">
@@ -240,7 +242,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
                 </p>
                 
                 <Link
-                  href={`/interview/${params.id}/analysis`}
+                  href={`/interview/${interview.id}/analysis`}
                   className="px-8 py-4 bg-[#D4AF37] text-black font-semibold rounded-lg hover:bg-[#C49F2F] transition-colors inline-flex items-center"
                 >
                   View Analysis
@@ -258,7 +260,7 @@ export default function InterviewPage({ params }: InterviewPageProps) {
               <div>
                 <span className="text-white/70">Type:</span>
                 <span className="ml-2 capitalize">{interview.interview_type || 'Video'}</span>
-              </div>
+                </div>
               <div>
                 <span className="text-white/70">Duration:</span>
                 <span className="ml-2">{interview.duration_minutes || 30} minutes</span>
@@ -267,10 +269,10 @@ export default function InterviewPage({ params }: InterviewPageProps) {
                 <span className="text-white/70">Meeting Link:</span>
                 <span className="ml-2 text-[#D4AF37]">
                   {interview.meeting_link || 'Will be provided when interview starts'}
-                </span>
-              </div>
-            </div>
-          </div>
+                        </span>
+                        </div>
+                      </div>
+                    </div>
 
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
             <h3 className="text-lg font-semibold mb-4">Preparation Tips</h3>
@@ -281,8 +283,8 @@ export default function InterviewPage({ params }: InterviewPageProps) {
               <li>• Have your resume ready</li>
               <li>• Prepare questions to ask</li>
             </ul>
-          </div>
-        </div>
+                    </div>
+                  </div>
 
         {interview.notes && (
           <div className="mt-6 bg-white/5 border border-white/10 rounded-xl p-6">
@@ -293,4 +295,4 @@ export default function InterviewPage({ params }: InterviewPageProps) {
       </div>
     </div>
   );
-}
+} 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { 
@@ -9,44 +9,49 @@ import {
   Smile,
   Clock,
   User,
-  Building,
   TrendingUp,
   TrendingDown,
   Eye,
   Brain,
   Download,
-  Share
+  Share,
+  CheckCircle
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import { Interview } from '@/lib/supabase';
 
 interface InterviewAnalysisProps {
-  params: {
+  params: Promise<{
     id: string;
+  }>;
+}
+
+interface AnalysisData {
+  overallScore: number;
+  duration: number;
+  keyStrengths: string[];
+  areasForImprovement: string[];
+  sentimentAnalysis: {
+    positive: number;
+    neutral: number;
+    negative: number;
   };
+  technicalSkills: Record<string, number>;
+  behavioralTraits: Record<string, number>;
+  recommendations: string[];
 }
 
 export default function InterviewAnalysis({ params }: InterviewAnalysisProps) {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [interview, setInterview] = useState<Interview | null>(null);
-  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysis, setAnalysis] = useState<AnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      fetchInterviewData();
-    }
-  }, [user, authLoading, router]);
-
-  const fetchInterviewData = async () => {
+  const fetchInterviewData = useCallback(async () => {
     try {
+      const resolvedParams = await params;
       // Fetch interview details
       const { data: interviewData, error: interviewError } = await supabase
         .from('interviews')
@@ -62,14 +67,14 @@ export default function InterviewAnalysis({ params }: InterviewAnalysisProps) {
             )
           )
         `)
-        .eq('id', params.id)
+        .eq('id', resolvedParams.id)
         .single();
 
       if (interviewError) throw interviewError;
       setInterview(interviewData);
 
       // Generate mock analysis data (in real app, this would come from AI analysis)
-      const mockAnalysis = {
+      const mockAnalysis: AnalysisData = {
         overallScore: 85,
         duration: 45,
         keyStrengths: [
@@ -113,7 +118,18 @@ export default function InterviewAnalysis({ params }: InterviewAnalysisProps) {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [params]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      fetchInterviewData();
+    }
+  }, [user, authLoading, router, fetchInterviewData]);
 
   if (authLoading || isLoading) {
     return (
@@ -174,7 +190,7 @@ export default function InterviewAnalysis({ params }: InterviewAnalysisProps) {
             Interview <span className="text-[#D4AF37]">Analysis</span>
           </h1>
           <p className="text-white/70">
-            {interview.jobs?.title} • {interview.jobs?.profiles?.company_name}
+            Interview Analysis
           </p>
         </div>
 

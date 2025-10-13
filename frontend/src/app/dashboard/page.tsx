@@ -1,27 +1,21 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
-  User, 
-  Building, 
   Briefcase, 
-  Calendar, 
-  DollarSign, 
-  TrendingUp, 
   Users, 
-  FileText,
-  Video,
+  FileText, 
+  Video, 
   BarChart3,
-  Plus,
   ArrowRight,
   LogOut
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
-import { Job, Application, Interview, Notification } from '@/lib/supabase';
+import { Job, Interview } from '@/lib/supabase';
 
 export default function Dashboard() {
   const router = useRouter();
@@ -33,23 +27,10 @@ export default function Dashboard() {
     notifications: 0
   });
   const [recentJobs, setRecentJobs] = useState<Job[]>([]);
-  const [recentApplications, setRecentApplications] = useState<Application[]>([]);
   const [upcomingInterviews, setUpcomingInterviews] = useState<Interview[]>([]);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-
-    if (user) {
-      fetchDashboardData();
-    }
-  }, [user, authLoading, router]);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       // Fetch jobs
       const { data: jobs } = await supabase
@@ -61,21 +42,7 @@ export default function Dashboard() {
 
       setRecentJobs(jobs || []);
 
-      // Fetch applications
-      const { data: applications } = await supabase
-        .from('applications')
-        .select(`
-          *,
-          jobs (
-            title,
-            company_name
-          )
-        `)
-        .eq('applicant_id', user?.id)
-        .order('applied_at', { ascending: false })
-        .limit(5);
-
-      setRecentApplications(applications || []);
+      // Applications not needed for dashboard
 
       // Fetch interviews
       const { data: interviews } = await supabase
@@ -93,16 +60,7 @@ export default function Dashboard() {
 
       setUpcomingInterviews(interviews || []);
 
-      // Fetch notifications
-      const { data: notificationsData } = await supabase
-        .from('notifications')
-        .select('*')
-        .eq('user_id', user?.id)
-        .eq('read', false)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      setNotifications(notificationsData || []);
+      // Notifications not needed for dashboard
 
       // Calculate stats
       const { count: jobsCount } = await supabase
@@ -125,7 +83,7 @@ export default function Dashboard() {
         totalJobs: jobsCount || 0,
         applications: applicationsCount || 0,
         interviews: interviewsCount || 0,
-        notifications: notificationsData?.length || 0
+        notifications: 0
       });
 
     } catch (error) {
@@ -133,7 +91,18 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+      return;
+    }
+
+    if (user) {
+      fetchDashboardData();
+    }
+  }, [user, authLoading, router, fetchDashboardData]);
 
   const handleSignOut = async () => {
     await signOut();
@@ -175,16 +144,16 @@ export default function Dashboard() {
             </div>
 
             <div className="flex items-center space-x-4">
-              <div className="text-right">
+                <div className="text-right">
                 <p className="text-sm text-white/70">Welcome back,</p>
                 <p className="font-semibold">{profile?.first_name} {profile?.last_name}</p>
-              </div>
-              <button
+                </div>
+                <button
                 onClick={handleSignOut}
                 className="p-2 text-white/70 hover:text-white transition-colors"
-              >
-                <LogOut size={20} />
-              </button>
+                >
+                  <LogOut size={20} />
+                </button>
             </div>
           </div>
         </div>
@@ -285,13 +254,13 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <div className="p-3 bg-[#D4AF37]/20 rounded-lg group-hover:bg-[#D4AF37]/30 transition-colors">
                 <BarChart3 className="h-6 w-6 text-[#D4AF37]" />
-              </div>
+                  </div>
               <div>
                 <h3 className="font-semibold text-white">Assessment</h3>
                 <p className="text-sm text-white/70">Take skills tests</p>
-              </div>
+                </div>
               <ArrowRight className="h-5 w-5 text-white/50 group-hover:text-[#D4AF37] transition-colors ml-auto" />
-            </div>
+          </div>
           </Link>
         </div>
 
@@ -304,7 +273,7 @@ export default function Dashboard() {
               <Link href="/jobs" className="text-[#D4AF37] hover:text-[#C49F2F] text-sm">
                 View all
               </Link>
-            </div>
+          </div>
             <div className="space-y-3">
               {recentJobs.length > 0 ? (
                 recentJobs.map((job) => (
@@ -317,13 +286,13 @@ export default function Dashboard() {
                         : 'Salary not specified'
                       }
                     </p>
-                  </div>
+                </div>
                 ))
               ) : (
                 <p className="text-white/70 text-center py-4">No recent jobs found</p>
               )}
-            </div>
-          </div>
+                </div>
+              </div>
 
           {/* Upcoming Interviews */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-6">
@@ -332,13 +301,13 @@ export default function Dashboard() {
               <Link href="/interviews" className="text-[#D4AF37] hover:text-[#C49F2F] text-sm">
                 View all
               </Link>
-            </div>
+                </div>
             <div className="space-y-3">
               {upcomingInterviews.length > 0 ? (
                 upcomingInterviews.map((interview) => (
                   <div key={interview.id} className="p-3 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
                     <h4 className="font-medium text-white">
-                      {interview.jobs?.title || 'Interview'}
+                      Interview
                     </h4>
                     <p className="text-sm text-white/70">
                       {new Date(interview.scheduled_at || '').toLocaleDateString()}
@@ -346,7 +315,7 @@ export default function Dashboard() {
                     <p className="text-xs text-white/50 capitalize">
                       {interview.interview_type} • {interview.duration_minutes} minutes
                     </p>
-                  </div>
+                </div>
                 ))
               ) : (
                 <p className="text-white/70 text-center py-4">No upcoming interviews</p>
@@ -357,4 +326,4 @@ export default function Dashboard() {
       </div>
     </div>
   );
-}
+} 
