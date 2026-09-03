@@ -8,6 +8,7 @@ from app.api.v1 import (
     documents,
     jobseeker,
     organizations,
+    talent,
     workid,
 )
 
@@ -19,3 +20,4 @@ router.include_router(consents.router, prefix="/work-id")
 router.include_router(documents.router)
 router.include_router(jobseeker.router)
 router.include_router(company.router)
+router.include_router(talent.router)

@@ -75,6 +75,8 @@ from app.services import development as development_service
 from app.services import matching as matching_service
 from app.services import notifications as notifications_service
 from app.services import person as person_service
+from app.services import skills_registry
+from app.services import talent as talent_service
 from app.services import work_dna as dna_service
 from app.services.auth_service import get_person_for_user
 from app.core.timeutil import utc_now_naive
@@ -323,6 +325,75 @@ def list_opportunities(
     return OpportunityListOut(
         items=items, total=total, page=page, page_size=page_size
     )
+
+
+@router.get("/opportunities/{opportunity_id}", response_model=dict)
+def opportunity_detail(
+    opportunity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Opportunity intelligence: the match, skill gaps with evidence, and
+    structured requirements — computed for the caller's own Work ID."""
+    person = _person(db, user)
+    opp = db.get(Opportunity, opportunity_id)
+    if opp is None or opp.status != "active" or not opp.is_approved:
+        raise NotFoundError("Opportunity not found.")
+
+    match = matching_service.match_all(db, person.id, [opp])
+    match_payload = match[0] if match else {}
+    gap = talent_service.own_skill_gap_analysis(db, person.id, opp.id)
+    skills_registry.normalize_opportunity_requirements(db, opp)
+    from app.models.talent import OpportunityRequirement
+
+    req_rows = db.scalars(
+        select(OpportunityRequirement)
+        .where(OpportunityRequirement.opportunity_id == opp.id)
+        .order_by(OpportunityRequirement.created_at.asc())
+    ).all()
+    from app.models.work import Skill as SkillModel
+
+    my_stance = db.scalar(
+        select(JobApplication.status).where(
+            JobApplication.person_id == person.id,
+            JobApplication.opportunity_id == opp.id,
+        ).limit(1)
+    )
+    requirements = [
+        {
+            "id": str(r.id),
+            "skill": db.get(SkillModel, r.skill_id).name if r.skill_id else None,
+            "raw_text": r.raw_text,
+            "requirement_kind": r.requirement_kind,
+            "min_years": r.min_years,
+        }
+        for r in req_rows
+    ]
+    db.commit()
+    return {
+        "opportunity": _opportunity_out(opp),
+        "match": match_payload,
+        "gap_analysis": gap,
+        "requirements": requirements,
+        "saved": my_stance == "saved",
+        "applied": my_stance in {
+            "applied", "application_received", "screening", "assessment",
+            "interview", "offer", "accepted", "on_hold",
+        },
+        "stance": my_stance,
+    }
+
+
+@router.get("/career/intelligence")
+def career_intelligence(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Data-grounded career intelligence over the caller's own Work ID:
+    roles within reach, roles to grow into, and skills to develop (tied to
+    real active opportunities). Never promises outcomes."""
+    person = _person(db, user)
+    return talent_service.career_intelligence(db, person.id)
 
 
 @router.post("/opportunities/{opportunity_id}/save", response_model=ApplicationOut)
