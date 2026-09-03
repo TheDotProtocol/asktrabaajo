@@ -5,6 +5,7 @@ from app.models import (
     communication,
     company,
     documents,
+    enforcement,
     governance,
     identity,
     platform,
@@ -54,6 +55,7 @@ from app.models.platform import (
     RateLimitHit,
 )
 from app.models.documents import DocumentAccessGrant, PersonDocument
+from app.models.enforcement import Appeal, EnforcementAction
 from app.models.identity import (
     EmailVerificationToken,
     PasswordResetToken,
@@ -93,9 +95,11 @@ from app.models.work import (
 )
 
 __all__ = [
+    "Appeal",
     "ApplicationEvent",
     "AuditLogEntry",
     "CandidateSearchEvent",
+    "EnforcementAction",
     "Conversation",
     "ConversationMessage",
     "ConversationReadState",

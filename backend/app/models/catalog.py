@@ -33,6 +33,9 @@ ROLES = [
      "Campaigns and aggregated audience intelligence."),
     ("governance_auditor", "Governance Auditor", ROLE_SCOPE_PLATFORM,
      "Read-only governance + platform audit review."),
+    ("enforcement_manager", "Enforcement Manager", ROLE_SCOPE_PLATFORM,
+     "Proposes/approves/revokes controlled enforcement actions and decides "
+     "eligible appeals. Severe actions require creator != approver."),
     ("finance", "Finance", ROLE_SCOPE_PLATFORM,
      "Employer billing, invoices, payments, refunds, reports."),
     # --- Organization scope ---------------------------------------------------
@@ -100,6 +103,14 @@ PERMISSIONS = [
     ("moderation.read", "Read moderation data"),
     ("moderation.manage", "Manage moderation data"),
     ("platform.audit.read", "Read platform-wide audit records"),
+    ("enforcement.read", "Read enforcement actions and their lifecycle"),
+    ("enforcement.create", "Propose controlled enforcement actions"),
+    ("enforcement.approve", "Approve/reject proposed enforcement actions"),
+    ("enforcement.revoke", "Revoke or expire active enforcement actions"),
+    ("enforcement.reinstate", "Restore access after an enforcement action"),
+    ("appeals.read", "Read appeals and their eligibility"),
+    ("appeals.manage", "Assign and review appeals"),
+    ("appeals.decide", "Decide appeals (uphold/reduce/revoke/reinstate)"),
     ("admin.manage", "Platform administration"),
 ]
 
@@ -112,6 +123,15 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "reports.read", "reports.manage", "reports.assign", "reports.resolve",
         "reports.escalate", "reports.teams",
         "reports.audit", "moderation.read", "platform.audit.read",
+        # Read-only visibility for case context; never enforcement powers.
+        "enforcement.read", "appeals.read",
+    ],
+    "enforcement_manager": [
+        "users.read", "orgs.read",
+        "reports.read", "reports.audit",
+        "enforcement.read", "enforcement.create", "enforcement.approve",
+        "enforcement.revoke", "enforcement.reinstate",
+        "appeals.read", "appeals.manage", "appeals.decide",
     ],
     "governance_auditor": [
         "reports.read", "reports.audit", "moderation.read", "platform.audit.read",

@@ -1,6 +1,139 @@
 """Canonical value constants (stored as strings for portability)."""
 from __future__ import annotations
 
+# --- Enforcement + appeals (Phase 11) ------------------------------------------
+# Action types — granular, never a generic "admin action".
+ENFORCEMENT_TYPE_WARNING = "warning"
+ENFORCEMENT_TYPE_CONTENT_RESTRICTION = "content_restriction"
+ENFORCEMENT_TYPE_COMMUNICATION_RESTRICTION = "communication_restriction"
+ENFORCEMENT_TYPE_ACCOUNT_RESTRICTION = "account_restriction"
+ENFORCEMENT_TYPE_ORGANIZATION_RESTRICTION = "organization_restriction"
+ENFORCEMENT_TYPE_SUSPENSION = "suspension"
+ENFORCEMENT_TYPE_REINSTATEMENT = "reinstatement"
+ENFORCEMENT_TYPES = {
+    ENFORCEMENT_TYPE_WARNING,
+    ENFORCEMENT_TYPE_CONTENT_RESTRICTION,
+    ENFORCEMENT_TYPE_COMMUNICATION_RESTRICTION,
+    ENFORCEMENT_TYPE_ACCOUNT_RESTRICTION,
+    ENFORCEMENT_TYPE_ORGANIZATION_RESTRICTION,
+    ENFORCEMENT_TYPE_SUSPENSION,
+    ENFORCEMENT_TYPE_REINSTATEMENT,
+}
+# Actions that always require an APPROVAL SEPARATION (creator != approver).
+ENFORCEMENT_APPROVAL_REQUIRED_TYPES = {
+    ENFORCEMENT_TYPE_ACCOUNT_RESTRICTION,
+    ENFORCEMENT_TYPE_ORGANIZATION_RESTRICTION,
+    ENFORCEMENT_TYPE_SUSPENSION,
+    ENFORCEMENT_TYPE_REINSTATEMENT,
+}
+# Enforcement scopes — granular by design: a communication restriction never
+# suspends the whole account, a company restriction never touches unrelated
+# users, a user restriction is not an organization restriction.
+ENFORCEMENT_SCOPE_ACCOUNT = "account"
+ENFORCEMENT_SCOPE_COMMUNICATIONS = "communications"
+ENFORCEMENT_SCOPE_APPLICATIONS = "applications"
+ENFORCEMENT_SCOPE_COMPANY_ORGANIZATION = "company_organization"
+ENFORCEMENT_SCOPE_GOVERNANCE_PARTICIPATION = "governance_participation"
+ENFORCEMENT_SCOPE_PLATFORM_ACCESS = "platform_access"
+ENFORCEMENT_SCOPES = {
+    ENFORCEMENT_SCOPE_ACCOUNT,
+    ENFORCEMENT_SCOPE_COMMUNICATIONS,
+    ENFORCEMENT_SCOPE_APPLICATIONS,
+    ENFORCEMENT_SCOPE_COMPANY_ORGANIZATION,
+    ENFORCEMENT_SCOPE_GOVERNANCE_PARTICIPATION,
+    ENFORCEMENT_SCOPE_PLATFORM_ACCESS,
+}
+# Enforcement lifecycle (deterministic; ACTIVE/EXPIRED derived from timestamps).
+ENFORCEMENT_STATUS_PROPOSED = "proposed"
+ENFORCEMENT_STATUS_APPROVED = "approved"
+ENFORCEMENT_STATUS_ACTIVE = "active"
+ENFORCEMENT_STATUS_EXPIRED = "expired"
+ENFORCEMENT_STATUS_REJECTED = "rejected"
+ENFORCEMENT_STATUS_REVOKED = "revoked"
+ENFORCEMENT_STATUSES = {
+    ENFORCEMENT_STATUS_PROPOSED,
+    ENFORCEMENT_STATUS_APPROVED,
+    ENFORCEMENT_STATUS_ACTIVE,
+    ENFORCEMENT_STATUS_EXPIRED,
+    ENFORCEMENT_STATUS_REJECTED,
+    ENFORCEMENT_STATUS_REVOKED,
+}
+# Statuses stored on the row (the stored lifecycle transitions).
+ENFORCEMENT_STORED_STATUSES = {
+    ENFORCEMENT_STATUS_PROPOSED,
+    ENFORCEMENT_STATUS_APPROVED,
+    ENFORCEMENT_STATUS_ACTIVE,
+    ENFORCEMENT_STATUS_REJECTED,
+    ENFORCEMENT_STATUS_REVOKED,
+}
+# Controlled reason codes — free-form sensitive narratives never enter the
+# audit/event payloads; a bounded sanitized note is allowed.
+ENFORCEMENT_REASON_HARASSMENT = "harassment"
+ENFORCEMENT_REASON_FRAUD = "fraud"
+ENFORCEMENT_REASON_IMPERSONATION = "impersonation"
+ENFORCEMENT_REASON_POLICY_VIOLATION = "policy_violation"
+ENFORCEMENT_REASON_DOCUMENT_MISUSE = "document_misuse"
+ENFORCEMENT_REASON_OUTREACH_ABUSE = "outreach_abuse"
+ENFORCEMENT_REASON_COMMUNICATIONS_ABUSE = "communications_abuse"
+ENFORCEMENT_REASON_SUSPICIOUS_ACTIVITY = "suspicious_activity"
+ENFORCEMENT_REASON_REPEATED_VIOLATIONS = "repeated_violations"
+ENFORCEMENT_REASON_OTHER = "other"
+ENFORCEMENT_REASON_CODES = {
+    ENFORCEMENT_REASON_HARASSMENT,
+    ENFORCEMENT_REASON_FRAUD,
+    ENFORCEMENT_REASON_IMPERSONATION,
+    ENFORCEMENT_REASON_POLICY_VIOLATION,
+    ENFORCEMENT_REASON_DOCUMENT_MISUSE,
+    ENFORCEMENT_REASON_OUTREACH_ABUSE,
+    ENFORCEMENT_REASON_COMMUNICATIONS_ABUSE,
+    ENFORCEMENT_REASON_SUSPICIOUS_ACTIVITY,
+    ENFORCEMENT_REASON_REPEATED_VIOLATIONS,
+    ENFORCEMENT_REASON_OTHER,
+}
+# Derived platform states for a target (computed from ACTIVE actions).
+PLATFORM_STATE_ACTIVE = "active"
+PLATFORM_STATE_RESTRICTED = "restricted"
+PLATFORM_STATE_SUSPENDED = "suspended"
+PLATFORM_STATES = {
+    PLATFORM_STATE_ACTIVE,
+    PLATFORM_STATE_RESTRICTED,
+    PLATFORM_STATE_SUSPENDED,
+}
+# Appeal lifecycle + decision codes.
+APPEAL_STATUS_SUBMITTED = "submitted"
+APPEAL_STATUS_ASSIGNED = "assigned"
+APPEAL_STATUS_UNDER_REVIEW = "under_review"
+APPEAL_STATUS_DECIDED = "decided"
+APPEAL_STATUS_WITHDRAWN = "withdrawn"
+APPEAL_STATUSES = {
+    APPEAL_STATUS_SUBMITTED,
+    APPEAL_STATUS_ASSIGNED,
+    APPEAL_STATUS_UNDER_REVIEW,
+    APPEAL_STATUS_DECIDED,
+    APPEAL_STATUS_WITHDRAWN,
+}
+APPEAL_DECISION_ACCEPTED = "accepted"
+APPEAL_DECISION_REJECTED = "rejected"
+APPEAL_DECISION_PARTIALLY_GRANTED = "partially_granted"
+APPEAL_DECISIONS = {
+    APPEAL_DECISION_ACCEPTED,
+    APPEAL_DECISION_REJECTED,
+    APPEAL_DECISION_PARTIALLY_GRANTED,
+}
+# Appeal reason codes (controlled; statement is the appellant's sanitized text).
+APPEAL_REASON_WRONG_TARGET = "wrong_target"
+APPEAL_REASON_NO_VIOLATION = "no_violation"
+APPEAL_REASON_EVIDENCE_NEW = "new_evidence"
+APPEAL_REASON_CIRCUMSTANCES_CHANGED = "circumstances_changed"
+APPEAL_REASON_OTHER = "other"
+APPEAL_REASON_CODES = {
+    APPEAL_REASON_WRONG_TARGET,
+    APPEAL_REASON_NO_VIOLATION,
+    APPEAL_REASON_EVIDENCE_NEW,
+    APPEAL_REASON_CIRCUMSTANCES_CHANGED,
+    APPEAL_REASON_OTHER,
+}
+
 # --- User lifecycle -----------------------------------------------------------
 USER_STATUS_ACTIVE = "active"
 USER_STATUS_SUSPENDED = "suspended"
@@ -504,6 +637,10 @@ EVENT_TYPES = {
     "governance.case.escalated",
     "governance.case.resolved",
     "governance.case.reopened",
+    "enforcement.action.activated",
+    "enforcement.action.revoked",
+    "appeal.assigned",
+    "appeal.decided",
 }
 
 # --- Notification channels (Phase 9) -------------------------------------------
@@ -529,6 +666,16 @@ PERMISSION_MODERATION_MANAGE = "moderation.manage"
 PERMISSION_PLATFORM_AUDIT_READ = "platform.audit.read"
 PERMISSION_REPORTS_ESCALATE = "reports.escalate"
 PERMISSION_REPORTS_TEAMS = "reports.teams"
+
+# Phase 11 permission codes (also seeded in catalog + migration 0009).
+PERMISSION_ENFORCEMENT_READ = "enforcement.read"
+PERMISSION_ENFORCEMENT_CREATE = "enforcement.create"
+PERMISSION_ENFORCEMENT_APPROVE = "enforcement.approve"
+PERMISSION_ENFORCEMENT_REVOKE = "enforcement.revoke"
+PERMISSION_ENFORCEMENT_REINSTATE = "enforcement.reinstate"
+PERMISSION_APPEALS_READ = "appeals.read"
+PERMISSION_APPEALS_MANAGE = "appeals.manage"
+PERMISSION_APPEALS_DECIDE = "appeals.decide"
 
 # Explainable match modes (never a bare percentage).
 MATCH_MODE_STRONG = "strong"
