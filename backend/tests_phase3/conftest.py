@@ -19,7 +19,7 @@ os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"
 
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
-from sqlalchemy import create_engine, event  # noqa: E402
+from sqlalchemy import create_engine, event, select  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 from sqlalchemy.pool import StaticPool  # noqa: E402
 
@@ -77,6 +77,23 @@ def engine():
     Base.metadata.create_all(eng)
     with Session(eng) as session:
         seed_catalog(session)
+        # Phase 10 governance teams (idempotent — mirrors migration 0008).
+        from app.models.governance import (
+            GOVERNANCE_TEAM_SEEDS,
+            GovernanceTeam,
+        )
+
+        for slug, name, description in GOVERNANCE_TEAM_SEEDS:
+            exists = session.scalar(
+                select(GovernanceTeam).where(GovernanceTeam.slug == slug)
+            )
+            if exists is None:
+                session.add(
+                    GovernanceTeam(
+                        slug=slug, name=name, description=description
+                    )
+                )
+        session.commit()
     yield eng
     Base.metadata.drop_all(eng)
     eng.dispose()
