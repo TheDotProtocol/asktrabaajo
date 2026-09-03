@@ -765,3 +765,68 @@ export interface CareerRoleRow {
   strengths: string[];
   missing_skills: string[];
 }
+
+/* ----------------------------- Phase 8: outreach + communications ----------------------------- */
+
+export interface OutreachRequestRow {
+  id: string;
+  organization_id?: string;
+  organization_name?: string | null;
+  candidate?: { person_id: string; name: string | null; headline: string | null } | null;
+  opportunity_id?: string | null;
+  opportunity_title?: string | null;
+  application_id?: string | null;
+  message: string;
+  context?: string | null;
+  status: string;
+  requester_id?: string;
+  requester_name?: string | null;
+  created_at: string | null;
+  expires_at: string | null;
+  viewed_at?: string | null;
+  responded_at: string | null;
+  note?: string | null;
+  conversation_id?: string | null;
+  organization?: { id: string; name: string | null } | null;
+  opportunity?: { id: string; title: string | null; company: string | null } | null;
+}
+
+export interface ConversationMessageRow {
+  id: string;
+  conversation_id: string;
+  sender_user_id: string;
+  sender_side: string;
+  sender_name: string | null;
+  body: string;
+  created_at: string | null;
+}
+
+export interface ConversationRow {
+  id: string;
+  organization: { id: string; name: string | null };
+  candidate: { person_id: string; name: string | null };
+  counterpart: string | null;
+  opportunity_id: string | null;
+  opportunity_title: string | null;
+  application_id: string | null;
+  outreach_id: string | null;
+  status: string;
+  created_at: string | null;
+  last_message_at: string | null;
+  closed_at: string | null;
+  unread_count: number;
+  messages: ConversationMessageRow[] | null;
+}
+
+export interface CommunicationsInbox {
+  outreach: OutreachRequestRow[];
+  conversations: ConversationRow[];
+  unread: { unread_messages: number; pending_outreach: number };
+}
+
+export interface BlockedOrg {
+  organization_id: string;
+  organization_name: string | null;
+  reason: string | null;
+  created_at: string | null;
+}

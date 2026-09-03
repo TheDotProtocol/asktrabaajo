@@ -16,6 +16,7 @@ const NAV = [
   { href: "/jobseeker/applications", label: "Applications" },
   { href: "/jobseeker/interviews", label: "Interviews" },
   { href: "/jobseeker/offers", label: "Offers" },
+  { href: "/jobseeker/communications", label: "Messages" },
 ];
 
 export default function JobseekerLayout({ children }: { children: ReactNode }) {

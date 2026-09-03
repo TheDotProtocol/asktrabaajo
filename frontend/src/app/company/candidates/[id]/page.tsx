@@ -11,7 +11,12 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/api/session";
-import { CandidateProfile, CompanyJob, GapAnalysis } from "@/lib/api/types";
+import {
+  CandidateProfile,
+  CompanyJob,
+  GapAnalysis,
+  OutreachRequestRow,
+} from "@/lib/api/types";
 
 const ORG_KEY = "asktrabaajo_org_id";
 const cardCls =
@@ -36,6 +41,10 @@ export default function CandidateDetailPage() {
   const [jobId, setJobId] = useState(search.get("job") ?? "");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [outreach, setOutreach] = useState<OutreachRequestRow[]>([]);
+  const [outreachMsg, setOutreachMsg] = useState("");
+  const [outreachCtx, setOutreachCtx] = useState("");
+  const [outreachSent, setOutreachSent] = useState("");
 
   const loadProfile = useCallback(
     async (oppId?: string) => {
@@ -65,8 +74,12 @@ export default function CandidateDetailPage() {
         .get<CompanyJob[]>(`/company/${id}/jobs`)
         .then((rows) => setJobs(rows.filter((j) => j.status === "published")))
         .catch(() => setJobs([]));
+      api
+        .get<OutreachRequestRow[]>(`/talent/${id}/outreach`)
+        .then((rows) => setOutreach(rows.filter((r) => r.candidate?.person_id === personId)))
+        .catch(() => setOutreach([]));
     }
-  }, []);
+  }, [personId]);
 
   useEffect(() => {
     if (orgId && personId) {
@@ -101,6 +114,31 @@ export default function CandidateDetailPage() {
       await loadProfile(opp);
     } catch (e) {
       setError(String((e as Error).message ?? e));
+    }
+  }
+
+  async function sendOutreach() {
+    if (!orgId || !outreachMsg.trim()) return;
+    setBusy(true);
+    setError("");
+    setOutreachSent("");
+    try {
+      const opp = jobs.find((j) => j.id === jobId)?.opportunity_id ?? undefined;
+      await api.post(`/talent/${orgId}/outreach`, {
+        person_id: personId,
+        opportunity_id: opp,
+        message: outreachMsg.trim(),
+        context: outreachCtx.trim() || undefined,
+      });
+      setOutreachMsg("");
+      setOutreachCtx("");
+      setOutreachSent("Request sent — the candidate decides whether to accept.");
+      const rows = await api.get<OutreachRequestRow[]>(`/talent/${orgId}/outreach`);
+      setOutreach(rows.filter((r) => r.candidate?.person_id === personId));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -272,6 +310,70 @@ export default function CandidateDetailPage() {
                 <GapBlock gap={match.gap_analysis} />
               </div>
             )}
+          </section>
+
+          {/* Controlled contact request — never reveals private details */}
+          <section className={cardCls}>
+            <h2 className="text-sm font-semibold">Request contact</h2>
+            <p className="mt-1 text-xs text-neutral-400">
+              The candidate stays in control. Accepting opens a conversation
+              inside AskTrabaajo — no phone numbers or emails are shared.
+            </p>
+            <div className="mt-3 space-y-3">
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <select
+                  value={jobId}
+                  onChange={(e) => selectJob(e.target.value)}
+                  className="rounded border border-neutral-300 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900"
+                >
+                  <option value="">Regarding… (no specific job)</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <textarea
+                value={outreachMsg}
+                onChange={(e) => setOutreachMsg(e.target.value)}
+                rows={3}
+                placeholder={"Introduce your organization and why you'd like to talk (min 10 characters)."}
+                className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              />
+              <input
+                value={outreachCtx}
+                onChange={(e) => setOutreachCtx(e.target.value)}
+                placeholder="Context / role — optional"
+                className="w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
+              />
+              <button
+                className="rounded bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-40"
+                disabled={busy || outreachMsg.trim().length < 10}
+                onClick={sendOutreach}
+              >
+                Send request
+              </button>
+              {outreachSent && (
+                <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                  {outreachSent}
+                </p>
+              )}
+
+              {outreach.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {outreach.map((r) => (
+                    <span
+                      key={r.id}
+                      className="rounded-full bg-neutral-100 px-2.5 py-1 text-xs capitalize text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300"
+                    >
+                      {r.status}
+                      {r.opportunity_title ? ` · ${r.opportunity_title}` : ""}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
           </section>
         </>
       )}

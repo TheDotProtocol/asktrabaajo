@@ -13,6 +13,7 @@ const NAV = [
   { href: "/company/jobs", label: "Jobs" },
   { href: "/company/pipeline", label: "Pipeline" },
   { href: "/company/candidates", label: "Candidates" },
+  { href: "/company/communications", label: "Communications" },
 ];
 
 export default function CompanyLayout({ children }: { children: ReactNode }) {

@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 /**
  * Application Manager — one lifecycle with a full timeline per application.
  * Statuses come from the controlled model; withdraw goes through the state
@@ -80,9 +81,9 @@ export default function ApplicationsPage() {
         <div className={cardCls}>
           <p className="text-center text-sm text-neutral-400">
             No applications yet — explore{" "}
-            <a href="/jobseeker/opportunities" className="text-amber-600 hover:underline">
+            <Link href="/jobseeker/opportunities" className="text-amber-600 hover:underline">
               opportunities
-            </a>
+            </Link>
             .
           </p>
         </div>
