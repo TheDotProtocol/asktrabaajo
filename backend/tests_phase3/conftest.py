@@ -30,7 +30,15 @@ from app.models.catalog import seed_catalog  # noqa: E402
 
 # Import every model so Base.metadata is complete before create_all.
 from app.models import (  # noqa: F401,E402
+    ApplicationEvent,
     AuditLogEntry,
+    CareerGoal,
+    Interview,
+    JobApplication,
+    Offer,
+    Opportunity,
+    UserNotification,
+    WorkDnaProfile,
     Credential,
     DocumentAccessGrant,
     Education,
@@ -117,3 +125,63 @@ def make_user(client):
         }
 
     return _make
+
+
+@pytest.fixture()
+def make_opportunity(db):
+    """Insert an approved canonical opportunity directly (catalogue data)."""
+
+    def _make(
+        company_name: str = "Dot Protocol",
+        title: str = "Senior Engineer",
+        skills_required=None,
+        industry: str = "Blockchain",
+        work_mode: str = "hybrid",
+        country: str = "UAE",
+        city: str = "Dubai",
+        seniority: str = "senior",
+        experience_level: str = "4+ years",
+        **kwargs,
+    ):
+        from app.models.career import Opportunity
+        import uuid
+
+        opp = Opportunity(
+            id=uuid.uuid4(),
+            company_name=company_name,
+            title=title,
+            summary=f"{title} at {company_name}",
+            skills_required=skills_required or [],
+            industry=industry,
+            work_mode=work_mode,
+            country=country,
+            city=city,
+            seniority=seniority,
+            experience_level=experience_level,
+            status="active",
+            is_approved=True,
+            source="platform",
+            **kwargs,
+        )
+        db.add(opp)
+        db.commit()
+        db.refresh(opp)
+        return opp
+
+    return _make
+
+
+@pytest.fixture()
+def add_skill(client):
+    """Add a skill to the caller's Work ID via the API (gate for applying)."""
+
+    def _add(user, skill_name: str = "Python", level: str = "advanced"):
+        response = client.put(
+            "/api/v1/work-id/skills",
+            headers=user["authorization"],
+            json={"skill_name": skill_name, "level": level, "years_experience": 4},
+        )
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    return _add
