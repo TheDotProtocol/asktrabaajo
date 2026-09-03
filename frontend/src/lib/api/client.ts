@@ -84,5 +84,12 @@ export class ApiClient {
   }
 }
 
-/** Default client instance. */
+/** Create a client whose auth token is read live from a provider. */
+export function createApiClient(
+  getAccessToken: () => string | null
+): ApiClient {
+  return new ApiClient(API_BASE, getAccessToken);
+}
+
+/** Default client instance (no token provider — use lib/api/session for UI). */
 export const api = new ApiClient();
