@@ -133,3 +133,35 @@ def require_membership(
     if membership is None:
         raise PermissionDeniedError("You are not a member of this organization.")
     return membership
+
+
+def has_platform_permission(db: Session, user_id: uuid.UUID, permission_code: str) -> bool:
+    """True when the user holds ``permission_code`` through a membership in a
+    PLATFORM-kind organization (moderator, governance auditor, super admin).
+    Company/government memberships can never satisfy platform governance
+    permissions — this is the Phase 9 governance boundary."""
+    if is_platform_super_admin(db, user_id):
+        return True
+    if permission_code not in effective_permission_codes(db, user_id):
+        return False
+    row = db.execute(
+        select(Membership.id)
+        .join(Organization, Organization.id == Membership.organization_id)
+        .where(
+            Membership.user_id == user_id,
+            Organization.kind == "platform",
+        )
+        .limit(1)
+    ).first()
+    return row is not None
+
+
+def require_platform_permission(
+    db: Session, user_id: uuid.UUID, permission_code: str
+) -> None:
+    """Raise 403 unless the user holds a platform-scope permission."""
+    if not has_platform_permission(db, user_id, permission_code):
+        raise PermissionDeniedError(
+            f"Missing platform permission '{permission_code}'.",
+            details={"permission": permission_code},
+        )
