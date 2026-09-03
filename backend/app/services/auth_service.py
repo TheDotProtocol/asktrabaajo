@@ -30,7 +30,13 @@ from app.core.security import (
     verify_password,
 )
 from app.models.enums import USER_STATUS_ACTIVE
-from app.models.identity import PersonProfile, RefreshToken, User
+from app.models.identity import (
+    EmailVerificationToken,
+    PasswordResetToken,
+    PersonProfile,
+    RefreshToken,
+    User,
+)
 
 
 def _now():
@@ -173,3 +179,117 @@ def ensure_person(db: Session, user_id: uuid.UUID) -> PersonProfile:
     if person is None:
         raise NotFoundError("Person profile not found for account.")
     return person
+
+
+# --- Password lifecycle -------------------------------------------------------
+
+
+def change_password(
+    db: Session, *, user: User, current_password: str, new_password: str
+) -> Tuple[str, str]:
+    """Verify + change password. All sessions/access tokens are invalidated
+    and a fresh token pair is returned so the current client stays signed in.
+    """
+    if not verify_password(current_password, user.password_hash):
+        raise UnauthorizedError("Current password is incorrect.")
+    user.password_hash = hash_password(new_password)
+    user.token_version += 1  # invalidate outstanding access tokens
+    db.flush()
+    revoke_all_user_tokens(db, user.id)
+    access, refresh = issue_token_pair(db, user)
+    db.commit()
+    return access, refresh
+
+
+def request_password_reset(db: Session, *, email: str) -> Optional[str]:
+    """Create a single-use reset token for the account, if it exists.
+
+    Returns the plaintext token (to be emailed) or None — callers must not
+    reveal whether the email had an account.
+    """
+    user = db.scalar(select(User).where(User.email == email.strip().lower()))
+    if user is None:
+        return None
+    token = generate_random_token()
+    db.add(
+        PasswordResetToken(
+            user_id=user.id,
+            token_hash=hash_token(token),
+            expires_at=_now() + timedelta(hours=1),
+        )
+    )
+    db.commit()
+    return token
+
+
+def reset_password(db: Session, *, token: str, new_password: str) -> User:
+    """Consume a reset token and set a new password (revokes all sessions)."""
+    row = db.scalar(
+        select(PasswordResetToken).where(PasswordResetToken.token_hash == hash_token(token))
+    )
+    if row is None or row.used_at is not None:
+        raise UnauthorizedError("Invalid or already-used reset token.")
+    if row.expires_at < _now():
+        raise UnauthorizedError("Reset token has expired.")
+    user = db.get(User, row.user_id)
+    if user is None:
+        raise UnauthorizedError("Account no longer exists.")
+
+    row.used_at = _now()
+    user.password_hash = hash_password(new_password)
+    user.token_version += 1
+    db.flush()
+    revoke_all_user_tokens(db, user.id)
+    db.commit()
+    return user
+
+
+# --- Email verification -------------------------------------------------------
+
+
+def request_email_verification(db: Session, *, user: User) -> str:
+    """Create a single-use, time-limited verification token (hashed at rest)."""
+    token = generate_random_token()
+    db.add(
+        EmailVerificationToken(
+            user_id=user.id,
+            token_hash=hash_token(token),
+            expires_at=_now() + timedelta(hours=24),
+        )
+    )
+    db.commit()
+    return token
+
+
+def verify_email_with_token(db: Session, *, token: str) -> User:
+    """Consume a verification token; marks the account email as verified."""
+    row = db.scalar(
+        select(EmailVerificationToken).where(
+            EmailVerificationToken.token_hash == hash_token(token)
+        )
+    )
+    if row is None or row.used_at is not None:
+        raise UnauthorizedError("Invalid or already-used verification token.")
+    if row.expires_at < _now():
+        raise UnauthorizedError("Verification token has expired.")
+    user = db.get(User, row.user_id)
+    if user is None:
+        raise UnauthorizedError("Account no longer exists.")
+    row.used_at = _now()
+    user.email_verified_at = user.email_verified_at or _now()
+    db.commit()
+    return user
+
+
+# --- Session management -------------------------------------------------------
+
+
+def list_active_sessions(db: Session, user_id: uuid.UUID):
+    """Active (non-revoked, unexpired) refresh sessions for a user."""
+    rows = db.scalars(
+        select(RefreshToken)
+        .where(RefreshToken.user_id == user_id)
+        .where(RefreshToken.revoked_at.is_(None))
+        .order_by(RefreshToken.created_at.desc())
+    ).all()
+    return [row for row in rows if row.expires_at >= _now()]

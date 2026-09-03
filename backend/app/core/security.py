@@ -17,6 +17,7 @@ from app.core.config import get_settings
 from app.core.errors import UnauthorizedError
 
 TOKEN_TYPE_ACCESS = "access"
+TOKEN_TYPE_MFA = "mfa"
 
 
 def hash_password(password: str) -> str:
@@ -85,6 +86,42 @@ def decode_access_token(token: str) -> Dict[str, Any]:
     if payload.get("type") != TOKEN_TYPE_ACCESS:
         raise UnauthorizedError("Invalid token type.")
     return payload
+
+
+def create_mfa_token(user_id: uuid.UUID, minutes: int = 5) -> str:
+    """Short-lived token proving the password step of a login succeeded."""
+    settings = get_settings()
+    payload: Dict[str, Any] = {
+        "sub": str(user_id),
+        "type": TOKEN_TYPE_MFA,
+        "jti": uuid.uuid4().hex,
+        "iat": _now_naive_epoch(),
+        "exp": _now_naive_epoch() + timedelta(minutes=minutes).total_seconds(),
+    }
+    return jwt.encode(payload, settings.secret_key, algorithm=settings.jwt_algorithm)
+
+
+def decode_mfa_token(token: str) -> uuid.UUID:
+    """Decode an MFA step token; returns the user id."""
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token,
+            settings.secret_key,
+            algorithms=[settings.jwt_algorithm],
+            options={"require": ["sub", "type", "exp"]},
+        )
+    except jwt.ExpiredSignatureError:
+        raise UnauthorizedError("MFA step has expired. Please log in again.")
+    except jwt.PyJWTError:
+        raise UnauthorizedError("Invalid MFA step token.")
+    if payload.get("type") != TOKEN_TYPE_MFA:
+        raise UnauthorizedError("Invalid token type.")
+    return uuid.UUID(str(payload.get("sub")))
+
+
+def _now_naive_epoch() -> float:
+    return datetime.now(timezone.utc).timestamp()
 
 
 def new_request_id() -> str:

@@ -16,6 +16,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import register_exception_handlers
 from app.core.logging import setup_logging
 from app.core.middleware import RequestContextMiddleware
+from app.core.ratelimit import RateLimiter
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -33,6 +34,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         openapi_url="/api/openapi.json",
     )
     app.state.settings = settings
+    # In-process rate limiters (Redis-backed in production deployments later).
+    app.state.rate_limiters = {
+        "login": RateLimiter(max_requests=10, window_seconds=60),
+        "mfa_verify": RateLimiter(max_requests=5, window_seconds=60),
+        "reset": RateLimiter(max_requests=5, window_seconds=60),
+    }
 
     app.add_middleware(
         CORSMiddleware,
