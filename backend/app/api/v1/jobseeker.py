@@ -1,0 +1,823 @@
+"""/api/v1/jobseeker — the Jobseeker Career OS API.
+
+Every career resource here is person-owned: the router resolves the caller's
+PERSON record once and scopes every query to it. Another user asking for an
+application/interview/offer/goal/milestone they do not own receives 404
+(existence is hidden). Opportunities are the shared catalogue; a person's
+private stance (save/dismiss/apply) still stays on their own rows.
+
+Self-service status transitions go through the application state machine —
+raw status writes from the jobseeker API are impossible by construction.
+"""
+from __future__ import annotations
+
+import uuid
+from typing import Optional
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func, or_, select
+from sqlalchemy.orm import Session, joinedload
+
+from app.api.deps import get_current_user
+from app.core.errors import InvalidInputError, NotFoundError
+from app.db.session import get_db
+from app.models.career import (
+    ApplicationEvent,
+    CareerGoal,
+    CareerMilestone,
+    Interview,
+    JobApplication,
+    Offer,
+    Opportunity,
+    UserNotification,
+    WorkDnaProfile,
+)
+from app.models.enums import (
+    INTERVIEW_STATUS_SCHEDULED,
+    OFFER_STATUS_ACCEPTED,
+    OFFER_STATUS_DECLINED,
+    OFFER_STATUSES,
+    OFFER_STATUS_PENDING,
+)
+from app.models.identity import PersonProfile, User
+from app.models.work import UserSkill
+from app.schemas.common import MessageResponse
+from app.schemas.jobseeker import (
+    AdvisorSnapshotOut,
+    ApplicationDetailOut,
+    ApplicationEventOut,
+    ApplicationOut,
+    ApplyRequest,
+    BatchApplyRequest,
+    CareerGoalCreate,
+    CareerGoalOut,
+    CareerGoalUpdate,
+    DashboardOut,
+    DnaProfileOut,
+    DnaQuestionOut,
+    DnaSubmitRequest,
+    InterviewOut,
+    MilestoneCreate,
+    MilestoneOut,
+    NotificationOut,
+    OfferDecisionRequest,
+    OfferOut,
+    OpportunityListOut,
+    OpportunityMatchOut,
+    OpportunityOut,
+    RescheduleRequest,
+)
+from app.services import audit as audit_service
+from app.services import applications as applications_service
+from app.services import development as development_service
+from app.services import matching as matching_service
+from app.services import notifications as notifications_service
+from app.services import person as person_service
+from app.services import work_dna as dna_service
+from app.services.auth_service import get_person_for_user
+from app.core.timeutil import utc_now_naive
+
+router = APIRouter(prefix="/jobseeker", tags=["jobseeker"])
+
+
+# --- helpers -----------------------------------------------------------------
+
+def _person(db: Session, user: User) -> PersonProfile:
+    person = get_person_for_user(db, user.id)
+    if person is None:
+        raise NotFoundError("Person profile not found for this account.")
+    return person
+
+
+def _opportunity_out(opp: Opportunity) -> Optional[OpportunityOut]:
+    if opp is None:
+        return None
+    return OpportunityOut.model_validate(opp)
+
+
+def _owned_application(db: Session, person_id: uuid.UUID, application_id: uuid.UUID) -> JobApplication:
+    app = db.get(JobApplication, application_id)
+    if app is None or app.person_id != person_id:
+        raise NotFoundError("Application not found.")
+    return app
+
+
+def _application_out(app: JobApplication) -> ApplicationOut:
+    out = ApplicationOut.model_validate(app)
+    return out
+
+
+# --- Work DNA ----------------------------------------------------------------
+
+@router.get("/work-dna/questions", response_model=list[DnaQuestionOut])
+def dna_questions(
+    _user: User = Depends(get_current_user),
+    _db: Session = Depends(get_db),
+) -> list:
+    """Current versioned assessment question set (adaptive engines later)."""
+    return dna_service.list_questions()
+
+
+@router.get("/work-dna", response_model=Optional[DnaProfileOut])
+def get_work_dna(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Optional[WorkDnaProfile]:
+    person = _person(db, user)
+    return dna_service.get_current_profile(db, person.id)
+
+
+@router.post("/work-dna/assessments", response_model=DnaProfileOut, status_code=201)
+def submit_work_dna(
+    body: DnaSubmitRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> WorkDnaProfile:
+    person = _person(db, user)
+    profile = dna_service.submit_assessment(
+        db, person.id, body.answers, user_id=user.id
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="workdna.assessment.submitted",
+        resource_type="work_dna_profile",
+        resource_id=profile.id,
+    )
+    notifications_service.notify(
+        db,
+        user.id,
+        "Work DNA updated",
+        "Your Work DNA profile has been refreshed from your latest assessment.",
+        kind="career",
+    )
+    db.commit()
+    db.refresh(profile)
+    return profile
+
+
+# --- Career goals ------------------------------------------------------------
+
+@router.get("/goals", response_model=list[CareerGoalOut])
+def list_goals(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, user)
+    return db.scalars(
+        select(CareerGoal)
+        .where(CareerGoal.person_id == person.id)
+        .order_by(CareerGoal.created_at.desc())
+    ).all()
+
+
+@router.post("/goals", response_model=CareerGoalOut, status_code=201)
+def create_goal(
+    body: CareerGoalCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CareerGoal:
+    person = _person(db, user)
+    goal = CareerGoal(person_id=person.id, **body.model_dump())
+    db.add(goal)
+    db.commit()
+    db.refresh(goal)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="career_goal.created",
+        resource_type="career_goal",
+        resource_id=goal.id,
+    )
+    db.commit()
+    return goal
+
+
+@router.patch("/goals/{goal_id}", response_model=CareerGoalOut)
+def update_goal(
+    goal_id: uuid.UUID,
+    body: CareerGoalUpdate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CareerGoal:
+    person = _person(db, user)
+    goal = db.get(CareerGoal, goal_id)
+    if goal is None or goal.person_id != person.id:
+        raise NotFoundError("Career goal not found.")
+    for key, value in body.model_dump(exclude_unset=True).items():
+        setattr(goal, key, value)
+    db.commit()
+    db.refresh(goal)
+    return goal
+
+
+@router.delete("/goals/{goal_id}", response_model=MessageResponse)
+def delete_goal(
+    goal_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    person = _person(db, user)
+    goal = db.get(CareerGoal, goal_id)
+    if goal is None or goal.person_id != person.id:
+        raise NotFoundError("Career goal not found.")
+    db.delete(goal)
+    db.commit()
+    return MessageResponse(message="Career goal deleted.")
+
+
+# --- Opportunities (shared catalogue + personal stance) ----------------------
+
+@router.get("/opportunities", response_model=OpportunityListOut)
+def list_opportunities(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    q: Optional[str] = Query(None, max_length=200),
+    company: Optional[str] = Query(None, max_length=200),
+    work_mode: Optional[str] = Query(None, max_length=20),
+    industry: Optional[str] = Query(None, max_length=120),
+    country: Optional[str] = Query(None, max_length=80),
+    _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> OpportunityListOut:
+    person = _person(db, _user)
+    query = select(Opportunity).where(
+        Opportunity.status == "active", Opportunity.is_approved.is_(True)
+    )
+    if q:
+        like = f"%{q}%"
+        query = query.where(
+            or_(
+                Opportunity.title.ilike(like),
+                Opportunity.company_name.ilike(like),
+                Opportunity.summary.ilike(like),
+            )
+        )
+    if company:
+        query = query.where(Opportunity.company_name.ilike(f"%{company}%"))
+    if work_mode:
+        query = query.where(Opportunity.work_mode == work_mode)
+    if industry:
+        query = query.where(Opportunity.industry.ilike(f"%{industry}%"))
+    if country:
+        query = query.where(Opportunity.country == country)
+
+    total = len(db.scalars(query).all()) if page == 1 else len(
+        db.scalars(
+            select(func.count()).select_from(query.subquery())
+        ).all()
+    )
+    query = query.order_by(Opportunity.created_at.desc())
+    opportunities = db.scalars(query.offset((page - 1) * page_size).limit(page_size)).all()
+
+    saved_ids = set(
+        db.scalars(
+            select(JobApplication.opportunity_id).where(
+                JobApplication.person_id == person.id,
+                JobApplication.status.in_(["saved"]),
+            )
+        ).all()
+    )
+    applied_ids = set(
+        db.scalars(
+            select(JobApplication.opportunity_id).where(
+                JobApplication.person_id == person.id,
+                JobApplication.status.in_(
+                    ["applied", "application_received", "screening", "assessment",
+                     "interview", "offer", "accepted", "on_hold"]
+                ),
+            )
+        ).all()
+    )
+
+    matches = matching_service.match_all(db, person.id, opportunities)
+    match_by_id = {m["opportunity_id"]: m for m in matches}
+    items = []
+    for opp in opportunities:
+        m = match_by_id.get(str(opp.id), {})
+        components = m.get("components", {})
+        enriched = {}
+        for key, comp in components.items():
+            enriched[key] = {
+                "score": comp.get("score", 0.0),
+                "reason": comp.get("reason", ""),
+                "matched": comp.get("matched"),
+                "missing": comp.get("missing"),
+            }
+        items.append(
+            OpportunityMatchOut(
+                opportunity_id=opp.id,
+                percent=m.get("percent", 0),
+                score=m.get("score", 0.0),
+                components=enriched,
+                strengths=m.get("strengths", []),
+                gaps=m.get("gaps", []),
+                missing_skills=m.get("missing_skills", []),
+                opportunity=_opportunity_out(opp),
+                saved=str(opp.id) in saved_ids,
+                applied=str(opp.id) in applied_ids,
+            )
+        )
+    return OpportunityListOut(
+        items=items, total=total, page=page, page_size=page_size
+    )
+
+
+@router.post("/opportunities/{opportunity_id}/save", response_model=ApplicationOut)
+def save_opportunity(
+    opportunity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JobApplication:
+    person = _person(db, user)
+    return applications_service.save_opportunity(db, person.id, opportunity_id)
+
+
+@router.post("/opportunities/{opportunity_id}/dismiss", response_model=MessageResponse)
+def dismiss_opportunity(
+    opportunity_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    person = _person(db, user)
+    from app.models.career import OpportunityInteraction
+
+    existing = db.scalar(
+        select(OpportunityInteraction).where(
+            OpportunityInteraction.person_id == person.id,
+            OpportunityInteraction.opportunity_id == opportunity_id,
+        )
+    )
+    if existing is not None:
+        existing.action = "dismissed"
+    else:
+        db.add(
+            OpportunityInteraction(
+                person_id=person.id,
+                opportunity_id=opportunity_id,
+                action="dismissed",
+            )
+        )
+    db.commit()
+    return MessageResponse(message="Opportunity dismissed.")
+
+
+# --- Applications ------------------------------------------------------------
+
+@router.get("/applications", response_model=list[ApplicationOut])
+def list_applications(
+    status: Optional[str] = Query(None, max_length=32),
+    _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, _user)
+    query = (
+        select(JobApplication)
+        .options(joinedload(JobApplication.opportunity))
+        .where(JobApplication.person_id == person.id)
+    )
+    if status:
+        query = query.where(JobApplication.status == status)
+    apps = db.scalars(
+        query.order_by(JobApplication.last_activity_at.desc())
+    ).all()
+    return [_application_out(a) for a in apps]
+
+
+@router.get("/applications/{application_id}", response_model=ApplicationDetailOut)
+def application_detail(
+    application_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> ApplicationDetailOut:
+    person = _person(db, user)
+    app = _owned_application(db, person.id, application_id)
+    events = db.scalars(
+        select(ApplicationEvent)
+        .where(ApplicationEvent.application_id == app.id)
+        .order_by(ApplicationEvent.created_at.asc())
+    ).all()
+    has_interview = (
+        db.scalar(
+            select(Interview.id)
+            .where(
+                Interview.application_id == app.id,
+                Interview.status.in_(["scheduled", "reschedule_requested", "completed"]),
+            )
+            .limit(1)
+        )
+        is not None
+    )
+    has_offer = (
+        db.scalar(select(Offer.id).where(Offer.application_id == app.id).limit(1))
+        is not None
+    )
+    return ApplicationDetailOut(
+        application=_application_out(app),
+        timeline=[ApplicationEventOut.model_validate(e) for e in events],
+        opportunity=_opportunity_out(app.opportunity),
+        has_interview=has_interview,
+        has_offer=has_offer,
+    )
+
+
+@router.post("/applications", response_model=ApplicationOut, status_code=201)
+def apply_to_opportunity(
+    body: ApplyRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> JobApplication:
+    person = _person(db, user)
+    app = applications_service.apply(
+        db,
+        person.id,
+        body.opportunity_id,
+        actor_user_id=user.id,
+        cover_note=body.cover_note,
+    )
+    opp = db.get(Opportunity, body.opportunity_id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="application.submitted",
+        resource_type="job_application",
+        resource_id=app.id,
+    )
+    db.commit()
+    db.refresh(app)
+    if opp:
+        notifications_service.notify(
+            db,
+            user.id,
+            f"Application submitted to {opp.company_name}",
+            f"You applied to {opp.title}.",
+            kind="application",
+        )
+    return app
+
+
+@router.post("/applications/batch", response_model=dict)
+def batch_apply(
+    body: BatchApplyRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Explicit batch apply — the caller lists the exact opportunities.
+
+    This is the building block Athena may one day trigger AFTER the user
+    explicitly authorizes bulk applications. Consent stays at the boundary.
+    """
+    person = _person(db, user)
+    result = applications_service.apply_to_matching(
+        db, person.id, user.id, [str(o) for o in body.opportunity_ids]
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="application.batch_submitted",
+        resource_type="job_application",
+        metadata={"applied": len(result["applied"]), "failed": len(result["failed"])},
+    )
+    db.commit()
+    return result
+
+
+@router.post("/applications/{application_id}/withdraw", response_model=ApplicationOut)
+def withdraw_application(
+    application_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    reason: Optional[str] = Query(None, max_length=500),
+) -> JobApplication:
+    person = _person(db, user)
+    app = applications_service.withdraw(
+        db, person.id, application_id, actor_user_id=user.id, reason=reason
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="application.withdrawn",
+        resource_type="job_application",
+        resource_id=app.id,
+    )
+    db.commit()
+    db.refresh(app)
+    return app
+
+
+# --- Interviews --------------------------------------------------------------
+
+@router.get("/interviews", response_model=list[InterviewOut])
+def list_interviews(
+    upcoming: bool = False,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, user)
+    app_ids = db.scalars(
+        select(JobApplication.id).where(JobApplication.person_id == person.id)
+    ).all()
+    if not app_ids:
+        return []
+    query = select(Interview).where(Interview.application_id.in_(app_ids))
+    if upcoming:
+        query = query.where(
+            Interview.status.in_(["scheduled", "reschedule_requested"]),
+            Interview.scheduled_at >= utc_now_naive(),
+        )
+    return db.scalars(
+        query.order_by(Interview.scheduled_at.desc())
+    ).all()
+
+
+@router.post("/interviews/{interview_id}/reschedule-request", response_model=InterviewOut)
+def request_reschedule(
+    interview_id: uuid.UUID,
+    body: RescheduleRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Interview:
+    """Request a reschedule — policy-controlled, not unlimited.
+
+    Jobseekers get a small, configurable number of reschedules and must give
+    a reason. Repeated requests without a valid reason are rejected by policy
+    (the reason minimum length is enforced at the schema). The company side
+    approves or counters in a later phase.
+    """
+    person = _person(db, user)
+    interview = db.get(Interview, interview_id)
+    if interview is None:
+        raise NotFoundError("Interview not found.")
+    app = db.get(JobApplication, interview.application_id)
+    if app is None or app.person_id != person.id:
+        raise NotFoundError("Interview not found.")
+    from app.core.config import get_settings
+
+    max_reschedules = get_settings().max_reschedules_per_interview
+    if interview.reschedule_count >= max_reschedules:
+        raise InvalidInputError(
+            f"This interview has already been rescheduled "
+            f"{interview.reschedule_count} time(s) (limit {max_reschedules}). "
+            "Contact the company directly for further changes."
+        )
+    if body.proposed_at is None and not body.reason:
+        raise InvalidInputError("Provide a proposed time or a clear reason.")
+    interview.status = "reschedule_requested"
+    interview.reschedule_reason = body.reason
+    interview.reschedule_requested_at = utc_now_naive()
+    if body.proposed_at is not None:
+        interview.scheduled_at = body.proposed_at
+    db.commit()
+    db.refresh(interview)
+    notifications_service.notify(
+        db,
+        user.id,
+        "Reschedule requested",
+        f"Your request to reschedule the interview on "
+        f"{interview.scheduled_at.strftime('%Y-%m-%d %H:%M')} has been noted.",
+        kind="interview",
+    )
+    return interview
+
+
+# --- Offers ------------------------------------------------------------------
+
+@router.get("/offers", response_model=list[OfferOut])
+def list_offers(
+    _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, _user)
+    app_ids = db.scalars(
+        select(JobApplication.id).where(JobApplication.person_id == person.id)
+    ).all()
+    if not app_ids:
+        return []
+    return db.scalars(
+        select(Offer).where(Offer.application_id.in_(app_ids))
+    ).all()
+
+
+@router.post("/offers/{offer_id}/decision", response_model=OfferOut)
+def decide_offer(
+    offer_id: uuid.UUID,
+    body: OfferDecisionRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Offer:
+    """Explicit accept/decline — never auto-generated or binding documents."""
+    person = _person(db, user)
+    offer = db.get(Offer, offer_id)
+    if offer is None:
+        raise NotFoundError("Offer not found.")
+    app = db.get(JobApplication, offer.application_id)
+    if app is None or app.person_id != person.id:
+        raise NotFoundError("Offer not found.")
+    if offer.status != OFFER_STATUS_PENDING:
+        raise InvalidInputError(f"Cannot respond to an offer with status '{offer.status}'.")
+    decision = body.decision
+    if decision not in (OFFER_STATUS_ACCEPTED, OFFER_STATUS_DECLINED):
+        raise InvalidInputError("decision must be 'accepted' or 'declined'.")
+    offer.status = decision
+    offer.responded_at = utc_now_naive()
+    if decision == OFFER_STATUS_ACCEPTED:
+        # Offer accepted: application reaches 'accepted' via the state machine.
+        applications_service.transition_to_status(
+            db, app, "accepted", actor_user_id=user.id,
+            note="Offer accepted by candidate.",
+        )
+    db.commit()
+    db.refresh(offer)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action=f"offer.{decision}",
+        resource_type="offer",
+        resource_id=offer.id,
+    )
+    db.commit()
+    return offer
+
+
+# --- Advisor / milestones / dashboard ----------------------------------------
+
+@router.get("/advisor", response_model=AdvisorSnapshotOut)
+def advisor_snapshot(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    person = _person(db, user)
+    return development_service.advisor_snapshot(db, person.id)
+
+
+@router.get("/milestones", response_model=list[MilestoneOut])
+def list_milestones(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, user)
+    return db.scalars(
+        select(CareerMilestone)
+        .where(CareerMilestone.person_id == person.id)
+        .order_by(CareerMilestone.occurred_on.desc())
+    ).all()
+
+
+@router.post("/milestones", response_model=MilestoneOut, status_code=201)
+def create_milestone(
+    body: MilestoneCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> CareerMilestone:
+    person = _person(db, user)
+    milestone = CareerMilestone(person_id=person.id, **body.model_dump())
+    db.add(milestone)
+    db.commit()
+    db.refresh(milestone)
+    return milestone
+
+
+@router.delete("/milestones/{milestone_id}", response_model=MessageResponse)
+def delete_milestone(
+    milestone_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    person = _person(db, user)
+    milestone = db.get(CareerMilestone, milestone_id)
+    if milestone is None or milestone.person_id != person.id:
+        raise NotFoundError("Milestone not found.")
+    db.delete(milestone)
+    db.commit()
+    return MessageResponse(message="Milestone deleted.")
+
+
+@router.get("/dashboard", response_model=DashboardOut)
+def jobseeker_dashboard(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DashboardOut:
+    """The personal Career Command Center — aggregates owned data only."""
+    person = _person(db, user)
+
+    completion = person_service.profile_completion(db, person, user)
+
+    dna = dna_service.get_current_profile(db, person.id)
+
+    goal = matching_service.load_primary_goal(db, person.id)
+
+    apps = db.scalars(
+        select(JobApplication)
+        .options(joinedload(JobApplication.opportunity))
+        .where(JobApplication.person_id == person.id)
+        .order_by(JobApplication.last_activity_at.desc())
+        .limit(10)
+    ).all()
+    app_ids = db.scalars(
+        select(JobApplication.id).where(JobApplication.person_id == person.id)
+    ).all()
+    live_ids = db.scalars(
+        select(JobApplication.id).where(
+            JobApplication.person_id == person.id,
+            JobApplication.status.in_(
+                ["saved", "applied", "application_received", "screening",
+                 "assessment", "interview", "on_hold"]
+            ),
+        )
+    ).all()
+
+    interview_scope = app_ids or [uuid.uuid4()]
+    upcoming_interviews = db.scalars(
+        select(Interview)
+        .where(
+            Interview.application_id.in_(interview_scope),
+            Interview.status.in_(["scheduled", "reschedule_requested"]),
+            Interview.scheduled_at >= utc_now_naive(),
+        )
+        .order_by(Interview.scheduled_at.asc())
+        .limit(5)
+    ).all()
+
+    pending_offers = db.scalars(
+        select(Offer).where(
+            Offer.application_id.in_(interview_scope),
+            Offer.status == OFFER_STATUS_PENDING,
+        )
+    ).all()
+
+    opportunities = db.scalars(
+        select(Opportunity)
+        .where(Opportunity.status == "active", Opportunity.is_approved.is_(True))
+        .limit(50)
+    ).all()
+    matches = matching_service.match_all(db, person.id, opportunities)[:5]
+
+    stats = {
+        "applications": len(app_ids),
+        "live": len(live_ids),
+        "upcoming_interviews": len(upcoming_interviews),
+        "pending_offers": len(pending_offers),
+        "career_milestones": len(
+            db.scalars(
+                select(CareerMilestone.id).where(
+                    CareerMilestone.person_id == person.id
+                )
+            ).all()
+        ),
+    }
+
+    return DashboardOut(
+        profile_completion=completion,
+        work_dna_status="completed" if dna else "incomplete",
+        has_career_goal=goal is not None,
+        stats=stats,
+        upcoming_interviews=[InterviewOut.model_validate(i) for i in upcoming_interviews],
+        recent_applications=[_application_out(a) for a in apps],
+        recommended=matches,
+        advisor=development_service.advisor_snapshot(db, person.id),
+        unread_notifications=notifications_service.unread_count(db, user.id),
+    )
+
+
+# --- Notifications -----------------------------------------------------------
+
+
+@router.get("/notifications", response_model=list[NotificationOut])
+def list_notifications(
+    unread_only: bool = False,
+    limit: int = Query(30, ge=1, le=100),
+    _user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    return notifications_service.list_for_user(
+        db, _user.id, limit=limit, unread_only=unread_only
+    )
+
+
+@router.post("/notifications/{notification_id}/read", response_model=MessageResponse)
+def mark_notification_read(
+    notification_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    ok = notifications_service.mark_read(db, user.id, notification_id)
+    if not ok:
+        raise NotFoundError("Notification not found.")
+    return MessageResponse(message="Notification marked as read.")
+
+
+@router.post("/notifications/read-all", response_model=dict)
+def mark_all_notifications_read(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    count = notifications_service.mark_all_read(db, user.id)
+    return {"marked": count}
+
+
+@router.get("/notifications/unread-count", response_model=dict)
+def notification_unread_count(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    return {"unread": notifications_service.unread_count(db, user.id)}
