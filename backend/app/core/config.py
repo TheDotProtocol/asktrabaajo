@@ -55,6 +55,10 @@ class Settings(BaseSettings):
     demo_user_email: str = ""
     demo_user_password: str = ""
 
+    # Interview scheduling policy: small, configurable number of candidate
+    # reschedules per interview (product principle: limited rescheduling).
+    max_reschedules_per_interview: int = 2
+
     @property
     def is_production_like(self) -> bool:
         return self.environment in {"staging", "production"}
