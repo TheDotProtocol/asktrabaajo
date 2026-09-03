@@ -6,10 +6,16 @@
  * stated goal) and lists concrete gaps + a small set of prioritized
  * recommendations. No invented career facts, no guaranteed outcomes.
  */
+import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/api/session";
-import { AdvisorSnapshot, CareerGoal, CareerMilestone } from "@/lib/api/types";
+import {
+  AdvisorSnapshot,
+  CareerGoal,
+  CareerIntelligence,
+  CareerMilestone,
+} from "@/lib/api/types";
 
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
@@ -23,6 +29,7 @@ export default function CareerPage() {
   const [advisor, setAdvisor] = useState<AdvisorSnapshot | null>(null);
   const [goals, setGoals] = useState<CareerGoal[]>([]);
   const [milestones, setMilestones] = useState<CareerMilestone[]>([]);
+  const [intel, setIntel] = useState<CareerIntelligence | null>(null);
   const [error, setError] = useState("");
 
   const [goalTitle, setGoalTitle] = useState("");
@@ -35,6 +42,7 @@ export default function CareerPage() {
       setAdvisor(await api.get<AdvisorSnapshot>("/jobseeker/advisor"));
       setGoals(await api.get<CareerGoal[]>("/jobseeker/goals"));
       setMilestones(await api.get<CareerMilestone[]>("/jobseeker/milestones"));
+      setIntel(await api.get<CareerIntelligence>("/jobseeker/career/intelligence"));
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
@@ -92,6 +100,107 @@ export default function CareerPage() {
         <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
           {error}
         </div>
+      )}
+
+      {intel && (
+        <section className="grid gap-6 lg:grid-cols-3">
+          <div className={`${cardCls} lg:col-span-2`}>
+            <h2 className="text-sm font-semibold">Career intelligence</h2>
+            <p className="mt-1 text-xs text-neutral-400">
+              Computed from your Work ID against real, active opportunities —
+              never invented, never a guarantee.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <h3 className={labelCls}>Roles within reach</h3>
+                <div className="mt-2 space-y-2">
+                  {intel.roles_within_reach.length === 0 && (
+                    <p className="text-xs text-neutral-400">Complete your Work ID to see these.</p>
+                  )}
+                  {intel.roles_within_reach.map((r) => (
+                    <Link
+                      key={r.opportunity_id}
+                      href={`/jobseeker/opportunities/${r.opportunity_id}`}
+                      className="block rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:border-amber-400 dark:border-neutral-800"
+                    >
+                      <p className="truncate font-medium">{r.title}</p>
+                      <p className="text-xs text-neutral-400">
+                        {r.company} · {r.percent}% match
+                      </p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3 className={labelCls}>Roles to grow into</h3>
+                <div className="mt-2 space-y-2">
+                  {intel.roles_to_grow_into.length === 0 && (
+                    <p className="text-xs text-neutral-400">Keep your profile current to unlock these.</p>
+                  )}
+                  {intel.roles_to_grow_into.map((r) => (
+                    <Link
+                      key={r.opportunity_id}
+                      href={`/jobseeker/opportunities/${r.opportunity_id}`}
+                      className="block rounded-lg border border-neutral-200 px-3 py-2 text-sm hover:border-amber-400 dark:border-neutral-800"
+                    >
+                      <p className="truncate font-medium">{r.title}</p>
+                      <p className="text-xs text-neutral-400">{r.company} · {r.percent}%</p>
+                      {r.missing_skills.length > 0 && (
+                        <p className="mt-1 text-[10px] text-amber-600 dark:text-amber-400">
+                          needs: {r.missing_skills.slice(0, 4).join(", ")}
+                        </p>
+                      )}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className={`${cardCls} lg:col-span-1`}>
+            <h2 className="text-sm font-semibold">What to develop</h2>
+            {intel.skill_development.length > 0 ? (
+              <ol className="mt-3 space-y-2 text-sm">
+                {intel.skill_development.map((s) => (
+                  <li key={s.skill} className="flex items-center justify-between gap-2">
+                    <span className="capitalize">{s.skill}</span>
+                    <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400">
+                      appears in {s.appears_in_roles} role{s.appears_in_roles === 1 ? "" : "s"}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-3 text-xs text-neutral-400">
+                Roles you nearly match will surface concrete skill gaps here.
+              </p>
+            )}
+
+            {intel.path_advice && intel.path_advice.next_step && (
+              <div className="mt-4 rounded-lg border border-neutral-200 p-3 text-sm dark:border-neutral-800">
+                <h3 className={labelCls}>Advisory next step</h3>
+                <p className="mt-2 font-medium">{intel.path_advice.next_step.role_title}</p>
+                {intel.path_advice.next_step.typical_skills && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {intel.path_advice.next_step.typical_skills.slice(0, 6).map((s) => (
+                      <span
+                        key={s}
+                        className="rounded-full bg-neutral-100 px-2 py-0.5 text-[10px] capitalize text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-2 text-[10px] text-neutral-400">{intel.path_advice.note}</p>
+              </div>
+            )}
+
+            <p className="mt-4 text-[10px] leading-relaxed text-neutral-400">
+              {intel.disclaimer}
+            </p>
+          </div>
+        </section>
       )}
 
       <section className="grid gap-6 lg:grid-cols-2">

@@ -5,6 +5,7 @@
  * Every card shows WHY it matches (per-component reasons) and what is
  * missing, never a bare percentage. Save / apply are explicit actions.
  */
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/api/session";
@@ -117,7 +118,12 @@ export default function OpportunitiesPage() {
             <article key={item.opportunity_id} className={cardCls}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="font-semibold">{opp?.title}</h2>
+                  <Link
+                    href={`/jobseeker/opportunities/${item.opportunity_id}`}
+                    className="font-semibold hover:text-amber-600"
+                  >
+                    {opp?.title}
+                  </Link>
                   <p className="text-sm text-neutral-500 dark:text-neutral-400">
                     {opp?.company_name}
                     {opp?.city ? ` · ${opp.city}${opp.country ? `, ${opp.country}` : ""}` : ""}

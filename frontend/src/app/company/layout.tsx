@@ -12,6 +12,7 @@ const NAV = [
   { href: "/company", label: "Home", exact: true },
   { href: "/company/jobs", label: "Jobs" },
   { href: "/company/pipeline", label: "Pipeline" },
+  { href: "/company/candidates", label: "Candidates" },
 ];
 
 export default function CompanyLayout({ children }: { children: ReactNode }) {

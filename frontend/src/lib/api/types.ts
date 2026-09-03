@@ -537,3 +537,231 @@ export interface CompanyInterview {
   duration_minutes: number;
   reschedule_count: number;
 }
+
+// --- Talent Graph (Phase 7) ---------------------------------------------------
+
+export interface TaxonomySkill {
+  id: string;
+  name: string;
+  category: string;
+  subcategory: string | null;
+  description: string | null;
+  status: string;
+}
+
+export interface TaxonomyList {
+  total: number;
+  page: number;
+  page_size: number;
+  categories: string[];
+  items: TaxonomySkill[];
+}
+
+export interface SkillDetail {
+  id: string;
+  name: string;
+  category: string;
+  subcategory: string | null;
+  description: string | null;
+  status: string;
+  aliases: string[];
+  parents: { kind: string; name: string }[];
+  related: { kind: string; name: string }[];
+}
+
+export interface NormalizeResult {
+  raw: string;
+  normalized: string;
+  canonical: { id: string; name: string } | null;
+}
+
+export interface SkillSummary {
+  name: string;
+  level: string | null;
+}
+
+export interface Disclosure {
+  profile: boolean;
+  skills_visible: boolean;
+  experience_visible: boolean;
+  contact_visible: boolean;
+}
+
+export interface LatestRole {
+  title: string;
+  company_name: string;
+  is_current: boolean;
+}
+
+export interface CandidateSearchItem {
+  person_id: string;
+  name: string | null;
+  headline: string | null;
+  location: string | null;
+  skills: SkillSummary[];
+  experience_years: number | null;
+  latest_role: LatestRole | null;
+  disclosure: Disclosure;
+}
+
+export interface CandidateSearchList {
+  items: CandidateSearchItem[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface MatchedCandidate {
+  person_id: string;
+  summary: CandidateSearchItem;
+  percent: number;
+  score: number;
+  mode: string;
+  coverage: number;
+  strengths: string[];
+  gaps: string[];
+  matched_skills: string[];
+  missing_skills: string[];
+}
+
+export interface MatchedCandidateList {
+  items: MatchedCandidate[];
+  total: number;
+  page: number;
+  page_size: number;
+  opportunity_id: string;
+}
+
+export interface SavedCandidate {
+  id: string;
+  person_id: string;
+  name: string | null;
+  headline: string | null;
+  note: string | null;
+  tags: string[] | null;
+  saved_at: string;
+  context: string;
+}
+
+export interface TalentPool {
+  id: string;
+  name: string;
+  description: string | null;
+  created_at: string;
+  member_count: number;
+}
+
+export interface PoolMember {
+  person_id: string;
+  name: string | null;
+  headline: string | null;
+  note: string | null;
+  added_at: string;
+}
+
+export interface TalentPoolDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  member_count: number;
+  members: PoolMember[];
+}
+
+export interface OpportunityRequirementRow {
+  id: string;
+  skill: string | null;
+  raw_text: string;
+  requirement_kind: string;
+  min_years: number | null;
+}
+
+export interface EvidenceRow {
+  evidence_type: string;
+  verification_status: string;
+}
+
+export interface GapAnalysis {
+  matched: { skill: string; evidence: EvidenceRow[] }[];
+  gaps: { skill: string; source: string }[];
+  coverage: number;
+}
+
+/** Discovery-safe candidate profile payload (progressive disclosure). */
+export interface CandidateProfile {
+  person_id: string;
+  context: string;
+  saved: boolean;
+  pool_names: string[];
+  name?: string | null;
+  headline?: string | null;
+  location?: string | null;
+  skills?: { name: string; level?: string | null }[] | null;
+  experience_years?: number | null;
+  latest_role?: LatestRole | null;
+  experience?: { company_name: string; title: string; is_current: boolean }[] | null;
+  education?: { institution: string; level: string | null; degree: string | null }[] | null;
+  disclosure?: Disclosure | null;
+  person?: { full_name?: string | null; headline?: string | null; location?: string | null } | null;
+  match?: {
+    percent: number;
+    score: number;
+    mode: string;
+    strengths: string[];
+    gaps: string[];
+    matched_skills: string[];
+    missing_skills: string[];
+    gap_analysis: GapAnalysis;
+  } | null;
+  has_live_consent?: boolean;
+}
+
+export interface JobseekerOpportunityDetail {
+  opportunity: Opportunity;
+  match: OpportunityMatch | null;
+  gap_analysis: GapAnalysis;
+  requirements: OpportunityRequirementRow[];
+  saved: boolean;
+  applied: boolean;
+  stance: string | null;
+}
+
+export interface CareerIntelligence {
+  capability: {
+    years_experience: number;
+    roles_held: number;
+    skills: {
+      name: string;
+      level: string;
+      years_experience: number | null;
+      evidence_count: number;
+    }[];
+    verified_skill_count: number;
+  };
+  current_position: { title: string | null; company: string | null; is_current: boolean };
+  career_goal: { title: string | null; target_role: string | null };
+  roles_within_reach: CareerRoleRow[];
+  roles_to_grow_into: CareerRoleRow[];
+  skill_development: { skill: string; appears_in_roles: number }[];
+  path_advice: {
+    path: string;
+    target_role: string;
+    current_step?: string | null;
+    next_step?: {
+      role_title: string;
+      seniority: string | null;
+      description: string | null;
+      typical_skills: string[] | null;
+    } | null;
+    note: string;
+  } | null;
+  disclaimer: string;
+}
+
+export interface CareerRoleRow {
+  opportunity_id: string;
+  title: string | null;
+  company: string | null;
+  percent: number;
+  strengths: string[];
+  missing_skills: string[];
+}
