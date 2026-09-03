@@ -148,18 +148,29 @@ APPLICATION_STATUS_USER_ACTIONS = {
 }
 
 # --- Offer lifecycle -----------------------------------------------------------
+# Employer side: draft -> sent. Candidate side: pending -> accepted/declined.
+# The candidate's Offer Center treats pending/sent as "actionable".
+OFFER_STATUS_DRAFT = "draft"
+OFFER_STATUS_SENT = "sent"
 OFFER_STATUS_PENDING = "pending"
+OFFER_STATUS_VIEWED = "viewed"
 OFFER_STATUS_ACCEPTED = "accepted"
 OFFER_STATUS_DECLINED = "declined"
 OFFER_STATUS_EXPIRED = "expired"
 OFFER_STATUS_WITHDRAWN = "withdrawn"
 OFFER_STATUSES = {
+    OFFER_STATUS_DRAFT,
+    OFFER_STATUS_SENT,
     OFFER_STATUS_PENDING,
+    OFFER_STATUS_VIEWED,
     OFFER_STATUS_ACCEPTED,
     OFFER_STATUS_DECLINED,
     OFFER_STATUS_EXPIRED,
     OFFER_STATUS_WITHDRAWN,
 }
+
+# Statuses a candidate may respond to through the jobseeker Offer Center.
+OFFER_CANDIDATE_DECIDABLE = {OFFER_STATUS_SENT, OFFER_STATUS_PENDING}
 
 # --- Interview scheduling ------------------------------------------------------
 INTERVIEW_STATUS_SCHEDULED = "scheduled"
@@ -199,4 +210,55 @@ NOTIFICATION_KINDS = {
     NOTIFICATION_KIND_DOCUMENT,
     NOTIFICATION_KIND_CAREER,
     NOTIFICATION_KIND_SYSTEM,
+}
+
+# --- Job posting lifecycle (company-owned) -----------------------------------
+JOB_STATUS_DRAFT = "draft"
+JOB_STATUS_PENDING_REVIEW = "pending_review"
+JOB_STATUS_PUBLISHED = "published"
+JOB_STATUS_PAUSED = "paused"
+JOB_STATUS_CLOSED = "closed"
+JOB_STATUS_ARCHIVED = "archived"
+JOB_STATUSES = {
+    JOB_STATUS_DRAFT,
+    JOB_STATUS_PENDING_REVIEW,
+    JOB_STATUS_PUBLISHED,
+    JOB_STATUS_PAUSED,
+    JOB_STATUS_CLOSED,
+    JOB_STATUS_ARCHIVED,
+}
+
+# Company org kinds eligible to own jobs/opportunities.
+HIRING_ORG_KINDS = {"employer", "recruiter"}
+
+# Organization verification states.
+ORG_VERIFICATION_UNVERIFIED = "unverified"
+ORG_VERIFICATION_PENDING = "pending"
+ORG_VERIFICATION_VERIFIED = "verified"
+ORG_VERIFICATION_STATUSES = {
+    ORG_VERIFICATION_UNVERIFIED,
+    ORG_VERIFICATION_PENDING,
+    ORG_VERIFICATION_VERIFIED,
+}
+
+# --- Document requests (employer -> candidate) --------------------------------
+DOC_REQUEST_STATUS_PENDING = "pending"
+DOC_REQUEST_STATUS_APPROVED = "approved"
+DOC_REQUEST_STATUS_DECLINED = "declined"
+DOC_REQUEST_STATUS_EXPIRED = "expired"
+DOC_REQUEST_STATUSES = {
+    DOC_REQUEST_STATUS_PENDING,
+    DOC_REQUEST_STATUS_APPROVED,
+    DOC_REQUEST_STATUS_DECLINED,
+    DOC_REQUEST_STATUS_EXPIRED,
+}
+
+# --- Interview scorecard recommendation ---------------------------------------
+SCORECARD_RECOMMEND_ADVANCE = "advance"
+SCORECARD_RECOMMEND_HOLD = "hold"
+SCORECARD_RECOMMEND_REJECT = "reject"
+SCORECARD_RECOMMENDATIONS = {
+    SCORECARD_RECOMMEND_ADVANCE,
+    SCORECARD_RECOMMEND_HOLD,
+    SCORECARD_RECOMMEND_REJECT,
 }

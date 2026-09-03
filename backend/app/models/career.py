@@ -243,6 +243,15 @@ class JobApplication(Base, TimestampMixin):
     last_activity_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
+    # Denormalized employer link: which company job this application belongs
+    # to (set when the opportunity is a published company job). One lifecycle,
+    # two sides — the jobseeker Career OS and the company pipeline read the
+    # same row and the same state machine.
+    job_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        UUID,
+        ForeignKey("job_postings.id", ondelete="SET NULL"),
+        index=True,
+    )
 
     opportunity: Mapped["Opportunity"] = relationship(lazy="selectin")
 
