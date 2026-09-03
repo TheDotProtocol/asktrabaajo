@@ -6,6 +6,7 @@ from app.api.v1 import (
     company,
     consents,
     documents,
+    enforcement,
     events,
     governance,
     jobseeker,
@@ -24,4 +25,5 @@ router.include_router(jobseeker.router)
 router.include_router(company.router)
 router.include_router(talent.router)
 router.include_router(governance.router)
+router.include_router(enforcement.router)
 router.include_router(events.router)

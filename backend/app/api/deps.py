@@ -12,18 +12,23 @@ from app.core import context
 from app.core.errors import UnauthorizedError
 from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.models.enums import USER_STATUS_ACTIVE
+from app.models.enums import (
+    USER_STATUS_ACTIVE,
+    USER_STATUS_PENDING_VERIFICATION,
+    USER_STATUS_SUSPENDED,
+)
 from app.models.identity import User
 from app.services import authz
 
 _bearer = HTTPBearer(auto_error=False)
 
 
-def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
-    db: Session = Depends(get_db),
+def _resolve_token_user(
+    credentials: Optional[HTTPAuthorizationCredentials],
+    db: Session,
+    *,
+    allow_suspended: bool,
 ) -> User:
-    """Resolve the authenticated user from a Bearer access token."""
     if credentials is None or not credentials.credentials:
         raise UnauthorizedError("Authentication required.")
 
@@ -34,7 +39,24 @@ def get_current_user(
         raise UnauthorizedError("Invalid access token.")
 
     user = db.get(User, user_id)
-    if user is None or user.status != USER_STATUS_ACTIVE:
+    if user is None:
+        raise UnauthorizedError("Account is not active.")
+    # Lazy enforcement reconciliation: a suspension whose window lapsed (no
+    # scheduler ran) releases the identity gate on the next authenticated
+    # request; a just-opened window suspends the target immediately.
+    if user.status == USER_STATUS_SUSPENDED:
+        from app.services import enforcement as enforcement_service
+
+        before = user.status
+        enforcement_service.reconcile_user(db, user)
+        if before != user.status:
+            db.commit()
+    # Suspended identities keep a LIMITED session: the default dependency
+    # rejects them everywhere; only appeal surfaces opt into suspended
+    # access. Pending-verification accounts are never admitted.
+    if user.status == USER_STATUS_PENDING_VERIFICATION:
+        raise UnauthorizedError("Account is not active.")
+    if user.status != USER_STATUS_ACTIVE and not allow_suspended:
         raise UnauthorizedError("Account is not active.")
 
     if user.token_version != int(payload.get("token_version", -1)):
@@ -44,6 +66,29 @@ def get_current_user(
     meta["actor_id"] = str(user.id)
     context.set_request_context(meta)
     return user
+
+
+def get_current_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User:
+    """Resolve the authenticated user from a Bearer access token.
+
+    Default gate: suspended identities are rejected (product surface).
+    """
+    return _resolve_token_user(credentials, db, allow_suspended=False)
+
+
+def get_suspended_user(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer),
+    db: Session = Depends(get_db),
+) -> User:
+    """Limited-access dependency for the enforcement appeal surface.
+
+    Used ONLY by appeal submission/withdrawal/self-view and the caller's own
+    derived platform state. Every other route keeps the default hard gate.
+    """
+    return _resolve_token_user(credentials, db, allow_suspended=True)
 
 
 def require_org_permission(

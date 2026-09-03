@@ -29,7 +29,7 @@ from app.core.security import (
     hash_token,
     verify_password,
 )
-from app.models.enums import USER_STATUS_ACTIVE
+from app.models.enums import USER_STATUS_ACTIVE, USER_STATUS_PENDING_VERIFICATION
 from app.models.identity import (
     EmailVerificationToken,
     PasswordResetToken,
@@ -67,11 +67,16 @@ def register_user(
 
 
 def authenticate(db: Session, *, email: str, password: str) -> User:
-    """Verify credentials. Never reveals whether the email exists."""
+    """Verify credentials. Never reveals whether the email exists.
+
+    Suspended accounts MAY authenticate so their holder can reach the
+    appeal surface; product routes still reject suspended identities via
+    the default auth dependency (limited-access sessions).
+    """
     user = db.scalar(select(User).where(User.email == email.strip().lower()))
     if user is None or not verify_password(password, user.password_hash):
         raise UnauthorizedError("Invalid email or password.")
-    if user.status != USER_STATUS_ACTIVE:
+    if user.status == USER_STATUS_PENDING_VERIFICATION:
         raise UnauthorizedError("This account is not active.")
     return user
 
@@ -130,7 +135,7 @@ def refresh_access_token(
         raise UnauthorizedError("Refresh token has expired.")
 
     user = db.get(User, row.user_id)
-    if user is None or user.status != USER_STATUS_ACTIVE:
+    if user is None or user.status == USER_STATUS_PENDING_VERIFICATION:
         raise UnauthorizedError("Account is not active.")
 
     row.revoked_at = _now()

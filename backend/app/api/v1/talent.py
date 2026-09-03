@@ -61,6 +61,7 @@ from app.schemas.talent import (
 )
 from app.services import audit as audit_service
 from app.services import communications as communications_service
+from app.services import enforcement as enforcement_service
 from app.services import events as events_service
 from app.services import notifications as notifications_service
 from app.services import outreach as outreach_service
@@ -536,6 +537,8 @@ def create_outreach(
 ) -> dict:
     """Request contact with a candidate (candidate stays in control)."""
     require_org_permission(db, user, PERMISSION_OUTREACH_CREATE, organization_id)
+    enforcement_service.check_communication_allowed(db, user.id)
+    enforcement_service.check_org_operational(db, organization_id)
     request = outreach_service.create_outreach(
         db,
         organization_id,
@@ -754,6 +757,8 @@ def send_org_message(
     db: Session = Depends(get_db),
 ) -> dict:
     require_org_permission(db, user, PERMISSION_COMMUNICATIONS_SEND, organization_id)
+    enforcement_service.check_communication_allowed(db, user.id)
+    enforcement_service.check_org_operational(db, organization_id)
     from app.services.communications import _org_owns
 
     conversation = _org_owns(db, organization_id, conversation_id, user.id)

@@ -81,6 +81,7 @@ from app.schemas.jobseeker import (
 from app.services import audit as audit_service
 from app.services import applications as applications_service
 from app.services import communications as communications_service
+from app.services import enforcement as enforcement_service
 from app.services import development as development_service
 from app.services import events as events_service
 from app.services import matching as matching_service
@@ -516,6 +517,7 @@ def apply_to_opportunity(
     db: Session = Depends(get_db),
 ) -> JobApplication:
     person = _person(db, user)
+    enforcement_service.check_application_allowed(db, user.id)
     app = applications_service.apply(
         db,
         person.id,
@@ -1185,6 +1187,7 @@ def send_candidate_message(
     db: Session = Depends(get_db),
 ) -> dict:
     person = _person(db, user)
+    enforcement_service.check_communication_allowed(db, user.id)
     from app.services.communications import _candidate_owns
 
     conversation = _candidate_owns(db, person.id, conversation_id)
