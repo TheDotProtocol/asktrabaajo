@@ -361,3 +361,179 @@ export interface CareerMilestone {
   occurred_on: string;
   description: string | null;
 }
+
+// --- Company / Employer OS (Phase 6) -----------------------------------------
+
+export interface MyOrganization {
+  organization_id: string;
+  name: string;
+  slug: string;
+  kind: "employer" | "recruiter" | "government" | "platform";
+  status: string;
+  role: string;
+}
+
+export interface CompanyProfile {
+  organization_id: string;
+  legal_name: string | null;
+  display_name: string | null;
+  industry: string | null;
+  sector: string | null;
+  country: string | null;
+  city: string | null;
+  website_url: string | null;
+  company_size: string | null;
+  company_type: string | null;
+  description: string | null;
+  contact_name: string | null;
+  contact_email: string | null;
+  verification_status: string;
+}
+
+export interface CompanyDashboard {
+  organization: { id: string; name: string; slug: string; kind: string };
+  profile: CompanyProfile | null;
+  open_jobs: number;
+  applications_total: number;
+  needs_review: number;
+  interviews_today: number;
+  interviews_upcoming: number;
+  offers_pending: number;
+  offers_accepted: number;
+  recent_applications: {
+    id: string;
+    status: string;
+    job_title: string | null;
+    applied_at: string | null;
+    candidate_name: string;
+  }[];
+  my_role: string;
+  permissions: string[];
+}
+
+export interface CompanyJob {
+  id: string;
+  organization_id: string;
+  opportunity_id: string | null;
+  title: string;
+  slug: string;
+  department: string | null;
+  summary: string | null;
+  description: string | null;
+  requirements: string[] | null;
+  skills_required: string[] | null;
+  preferred_skills: string[] | null;
+  experience_level: string | null;
+  location: string | null;
+  country: string | null;
+  city: string | null;
+  remote_eligible: boolean;
+  work_mode: string | null;
+  employment_type: string | null;
+  salary_min: number | null;
+  salary_max: number | null;
+  salary_currency: string | null;
+  seniority: string | null;
+  industry: string | null;
+  openings_count: number;
+  status: string;
+  published_at: string | null;
+  applications_count: number;
+}
+
+export interface CompanyApplication {
+  id: string;
+  status: string;
+  job_id: string | null;
+  opportunity_id: string | null;
+  job_title: string | null;
+  candidate_name: string;
+  applied_at: string | null;
+  last_activity_at: string | null;
+}
+
+export interface ApplicationEventRow {
+  id: string;
+  from_status: string | null;
+  to_status: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface CandidateReview {
+  person: Record<string, unknown>;
+  skills: { id?: string; name: string; level: string; years_experience?: number | null }[];
+  has_live_consent: boolean;
+  disclosure: Record<string, boolean>;
+  application_events_count: number;
+  events: ApplicationEventRow[];
+}
+
+export interface ApplicationReview {
+  application: {
+    id: string;
+    status: string;
+    opportunity_id: string | null;
+    job_id: string | null;
+    cover_note: string | null;
+    applied_at: string | null;
+    last_activity_at: string | null;
+  };
+  job: { id: string | null; title: string | null } | null;
+  candidate: CandidateReview | null;
+  interview: {
+    id: string;
+    scheduled_at: string;
+    status: string;
+    mode: string;
+    interviewer_name: string | null;
+  } | null;
+  offer: {
+    id: string;
+    status: string;
+    salary_amount: number | null;
+    salary_currency: string | null;
+  } | null;
+}
+
+export interface CompanyAnalytics {
+  open_jobs: number;
+  total_jobs: number;
+  applications_total: number;
+  by_status: Record<string, number>;
+  needs_review: number;
+  interviews_scheduled: number;
+  offers_pending: number;
+  conversion: Record<string, number>;
+}
+
+export interface DocumentRequestRow {
+  id: string;
+  application_id: string;
+  organization_id: string;
+  document_type: string;
+  purpose: string | null;
+  status: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface CompanyOffer {
+  id: string;
+  application_id: string;
+  status: string;
+  salary_amount: number | null;
+  salary_currency: string | null;
+  responded_at: string | null;
+}
+
+export interface CompanyInterview {
+  id: string;
+  application_id: string;
+  scheduled_at: string;
+  status: string;
+  mode: string;
+  interviewer_name: string | null;
+  duration_minutes: number;
+  reschedule_count: number;
+}
