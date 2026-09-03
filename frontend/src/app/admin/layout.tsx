@@ -10,7 +10,9 @@ import Link from "next/link";
 import { ReactNode } from "react";
 
 const NAV = [
-  { href: "/admin/governance", label: "Governance", exact: true },
+  { href: "/admin/governance", label: "Control Room", exact: false },
+  { href: "/admin/governance/teams", label: "Teams", exact: false },
+  { href: "/admin/governance/audit", label: "Audit Review", exact: false },
 ];
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

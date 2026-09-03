@@ -1,31 +1,40 @@
 "use client";
 /**
- * Governance report detail (Phase 9 proof).
+ * Governance case detail (Phase 10 proof).
  *
- * Moderator surface: report metadata, internal notes, and the audit timeline.
- * It never fabricates access to the target's Work ID — inspecting a private
- * Work ID requires a separate platform permission with a legitimate purpose.
+ * Moderator surface: case header (case ref, category, severity, priority,
+ * status, SLA state, team, assignee), summary, lifecycle actions (assign,
+ * change priority, route to team, escalate, add notes, resolve, reopen),
+ * linked reports, and the audit timeline. It never fabricates access to the
+ * target's Work ID — and escalation reasons never enter audit/event payloads.
  */
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
 import { api } from "@/lib/api/session";
-import { GovernanceReportRow } from "@/lib/api/types";
+import {
+  GovernanceReportRow,
+  GovernanceTeamRow,
+  GovernanceModeratorRow,
+} from "@/lib/api/types";
+
+const STATUSES = ["open", "in_review", "assigned", "escalated", "resolved", "closed"];
+const PRIORITIES = ["low", "normal", "high", "urgent", "critical"];
 
 const statusStyle: Record<string, string> = {
   open: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
   in_review: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
   assigned: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  escalated: "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300",
   resolved: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
   closed: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
 };
 
-const severityStyle: Record<string, string> = {
-  low: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
-  medium: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
-  high: "bg-orange-100 text-orange-700 dark:bg-orange-950 dark:text-orange-300",
-  critical: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
+const slaStyle: Record<string, string> = {
+  on_track: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
+  due_soon: "bg-amber-50 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
+  breached: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
 const cardCls =
@@ -36,6 +45,8 @@ const ghostBtn =
   "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
 const inputCls =
   "w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const selectCls =
+  "rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900";
 
 function fmt(ts: string | null): string {
   if (!ts) return "";
@@ -58,28 +69,40 @@ function titleCase(value: string): string {
     .join(" ");
 }
 
-export default function GovernanceReportDetailPage() {
+export default function GovernanceCaseDetailPage() {
   const params = useParams();
-  const reportId = String(params?.id ?? "");
+  const caseId = String(params?.id ?? "");
   const [report, setReport] = useState<GovernanceReportRow | null>(null);
+  const [teams, setTeams] = useState<GovernanceTeamRow[]>([]);
+  const [moderators, setModerators] = useState<GovernanceModeratorRow[]>([]);
   const [note, setNote] = useState("");
   const [resolution, setResolution] = useState("");
+  const [linkId, setLinkId] = useState("");
+  const [escalateReason, setEscalateReason] = useState("");
+  const [escalatePriority, setEscalatePriority] = useState("high");
+  const [escalateTeam, setEscalateTeam] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [forbidden, setForbidden] = useState(false);
 
   const load = useCallback(async () => {
-    if (!reportId) return;
+    if (!caseId) return;
     setError("");
     try {
-      const r = await api.get<GovernanceReportRow>(`/governance/reports/${reportId}`);
+      const [r, t, m] = await Promise.all([
+        api.get<GovernanceReportRow>(`/governance/reports/${caseId}`),
+        api.get<{ items: GovernanceTeamRow[] }>("/governance/teams"),
+        api.get<{ items: GovernanceModeratorRow[] }>("/governance/moderators"),
+      ]);
       setReport(r);
+      setTeams(t.items);
+      setModerators(m.items);
     } catch (e) {
       const err = e as { status?: number; message?: string };
       if (err.status === 403) setForbidden(true);
       setError(String(err.message ?? e));
     }
-  }, [reportId]);
+  }, [caseId]);
 
   useEffect(() => {
     void load();
@@ -96,7 +119,7 @@ export default function GovernanceReportDetailPage() {
   if (!report) {
     return (
       <p className="text-sm text-neutral-500">
-        {error ? `Could not load report: ${error}` : "Loading report…"}
+        {error ? `Could not load case: ${error}` : "Loading case…"}
       </p>
     );
   }
@@ -117,22 +140,69 @@ export default function GovernanceReportDetailPage() {
   }
 
   async function changeStatus(status: string) {
+    await run(() => api.patch(`/governance/reports/${caseId}/status`, { status }));
+  }
+
+  async function changePriority(priority: string) {
+    await run(() => api.post(`/governance/reports/${caseId}/priority`, { priority }));
+  }
+
+  async function routeTeam(teamId: string) {
     await run(() =>
-      api.patch(`/governance/reports/${reportId}/status`, { status })
+      api.post(`/governance/reports/${caseId}/team`, {
+        team_id: teamId || null,
+      })
     );
   }
 
-  async function assignToMe() {
-    await run(() => api.post(`/governance/reports/${reportId}/assign`, {}));
+  async function assignTo(userId: string) {
+    await run(() =>
+      api.post(`/governance/reports/${caseId}/assign`, {
+        moderator_user_id: userId || null,
+      })
+    );
+  }
+
+  async function escalate() {
+    const reason = escalateReason.trim();
+    if (reason.length < 10) {
+      setError("An escalation reason of at least 10 characters is required.");
+      return;
+    }
+    await run(async () => {
+      await api.post(`/governance/reports/${caseId}/escalate`, {
+        reason,
+        priority: escalatePriority,
+        team_id: escalateTeam || null,
+      });
+      setEscalateReason("");
+      setEscalatePriority("high");
+      setEscalateTeam("");
+    });
   }
 
   async function addNote() {
     const body = note.trim();
     if (!body) return;
     await run(async () => {
-      await api.post(`/governance/reports/${reportId}/notes`, { body });
+      await api.post(`/governance/reports/${caseId}/notes`, { body });
       setNote("");
     });
+  }
+
+  async function addLink() {
+    if (!linkId.trim()) return;
+    await run(async () => {
+      await api.post(`/governance/reports/${caseId}/links`, {
+        report_id: linkId.trim(),
+        reason: "Linked during investigation to avoid duplicate work.",
+      });
+      setLinkId("");
+    });
+  }
+
+  async function removeLink(linkId: string) {
+    await run(() => api.delete(`/governance/reports/${caseId}/links/${linkId}`));
   }
 
   async function resolve() {
@@ -142,13 +212,13 @@ export default function GovernanceReportDetailPage() {
       return;
     }
     await run(async () => {
-      await api.post(`/governance/reports/${reportId}/resolve`, { resolution: body });
+      await api.post(`/governance/reports/${caseId}/resolve`, { resolution: body });
       setResolution("");
     });
   }
 
   async function reopen() {
-    await run(() => api.post(`/governance/reports/${reportId}/reopen`));
+    await run(() => api.post(`/governance/reports/${caseId}/reopen`));
   }
 
   return (
@@ -158,23 +228,33 @@ export default function GovernanceReportDetailPage() {
           href="/admin/governance"
           className="mt-1 text-sm text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
         >
-          ← Queue
+          ← Control room
         </Link>
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-sm font-medium text-neutral-400">
+              {report.case_ref ?? report.id.slice(0, 8)}
+            </span>
             <span
               className={`rounded px-1.5 py-0.5 text-xs font-medium ${statusStyle[report.status] ?? ""}`}
             >
               {titleCase(report.status)}
             </span>
-            <span
-              className={`rounded px-1.5 py-0.5 text-xs font-medium ${severityStyle[report.severity] ?? ""}`}
-            >
-              {titleCase(report.severity)}
-            </span>
+            {report.sla_state && (
+              <span
+                className={`rounded px-1.5 py-0.5 text-xs font-medium ${slaStyle[report.sla_state] ?? ""}`}
+              >
+                SLA {titleCase(report.sla_state)}
+              </span>
+            )}
             <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
               {titleCase(report.category)}
             </span>
+            {report.team_name && (
+              <span className="rounded bg-purple-100 px-1.5 py-0.5 text-xs text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                {report.team_name}
+              </span>
+            )}
             {report.reopened_count > 0 && (
               <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-700 dark:bg-amber-950 dark:text-amber-300">
                 Reopened ×{report.reopened_count}
@@ -182,7 +262,7 @@ export default function GovernanceReportDetailPage() {
             )}
           </div>
           <h1 className="mt-2 text-xl font-semibold tracking-tight">
-            {titleCase(report.target_type)} report
+            {titleCase(report.target_type)} case
           </h1>
           <p className="text-sm text-neutral-500">
             Filed {fmt(report.created_at)} ·{" "}
@@ -196,17 +276,19 @@ export default function GovernanceReportDetailPage() {
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className={`${cardCls} space-y-4`}>
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className={`${cardCls} space-y-4 lg:col-span-2`}>
           <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-            Report
+            Case summary
           </h2>
           <p className="text-sm leading-relaxed text-neutral-700 dark:text-neutral-300">
             {report.description}
           </p>
           {report.evidence_refs.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-neutral-500">Evidence references</p>
+              <p className="text-xs font-medium text-neutral-500">
+                Evidence references
+              </p>
               <ul className="mt-1 space-y-1">
                 {report.evidence_refs.map((ref, i) => (
                   <li key={i} className="text-xs text-neutral-600 dark:text-neutral-300">
@@ -226,19 +308,135 @@ export default function GovernanceReportDetailPage() {
             </div>
           )}
 
+          <div className="grid gap-3 border-t border-neutral-200 pt-4 sm:grid-cols-2 dark:border-neutral-800">
+            <div>
+              <label className="text-xs font-medium text-neutral-500">
+                Assignee
+              </label>
+              <select
+                value={report.assigned_moderator_id ?? ""}
+                onChange={(e) => assignTo(e.target.value)}
+                disabled={busy}
+                className={`${selectCls} mt-1 w-full`}
+              >
+                <option value="">Unassigned</option>
+                {moderators.map((m) => (
+                  <option key={m.user_id} value={m.user_id}>
+                    {m.full_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-neutral-500">Team</label>
+              <select
+                value={report.team_id ?? ""}
+                onChange={(e) => routeTeam(e.target.value)}
+                disabled={busy}
+                className={`${selectCls} mt-1 w-full`}
+              >
+                <option value="">No team</option>
+                {teams.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-neutral-500">
+                Priority (restarts SLA clock)
+              </label>
+              <select
+                value={report.priority ?? "normal"}
+                onChange={(e) => changePriority(e.target.value)}
+                disabled={busy || isResolved}
+                className={`${selectCls} mt-1 w-full`}
+              >
+                {PRIORITIES.map((p) => (
+                  <option key={p} value={p}>
+                    {titleCase(p)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-neutral-500">Status</label>
+              <select
+                value={report.status}
+                onChange={(e) => changeStatus(e.target.value)}
+                disabled={busy}
+                className={`${selectCls} mt-1 w-full`}
+              >
+                {STATUSES.filter((s) => s !== "escalated").map((s) => (
+                  <option key={s} value={s}>
+                    {titleCase(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {report.sla_resolution_due_at && !isResolved && (
+            <p className="text-xs text-neutral-500">
+              Response due {fmt(report.sla_response_due_at)} · Resolution due{" "}
+              {fmt(report.sla_resolution_due_at)}
+              {report.first_responded_at
+                ? ` · First response ${fmt(report.first_responded_at)}`
+                : " · No first response yet"}
+            </p>
+          )}
+
+          {!isResolved && (
+            <div className="rounded-lg border border-purple-200 bg-purple-50 p-3 dark:border-purple-900 dark:bg-purple-950/40">
+              <p className="text-xs font-medium text-purple-700 dark:text-purple-300">
+                Escalate
+              </p>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <select
+                  value={escalatePriority}
+                  onChange={(e) => setEscalatePriority(e.target.value)}
+                  className={selectCls}
+                >
+                  {PRIORITIES.map((p) => (
+                    <option key={p} value={p}>
+                      {titleCase(p)}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={escalateTeam}
+                  onChange={(e) => setEscalateTeam(e.target.value)}
+                  className={selectCls}
+                >
+                  <option value="">Keep team</option>
+                  {teams.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.name}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  value={escalateReason}
+                  onChange={(e) => setEscalateReason(e.target.value)}
+                  placeholder="Escalation reason (recorded, never logged verbatim)"
+                  className={`${inputCls} min-w-52 flex-1`}
+                />
+                <button onClick={escalate} disabled={busy} className={ghostBtn}>
+                  Escalate
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-2 border-t border-neutral-200 pt-4 dark:border-neutral-800">
             {!isResolved && (
-              <button onClick={assignToMe} disabled={busy} className={ghostBtn}>
-                Assign to me
-              </button>
-            )}
-            {report.status !== "in_review" && !isResolved && (
               <button
-                onClick={() => changeStatus("in_review")}
-                disabled={busy}
-                className={ghostBtn}
+                onClick={resolve}
+                disabled={busy || resolution.trim().length < 10}
+                className={primaryBtn}
               >
-                Mark in review
+                Resolve
               </button>
             )}
             {isResolved && (
@@ -248,59 +446,101 @@ export default function GovernanceReportDetailPage() {
             )}
           </div>
           {!isResolved && (
-            <div className="flex flex-wrap items-end gap-2">
-              <div className="flex-1">
-                <label className="text-xs font-medium text-neutral-500">
-                  Resolution
-                </label>
-                <textarea
-                  value={resolution}
-                  onChange={(e) => setResolution(e.target.value)}
-                  rows={2}
-                  placeholder="Record the resolution action…"
-                  className={`${inputCls} mt-1`}
-                />
-              </div>
-              <button onClick={resolve} disabled={busy} className={primaryBtn}>
-                Resolve
-              </button>
-            </div>
+            <textarea
+              value={resolution}
+              onChange={(e) => setResolution(e.target.value)}
+              rows={2}
+              placeholder="Resolution action (recorded in the case and audit)…"
+              className={inputCls}
+            />
           )}
         </div>
 
-        <div className={`${cardCls} space-y-4`}>
-          <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
-            Internal notes
-          </h2>
-          {(report.notes ?? []).length === 0 && (
-            <p className="text-sm text-neutral-500">No internal notes yet.</p>
-          )}
-          <ul className="space-y-2">
-            {(report.notes ?? []).map((n) => (
-              <li
-                key={n.id}
-                className="rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-950"
+        <div className="space-y-4">
+          <div className={`${cardCls} space-y-3`}>
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+              Linked reports
+            </h2>
+            {(report.links ?? []).length === 0 && (
+              <p className="text-sm text-neutral-500">No linked reports.</p>
+            )}
+            <ul className="space-y-1.5">
+              {(report.links ?? []).map((link) => (
+                <li
+                  key={link.link_id}
+                  className="flex items-center gap-2 rounded-lg bg-neutral-50 p-2 text-xs dark:bg-neutral-950"
+                >
+                  <Link
+                    href={`/admin/governance/${link.report_id}`}
+                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                  >
+                    {link.case_ref}
+                  </Link>
+                  <span className="text-neutral-400">{link.category}</span>
+                  <button
+                    onClick={() => removeLink(link.link_id)}
+                    className="ml-auto text-neutral-400 hover:text-red-600"
+                  >
+                    Remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input
+                value={linkId}
+                onChange={(e) => setLinkId(e.target.value)}
+                placeholder="Report UUID to link…"
+                className={inputCls}
+              />
+              <button
+                onClick={addLink}
+                disabled={busy || !linkId.trim()}
+                className={ghostBtn}
               >
-                <p className="text-neutral-700 dark:text-neutral-300">{n.body}</p>
-                <p className="mt-1 text-xs text-neutral-400">
-                  {n.author_user_id.slice(0, 8)}… · {fmt(n.created_at)}
-                </p>
-              </li>
-            ))}
-          </ul>
-          <div className="flex gap-2">
-            <input
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void addNote();
-              }}
-              placeholder="Add an internal note…"
-              className={inputCls}
-            />
-            <button onClick={addNote} disabled={busy || !note.trim()} className={primaryBtn}>
-              Add
-            </button>
+                Link
+              </button>
+            </div>
+          </div>
+
+          <div className={`${cardCls} space-y-3`}>
+            <h2 className="text-sm font-semibold text-neutral-700 dark:text-neutral-200">
+              Internal notes
+            </h2>
+            {(report.notes ?? []).length === 0 && (
+              <p className="text-sm text-neutral-500">No internal notes yet.</p>
+            )}
+            <ul className="space-y-2">
+              {(report.notes ?? []).map((n) => (
+                <li
+                  key={n.id}
+                  className="rounded-lg bg-neutral-50 p-3 text-sm dark:bg-neutral-950"
+                >
+                  <p className="text-neutral-700 dark:text-neutral-300">{n.body}</p>
+                  <p className="mt-1 text-xs text-neutral-400">
+                    {n.author_user_id.slice(0, 8)}… · {fmt(n.created_at)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <div className="flex gap-2">
+              <input
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void addNote();
+                }}
+                placeholder="Add an internal note…"
+                className={inputCls}
+              />
+              <button
+                onClick={addNote}
+                disabled={busy || !note.trim()}
+                className={primaryBtn}
+              >
+                Add
+              </button>
+            </div>
           </div>
         </div>
       </div>

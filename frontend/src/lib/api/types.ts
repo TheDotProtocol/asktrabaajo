@@ -833,8 +833,20 @@ export interface BlockedOrg {
 
 // --- Phase 9: platform governance ---------------------------------------------
 
+export interface GovernanceCaseLinkRow {
+  link_id: string;
+  report_id: string;
+  case_ref: string;
+  category: string;
+  severity: string;
+  status: string;
+  created_at: string | null;
+  reason: string | null;
+}
+
 export interface GovernanceReportRow {
   id: string;
+  case_ref: string | null;
   reporter_user_id: string;
   target_type: string;
   target_id: string;
@@ -842,11 +854,22 @@ export interface GovernanceReportRow {
   organization_name: string | null;
   category: string;
   severity: string;
+  priority: string | null;
   status: string;
   description: string;
   evidence_refs: Array<{ type: string; id: string; note?: string | null }>;
   assigned_moderator_id: string | null;
   assigned_moderator_name: string | null;
+  team_id: string | null;
+  team_name: string | null;
+  team_slug: string | null;
+  escalated_at: string | null;
+  escalated_to_team_id: string | null;
+  escalated_to_team_name: string | null;
+  first_responded_at: string | null;
+  sla_response_due_at: string | null;
+  sla_resolution_due_at: string | null;
+  sla_state: string | null;
   resolution: string | null;
   resolved_at: string | null;
   reopened_count: number;
@@ -858,6 +881,7 @@ export interface GovernanceReportRow {
     body: string;
     created_at: string | null;
   }> | null;
+  links?: GovernanceCaseLinkRow[] | null;
   audit?: Array<{
     action: string;
     actor_id: string | null;
@@ -877,8 +901,80 @@ export interface GovernanceQueue {
 export interface GovernanceDashboard {
   total: number;
   open: number;
+  urgent: number;
+  critical: number;
+  unassigned: number;
+  mine: number;
+  escalated: number;
+  breached: number;
+  due_soon: number;
+  recently_resolved: number;
   by_status: Record<string, number>;
   by_severity: Record<string, number>;
+  by_priority: Record<string, number>;
+  by_category: Record<string, number>;
+  by_team: Record<string, number>;
+}
+
+export interface GovernanceTeamRow {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  member_count: number;
+  open_cases: number;
+}
+
+export interface GovernanceTeamDetail {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  members: Array<{ user_id: string; full_name: string; joined_at: string | null }>;
+  counts: {
+    open: number;
+    urgent: number;
+    breached: number;
+    unresolved: number;
+  };
+}
+
+export interface GovernanceModeratorRow {
+  user_id: string;
+  full_name: string;
+  roles: string[];
+}
+
+export interface GovernanceAuditRow {
+  id: string;
+  action: string;
+  actor_id: string | null;
+  actor_name: string | null;
+  resource_type: string | null;
+  resource_id: string | null;
+  organization_id: string | null;
+  result: string | null;
+  request_id: string | null;
+  created_at: string | null;
+  payload: Record<string, unknown>;
+}
+
+export interface GovernanceAuditPage {
+  items: GovernanceAuditRow[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface IntegritySignalRow {
+  signal_type: string;
+  subject_type: string;
+  subject_id: string;
+  subject_name?: string | null;
+  count: number;
+  window_days: number;
+  status: string;
+  note: string;
 }
 
 // --- Phase 9: realtime event feed ---------------------------------------------
