@@ -995,3 +995,82 @@ export interface EventsFeed {
   count: number;
   next_after: string | null;
 }
+
+// --- Phase 11: moderator enforcement + appeals ---------------------------------
+
+export interface AuditTimelineEntry {
+  action: string;
+  result: string | null;
+  actor_id: string | null;
+  created_at: string | null;
+  payload: Record<string, unknown> | null;
+}
+
+export interface EnforcementActionRow {
+  id: string;
+  governance_case_id: string | null;
+  target_user_id: string | null;
+  target_organization_id: string | null;
+  action_type: string;
+  scope: string;
+  reason_code: string;
+  status: string;
+  stored_status: string;
+  created_by: string;
+  approved_by: string | null;
+  effective_at: string;
+  expires_at: string | null;
+  activated_at: string | null;
+  revoked_at: string | null;
+  supersedes_id: string | null;
+  note: string | null;
+  created_at: string | null;
+  audit?: AuditTimelineEntry[] | null;
+}
+
+export interface EnforcementActionList {
+  items: EnforcementActionRow[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface AppealRow {
+  id: string;
+  enforcement_action_id: string;
+  appellant_user_id: string;
+  reason_code: string;
+  statement: string | null;
+  status: string;
+  assigned_reviewer_id: string | null;
+  decision: string | null;
+  decision_note: string | null;
+  review_note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  withdrawn_at: string | null;
+  superseding_action_id: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  audit?: AuditTimelineEntry[] | null;
+}
+
+export interface AppealList {
+  items: AppealRow[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface DerivedPlatformState {
+  user_id: string;
+  state: string;
+  active_restrictions: Array<{
+    id: string;
+    action_type: string;
+    scope: string;
+    reason_code: string;
+    expires_at: string | null;
+  }>;
+  derived_at: string;
+}

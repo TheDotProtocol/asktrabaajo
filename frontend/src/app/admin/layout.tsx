@@ -11,6 +11,8 @@ import { ReactNode } from "react";
 
 const NAV = [
   { href: "/admin/governance", label: "Control Room", exact: false },
+  { href: "/admin/governance/enforcement", label: "Enforcement", exact: false },
+  { href: "/admin/governance/appeals", label: "Appeals", exact: false },
   { href: "/admin/governance/teams", label: "Teams", exact: false },
   { href: "/admin/governance/audit", label: "Audit Review", exact: false },
 ];

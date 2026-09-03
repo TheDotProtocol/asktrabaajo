@@ -274,6 +274,21 @@ export default function GovernanceCaseDetailPage() {
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-2 text-sm">
+        <Link
+          href={`/admin/governance/enforcement?case_id=${caseId}`}
+          className="rounded border border-indigo-300 px-2.5 py-1 font-medium text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950"
+        >
+          Enforcement actions for this case
+        </Link>
+        <Link
+          href="/admin/governance/appeals"
+          className="rounded border border-neutral-300 px-2.5 py-1 text-neutral-600 hover:border-indigo-300 dark:border-neutral-700 dark:text-neutral-300"
+        >
+          Appeals queue
+        </Link>
+      </div>
+
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
       <div className="grid gap-4 lg:grid-cols-3">
