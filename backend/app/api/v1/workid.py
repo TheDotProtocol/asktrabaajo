@@ -300,14 +300,17 @@ def add_skill(
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> UserSkillOut:
+    """Attach a skill to the caller's Work ID.
+
+    Free text resolves against the canonical taxonomy first (aliases such as
+    ``ReactJS``/``React.js`` converge on ``React`` instead of creating
+    duplicate rows); truly new skills are added as canonical entries with
+    their own alias.
+    """
     person = _person(db, user)
-    skill = db.scalar(
-        select(Skill).where(func.lower(Skill.name) == body.skill_name.lower())
-    )
-    if skill is None:
-        skill = Skill(name=body.skill_name.strip())
-        db.add(skill)
-        db.flush()
+    from app.services import skills_registry
+
+    skill = skills_registry.ensure_skill(db, body.skill_name.strip())
 
     existing = db.scalar(
         select(UserSkill).where(

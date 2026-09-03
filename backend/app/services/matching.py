@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 
 from app.models.career import CareerGoal, Opportunity
 from app.models.work import Education, Skill, UserSkill, WorkExperience
+from app.services import skills_registry
 
 # --- component weights (configurable; sum to 1.0) -----------------------------
 MATCH_WEIGHTS = {
@@ -86,8 +87,14 @@ def load_candidate_profile(db: Session, person_id: uuid.UUID) -> CandidateProfil
         .where(UserSkill.person_id == person_id)
     ).all()
     skills: Dict[str, str] = {}
+    # Canonicalize self-declared skill names against the taxonomy so a
+    # candidate who typed "reactjs" matches an opportunity requiring "React".
+    name_map = skills_registry.canonical_name_map(
+        db, [skill.name for _, skill in skill_rows]
+    )
     for us, skill in skill_rows:
-        skills[skill.name.lower()] = us.level or "intermediate"
+        canonical = name_map.get(skill.name, skill.name)
+        skills[canonical.lower()] = us.level or "intermediate"
 
     experiences = db.scalars(
         select(WorkExperience).where(WorkExperience.person_id == person_id)
@@ -130,8 +137,17 @@ def load_primary_goal(db: Session, person_id: uuid.UUID) -> Optional[CareerGoal]
 # --- components ---------------------------------------------------------------
 
 
-def skill_component(candidate: CandidateProfile, opportunity: Opportunity) -> Dict:
-    required = [str(s).lower() for s in (opportunity.skills_required or [])]
+def skill_component(
+    candidate: CandidateProfile,
+    opportunity: Opportunity,
+    name_map: Optional[Dict[str, str]] = None,
+) -> Dict:
+    raw_required = [str(s).strip() for s in (opportunity.skills_required or [])]
+    if name_map:
+        required = [name_map.get(r, r).lower() for r in raw_required]
+    else:
+        required = [r.lower() for r in raw_required]
+    required = [r for r in required if r]
     if not required:
         return {
             "score": 1.0,
@@ -296,10 +312,11 @@ def match_opportunity(
     candidate: CandidateProfile,
     opportunity: Opportunity,
     goal: Optional[CareerGoal] = None,
+    name_map: Optional[Dict[str, str]] = None,
 ) -> Dict:
     """One opportunity -> explainable match result."""
     components = {
-        "skills": skill_component(candidate, opportunity),
+        "skills": skill_component(candidate, opportunity, name_map=name_map),
         "experience": experience_component(candidate, opportunity),
         "education": education_component(candidate, opportunity),
         "seniority": seniority_component(candidate, opportunity),
@@ -344,8 +361,18 @@ def match_all(
 ) -> List[Dict]:
     candidate = load_candidate_profile(db, person_id)
     goal = load_primary_goal(db, person_id)
+    raw_required = {
+        str(s).strip()
+        for opp in opportunities
+        for s in (opp.skills_required or [])
+        if str(s).strip()
+    }
+    name_map = (
+        skills_registry.canonical_name_map(db, raw_required) if raw_required else {}
+    )
     results = [
-        match_opportunity(candidate, opp, goal) for opp in opportunities
+        match_opportunity(candidate, opp, goal, name_map=name_map)
+        for opp in opportunities
     ]
     results.sort(key=lambda r: -r["score"])
     return results
