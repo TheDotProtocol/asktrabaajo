@@ -18,10 +18,29 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_org_permission
 from app.core.errors import NotFoundError
 from app.db.session import get_db
-from app.models.enums import PERMISSION_CANDIDATES_SEARCH, PERMISSION_POOLS_MANAGE
+from app.models.communication import Conversation
+from app.models.enums import (
+    PERMISSION_CANDIDATES_SEARCH,
+    PERMISSION_COMMUNICATIONS_MANAGE,
+    PERMISSION_COMMUNICATIONS_READ,
+    PERMISSION_COMMUNICATIONS_SEND,
+    PERMISSION_OUTREACH_CREATE,
+    PERMISSION_OUTREACH_MANAGE,
+    PERMISSION_OUTREACH_READ,
+    PERMISSION_POOLS_MANAGE,
+)
 from app.models.identity import PersonProfile, User
+from app.models.tenancy import Organization
 from app.models.work import Skill
 from app.schemas.common import MessageResponse
+from app.schemas.communication import (
+    ConversationOut,
+    MessageOut,
+    MessageSend,
+    OpenConversationRequest,
+    OutreachCompanyOut,
+    OutreachCreate,
+)
 from app.schemas.talent import (
     CandidateSearchList,
     MatchedCandidateList,
@@ -40,6 +59,9 @@ from app.schemas.talent import (
     TalentPoolOut,
 )
 from app.services import audit as audit_service
+from app.services import communications as communications_service
+from app.services import notifications as notifications_service
+from app.services import outreach as outreach_service
 from app.services import skills_registry
 from app.services import talent as talent_service
 
@@ -477,3 +499,291 @@ def remove_pool_member(
     )
     db.commit()
     return MessageResponse(message="Candidate removed from the pool.")
+
+
+# --- Controlled outreach + communications (Phase 8) ----------------------------
+
+
+def _candidate_user_id(db: Session, person_id: uuid.UUID):
+    person = db.get(PersonProfile, person_id)
+    return person.user_id if person else None
+
+
+def _opportunity_title(db: Session, opportunity_id) -> Optional[str]:
+    if opportunity_id is None:
+        return None
+    from app.models.career import Opportunity
+
+    opp = db.get(Opportunity, opportunity_id)
+    return opp.title if opp else None
+
+
+@router.post("/{organization_id}/outreach", response_model=OutreachCompanyOut,
+             status_code=201)
+def create_outreach(
+    organization_id: uuid.UUID,
+    body: OutreachCreate,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Request contact with a candidate (candidate stays in control)."""
+    require_org_permission(db, user, PERMISSION_OUTREACH_CREATE, organization_id)
+    request = outreach_service.create_outreach(
+        db,
+        organization_id,
+        user.id,
+        person_id=body.person_id,
+        message=body.message,
+        opportunity_id=body.opportunity_id,
+        context=body.context,
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.created",
+        resource_type="outreach_request",
+        resource_id=request.id,
+        organization_id=organization_id,
+        metadata={
+            "person_id": str(body.person_id),
+            "opportunity_id": str(body.opportunity_id) if body.opportunity_id else None,
+        },
+    )
+    # Notify the candidate through their feed (never by email/phone).
+    candidate_user_id = _candidate_user_id(db, request.person_id)
+    if candidate_user_id:
+        org_name = _org_name(db, organization_id)
+        notifications_service.notify(
+            db,
+            candidate_user_id,
+            "A company would like to contact you",
+            f"{org_name} sent you an outreach request about "
+            f"{_opportunity_title(db, request.opportunity_id) or 'an opportunity'}.",
+            kind="outreach",
+        )
+    db.commit()
+    return outreach_service.outreach_company_out(db, request)
+
+
+def _org_name(db: Session, organization_id) -> Optional[str]:
+    org = db.get(Organization, organization_id)
+    return org.name if org else None
+
+
+@router.get("/{organization_id}/outreach", response_model=list[OutreachCompanyOut])
+def list_outreach(
+    organization_id: uuid.UUID,
+    status: Optional[str] = Query(None, max_length=20),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    require_org_permission(db, user, PERMISSION_OUTREACH_READ, organization_id)
+    return outreach_service.list_org_outreach(db, organization_id, status=status)
+
+
+@router.get("/{organization_id}/outreach/{request_id}",
+            response_model=OutreachCompanyOut)
+def get_outreach(
+    organization_id: uuid.UUID,
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_org_permission(db, user, PERMISSION_OUTREACH_READ, organization_id)
+    return outreach_service.get_org_outreach(db, organization_id, request_id)
+
+
+@router.post("/{organization_id}/outreach/{request_id}/cancel", response_model=dict)
+def cancel_outreach(
+    organization_id: uuid.UUID,
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Cancel a live request (requester, or anyone with outreach.manage)."""
+    require_org_permission(db, user, PERMISSION_OUTREACH_CREATE, organization_id)
+    request = outreach_service.cancel_outreach(
+        db, organization_id, request_id, user.id
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.cancelled",
+        resource_type="outreach_request",
+        resource_id=request.id,
+        organization_id=organization_id,
+    )
+    db.commit()
+    return {"id": str(request.id), "status": request.status}
+
+
+@router.get("/{organization_id}/communications",
+            response_model=list[ConversationOut])
+def list_communications(
+    organization_id: uuid.UUID,
+    status: Optional[str] = Query(None, max_length=20),
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_READ, organization_id)
+    return communications_service.list_org_conversations(
+        db, organization_id, user.id, status=status
+    )
+
+
+@router.post("/{organization_id}/communications", response_model=ConversationOut,
+             status_code=201)
+def open_application_conversation(
+    organization_id: uuid.UUID,
+    body: OpenConversationRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Open a controlled conversation from an existing application (idempotent
+    per application: the same thread keeps interview/offer context attached)."""
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_SEND, organization_id)
+    from app.models.career import Opportunity
+    from app.services.company_os import _application_owned
+
+    app = _application_owned(db, organization_id, body.application_id, actor_id=user.id)
+    # Reuse an existing thread for this application when one exists.
+    existing = db.scalar(
+        select(Conversation).where(Conversation.application_id == app.id).limit(1)
+    )
+    if existing is not None:
+        return communications_service.conversation_out(db, existing, user.id)
+
+    opp = db.get(Opportunity, app.opportunity_id)
+    conversation = communications_service.create_conversation(
+        db,
+        organization_id=organization_id,
+        person_id=app.person_id,
+        actor_id=user.id,
+        opportunity_id=opp.id if opp else None,
+        application_id=app.id,
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.conversation.opened",
+        resource_type="conversation",
+        resource_id=conversation.id,
+        organization_id=organization_id,
+        metadata={"application_id": str(app.id)},
+    )
+    db.commit()
+    candidate_user_id = _candidate_user_id(db, app.person_id)
+    if candidate_user_id:
+        notifications_service.notify(
+            db,
+            candidate_user_id,
+            "A conversation has been opened about your application",
+            f"{_org_name(db, organization_id)} can now discuss your application "
+            "with you through AskTrabaajo.",
+            kind="communication",
+        )
+    db.commit()
+    return communications_service.conversation_out(db, conversation, user.id)
+
+
+@router.get("/{organization_id}/communications/{conversation_id}",
+            response_model=ConversationOut)
+def get_conversation(
+    organization_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_READ, organization_id)
+    payload = communications_service.get_org_conversation(
+        db, organization_id, conversation_id, user.id
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.conversation.viewed",
+        resource_type="conversation",
+        resource_id=conversation_id,
+        organization_id=organization_id,
+    )
+    db.commit()
+    return payload
+
+
+@router.post("/{organization_id}/communications/{conversation_id}/messages",
+             response_model=MessageOut, status_code=201)
+def send_org_message(
+    organization_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    body: MessageSend,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_SEND, organization_id)
+    from app.services.communications import _org_owns
+
+    conversation = _org_owns(db, organization_id, conversation_id, user.id)
+    message = communications_service.send_message(
+        db, conversation, user.id, sender_side="recruiter", body=body.body
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.message.sent",
+        resource_type="conversation_message",
+        resource_id=message.id,
+        organization_id=organization_id,
+        metadata={"conversation_id": str(conversation_id)},
+    )
+    candidate_user_id = _candidate_user_id(db, conversation.person_id)
+    if candidate_user_id:
+        notifications_service.notify(
+            db,
+            candidate_user_id,
+            "New message from a company",
+            f"{_org_name(db, organization_id)} sent you a message in AskTrabaajo.",
+            kind="communication",
+        )
+    db.commit()
+    return communications_service._message_out(db, message)
+
+
+@router.post("/{organization_id}/communications/{conversation_id}/read",
+             response_model=dict)
+def mark_conversation_read(
+    organization_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_READ, organization_id)
+    from app.services.communications import _org_owns
+
+    conversation = _org_owns(db, organization_id, conversation_id, user.id)
+    communications_service.mark_conversation_read(db, conversation, user.id)
+    return {"conversation_id": str(conversation_id), "ok": True}
+
+
+@router.post("/{organization_id}/communications/{conversation_id}/close",
+             response_model=ConversationOut)
+def close_conversation(
+    organization_id: uuid.UUID,
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    require_org_permission(db, user, PERMISSION_COMMUNICATIONS_MANAGE, organization_id)
+    from app.services.communications import _org_owns
+
+    conversation = _org_owns(db, organization_id, conversation_id, user.id)
+    closed = communications_service.close_conversation(db, conversation, user.id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.conversation.closed",
+        resource_type="conversation",
+        resource_id=conversation_id,
+        organization_id=organization_id,
+    )
+    db.commit()
+    return communications_service.conversation_out(db, closed, user.id)

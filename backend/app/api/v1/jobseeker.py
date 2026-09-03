@@ -44,6 +44,14 @@ from app.models.enums import (
 from app.models.identity import PersonProfile, User
 from app.models.work import UserSkill
 from app.schemas.common import MessageResponse
+from app.schemas.communication import (
+    BlockRequest,
+    ConversationOut,
+    DeclineRequest,
+    MessageOut,
+    MessageSend,
+    ReportRequest,
+)
 from app.schemas.jobseeker import (
     AdvisorSnapshotOut,
     ApplicationDetailOut,
@@ -71,9 +79,11 @@ from app.schemas.jobseeker import (
 )
 from app.services import audit as audit_service
 from app.services import applications as applications_service
+from app.services import communications as communications_service
 from app.services import development as development_service
 from app.services import matching as matching_service
 from app.services import notifications as notifications_service
+from app.services import outreach as outreach_service
 from app.services import person as person_service
 from app.services import skills_registry
 from app.services import talent as talent_service
@@ -1034,3 +1044,302 @@ def notification_unread_count(
     db: Session = Depends(get_db),
 ) -> dict:
     return {"unread": notifications_service.unread_count(db, user.id)}
+
+
+# --- Outreach + controlled communications (Phase 8) ----------------------------
+
+
+def _outreach_row(db: Session, request_id: uuid.UUID):
+    from app.models.communication import OutreachRequest
+
+    return db.get(OutreachRequest, request_id)
+
+
+def _org_name(db: Session, organization_id) -> Optional[str]:
+    from app.models.tenancy import Organization
+
+    org = db.get(Organization, organization_id)
+    return org.name if org else None
+
+
+@router.get("/communications", response_model=dict)
+def communications_inbox(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """The candidate's communication center: pending outreach, active
+    conversations and unread counts — everything THEY own, nothing more."""
+    person = _person(db, user)
+    outreach = outreach_service.list_candidate_outreach(db, person.id)
+    conversations = communications_service.list_candidate_conversations(
+        db, person.id, user.id
+    )
+    unread = communications_service.unread_candidate_summary(db, person.id)
+    return {
+        "outreach": outreach,
+        "conversations": conversations,
+        "unread": unread,
+    }
+
+
+@router.get("/communications/blocks", response_model=list)
+def list_blocks(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    person = _person(db, user)
+    return outreach_service.list_blocks(db, person.id)
+
+
+@router.post("/communications/organizations/{organization_id}/block",
+             response_model=dict, status_code=201)
+def block_organization(
+    organization_id: uuid.UUID,
+    body: BlockRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Candidate asks this organization not to contact them again."""
+    person = _person(db, user)
+    outreach_service.block_organization(
+        db, person.id, organization_id, user.id, reason=body.reason
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.org.blocked",
+        resource_type="outreach_block",
+        organization_id=organization_id,
+    )
+    db.commit()
+    return {"organization_id": str(organization_id), "blocked": True}
+
+
+@router.delete("/communications/organizations/{organization_id}/block",
+               response_model=MessageResponse)
+def unblock_organization(
+    organization_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    person = _person(db, user)
+    outreach_service.unblock_organization(db, person.id, organization_id, user.id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.org.unblocked",
+        resource_type="outreach_block",
+        organization_id=organization_id,
+    )
+    db.commit()
+    return MessageResponse(message="Block removed.")
+
+
+@router.get("/communications/unread", response_model=dict)
+def communications_unread(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    return communications_service.unread_candidate_summary(db, person.id)
+
+
+@router.get("/communications/{conversation_id}", response_model=ConversationOut)
+def get_my_conversation(
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    return communications_service.get_candidate_conversation(
+        db, person.id, conversation_id, user.id
+    )
+
+
+@router.post("/communications/{conversation_id}/messages", response_model=MessageOut,
+             status_code=201)
+def send_candidate_message(
+    conversation_id: uuid.UUID,
+    body: MessageSend,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    from app.services.communications import _candidate_owns
+
+    conversation = _candidate_owns(db, person.id, conversation_id)
+    message = communications_service.send_message(
+        db, conversation, user.id, sender_side="candidate", body=body.body
+    )
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.message.sent",
+        resource_type="conversation_message",
+        resource_id=message.id,
+        organization_id=conversation.organization_id,
+        metadata={"conversation_id": str(conversation_id)},
+    )
+    # Notify the company-side opener (never other candidates' data).
+    opener = db.get(User, conversation.opened_by)
+    if opener is not None and opener.id != user.id:
+        notifications_service.notify(
+            db,
+            opener.id,
+            "A candidate replied",
+            "A candidate replied to your conversation in AskTrabaajo.",
+            kind="communication",
+        )
+    db.commit()
+    return communications_service._message_out(db, message)
+
+
+@router.post("/communications/{conversation_id}/read", response_model=dict)
+def mark_my_conversation_read(
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    from app.services.communications import _candidate_owns
+
+    conversation = _candidate_owns(db, person.id, conversation_id)
+    communications_service.mark_conversation_read(db, conversation, user.id)
+    return {"conversation_id": str(conversation_id), "ok": True}
+
+
+@router.post("/communications/{conversation_id}/close", response_model=ConversationOut)
+def close_my_conversation(
+    conversation_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    from app.services.communications import _candidate_owns
+
+    conversation = _candidate_owns(db, person.id, conversation_id)
+    closed = communications_service.close_conversation(db, conversation, user.id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="communications.conversation.closed",
+        resource_type="conversation",
+        resource_id=conversation_id,
+    )
+    db.commit()
+    return communications_service.conversation_out(db, closed, user.id)
+
+
+@router.get("/outreach/{request_id}", response_model=dict)
+def view_my_outreach(
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Candidate reads one outreach request (marks it viewed)."""
+    person = _person(db, user)
+    payload = outreach_service.get_candidate_outreach(
+        db, person.id, request_id, user.id
+    )
+    request = _outreach_row(db, request_id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.viewed",
+        resource_type="outreach_request",
+        resource_id=request_id,
+        organization_id=request.organization_id if request else None,
+    )
+    db.commit()
+    return payload
+
+
+@router.post("/outreach/{request_id}/accept", response_model=dict)
+def accept_outreach(
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Accept opens a controlled AskTrabaajo conversation. It never exposes
+    private contact details — the employer still communicates in-platform."""
+    person = _person(db, user)
+    result = outreach_service.accept_outreach(db, person.id, request_id, user.id)
+    request = _outreach_row(db, request_id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.accepted",
+        resource_type="outreach_request",
+        resource_id=request_id,
+        organization_id=request.organization_id if request else None,
+    )
+    if request is not None:
+        notifications_service.notify(
+            db,
+            request.requester_id,
+            "Your outreach request was accepted",
+            "The candidate accepted your request — a controlled conversation "
+            "is now open in your communications center.",
+            kind="communication",
+        )
+    db.commit()
+    return result
+
+
+@router.post("/outreach/{request_id}/decline", response_model=dict)
+def decline_outreach(
+    request_id: uuid.UUID,
+    body: DeclineRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    person = _person(db, user)
+    result = outreach_service.decline_outreach(db, person.id, request_id, note=body.note)
+    request = _outreach_row(db, request_id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.declined",
+        resource_type="outreach_request",
+        resource_id=request_id,
+        organization_id=request.organization_id if request else None,
+        metadata={"note_present": bool(body.note)},
+    )
+    # Company receives a GENERIC decline — no private information is shared.
+    if request is not None:
+        notifications_service.notify(
+            db,
+            request.requester_id,
+            "Your outreach request was declined",
+            "The candidate declined this outreach request.",
+            kind="communication",
+        )
+    db.commit()
+    return result
+
+
+@router.post("/outreach/{request_id}/report", response_model=dict)
+def report_outreach(
+    request_id: uuid.UUID,
+    body: ReportRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Report an outreach: the request is blocked and the organization is
+    added to the candidate's standing block list."""
+    person = _person(db, user)
+    result = outreach_service.report_outreach(
+        db, person.id, request_id, user.id, note=body.note
+    )
+    request = _outreach_row(db, request_id)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="talent.outreach.reported",
+        resource_type="outreach_request",
+        resource_id=request_id,
+        organization_id=request.organization_id if request else None,
+        metadata={"note_present": bool(body.note)},
+    )
+    db.commit()
+    return result
