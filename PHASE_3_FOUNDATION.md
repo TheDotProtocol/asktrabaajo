@@ -200,7 +200,7 @@ cd backend && DATABASE_URL="sqlite:////tmp/scratch.db" ./.venv/bin/alembic upgra
 
 ## 13. Files created/modified
 
-**Created:** `backend/app/**` (35 files) · `backend/alembic/**` · `backend/alembic.ini` · `backend/tests_phase3/**` (10 files) · `backend/pytest.legacy-safe.ini` · `backend/.env.example` · `frontend/.env.example` · `frontend/src/lib/api/{client,types}.ts` · `PHASE_3_FOUNDATION.md`.
+**Created:** `backend/app/**` (42 Python files) · `backend/alembic/**` · `backend/alembic.ini` · `backend/tests_phase3/**` (10 files) · `backend/pytest.legacy-safe.ini` · `backend/.env.example` · `frontend/.env.example` · `frontend/src/lib/api/{client,types}.ts` · `PHASE_3_FOUNDATION.md`.
 **Modified:** `backend/requirements.txt` (added alembic pin).
 
 *End of Phase 3. No Phase 4 work has begun. Next: owner review, then the Phase 4 data layer per PHASE_2_ARCHITECTURE.md §25.*
