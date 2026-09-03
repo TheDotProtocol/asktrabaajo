@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user
 from app.core.errors import InvalidInputError, NotFoundError
 from app.db.session import get_db
+from app.models.enums import EDUCATION_LEVELS
 from app.models.identity import PersonProfile, User
 from app.models.work import (
     Credential,
@@ -26,6 +27,11 @@ from app.models.work import (
     WorkExperience,
 )
 from app.schemas.common import MessageResponse
+from app.schemas.privacy import (
+    CompletionOut,
+    PrivacySettingsOut,
+    PrivacyUpdateRequest,
+)
 from app.schemas.work import (
     CredentialCreate,
     CredentialOut,
@@ -46,6 +52,7 @@ from app.schemas.work import (
     is_valid_employment_type,
 )
 from app.services import audit as audit_service
+from app.services import person as person_service
 from app.services.auth_service import get_person_for_user
 
 router = APIRouter(prefix="/work-id", tags=["work-id"])
@@ -217,6 +224,10 @@ def create_education(
     db: Session = Depends(get_db),
 ) -> Education:
     person = _person(db, user)
+    if body.level is not None and body.level not in EDUCATION_LEVELS:
+        raise InvalidInputError(
+            f"level must be one of {sorted(EDUCATION_LEVELS)} when provided."
+        )
     obj = Education(person_id=person.id, **body.model_dump())
     db.add(obj)
     db.commit()
@@ -459,3 +470,69 @@ def create_employment(
     db.commit()
     db.refresh(obj)
     return obj
+
+
+@router.delete("/employments/{employment_id}", response_model=MessageResponse)
+def delete_employment(
+    employment_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MessageResponse:
+    person = _person(db, user)
+    obj = _owned(db, person.id, Employment, employment_id)
+    db.delete(obj)
+    db.commit()
+    return MessageResponse(message="Employment record deleted.")
+
+
+# --- profile completion + privacy --------------------------------------------
+
+
+@router.get("/completion", response_model=CompletionOut)
+def get_completion(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    person = _person(db, user)
+    result = person_service.profile_completion(db, person, user)
+    return CompletionOut(
+        percent=result["percent"],
+        sections={
+            key: {
+                "met": section["met"],
+                "weight": section["weight"],
+                "threshold": section.get("threshold"),
+                "count": section.get("count"),
+            }
+            for key, section in result["sections"].items()
+        },
+        missing=result["missing"],
+    )
+
+
+@router.get("/privacy", response_model=PrivacySettingsOut)
+def get_privacy(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PrivacySettingsOut:
+    person = _person(db, user)
+    return PrivacySettingsOut(settings=person_service.get_visibility_map(db, person.id))
+
+
+@router.put("/privacy", response_model=PrivacySettingsOut)
+def update_privacy(
+    body: PrivacyUpdateRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> PrivacySettingsOut:
+    person = _person(db, user)
+    settings = person_service.set_visibility_map(db, person.id, body.settings)
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="privacy.updated",
+        resource_type="person_profile",
+        resource_id=person.id,
+    )
+    db.commit()
+    return PrivacySettingsOut(settings=settings)

@@ -12,54 +12,78 @@ from app.schemas.common import ORMOut
 
 
 class ProfilePatch(BaseModel):
+    """Owner-editable person profile fields.
+
+    Contact details are private by default and never returned through any
+    non-owner API (see the Work ID privacy model).
+    """
+
     headline: Optional[str] = Field(default=None, max_length=200)
     summary: Optional[str] = Field(default=None, max_length=4000)
+    preferred_name: Optional[str] = Field(default=None, max_length=120)
+    city: Optional[str] = Field(default=None, max_length=120)
+    state_province: Optional[str] = Field(default=None, max_length=120)
     location: Optional[str] = Field(default=None, max_length=160)
     country_code: Optional[str] = Field(default=None, max_length=8)
+    phone: Optional[str] = Field(default=None, max_length=40)
 
 
 class ProfileOut(ORMOut):
+    """Full profile — only ever returned to the owner through /work-id."""
+
     id: uuid.UUID
     headline: Optional[str] = None
     summary: Optional[str] = None
+    preferred_name: Optional[str] = None
+    city: Optional[str] = None
+    state_province: Optional[str] = None
     location: Optional[str] = None
     country_code: Optional[str] = None
+    phone: Optional[str] = None
     updated_at: datetime
 
 
 class ExperienceCreate(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
     title: str = Field(min_length=1, max_length=200)
+    department: Optional[str] = Field(default=None, max_length=160)
     location: Optional[str] = Field(default=None, max_length=160)
     start_date: date
     end_date: Optional[date] = None
     is_current: bool = False
     description: Optional[str] = Field(default=None, max_length=4000)
+    skills_used: Optional[List[str]] = None
 
 
 class ExperienceUpdate(BaseModel):
     company_name: Optional[str] = Field(default=None, max_length=200)
     title: Optional[str] = Field(default=None, max_length=200)
+    department: Optional[str] = Field(default=None, max_length=160)
     location: Optional[str] = Field(default=None, max_length=160)
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_current: Optional[bool] = None
     description: Optional[str] = Field(default=None, max_length=4000)
+    skills_used: Optional[List[str]] = None
 
 
 class ExperienceOut(ORMOut):
     id: uuid.UUID
     company_name: str
     title: str
+    department: Optional[str] = None
     location: Optional[str] = None
     start_date: date
     end_date: Optional[date] = None
     is_current: bool
     description: Optional[str] = None
+    skills_used: Optional[List[str]] = None
+    verification_status: str
 
 
 class EducationCreate(BaseModel):
     institution: str = Field(min_length=1, max_length=200)
+    level: Optional[str] = Field(default=None, max_length=60)
     degree: Optional[str] = Field(default=None, max_length=200)
     field_of_study: Optional[str] = Field(default=None, max_length=200)
     start_date: Optional[date] = None
@@ -70,6 +94,7 @@ class EducationCreate(BaseModel):
 
 class EducationUpdate(BaseModel):
     institution: Optional[str] = Field(default=None, max_length=200)
+    level: Optional[str] = Field(default=None, max_length=60)
     degree: Optional[str] = Field(default=None, max_length=200)
     field_of_study: Optional[str] = Field(default=None, max_length=200)
     start_date: Optional[date] = None
@@ -81,12 +106,14 @@ class EducationUpdate(BaseModel):
 class EducationOut(ORMOut):
     id: uuid.UUID
     institution: str
+    level: Optional[str] = None
     degree: Optional[str] = None
     field_of_study: Optional[str] = None
     start_date: Optional[date] = None
     end_date: Optional[date] = None
     is_current: bool
     description: Optional[str] = None
+    verification_status: str
 
 
 class SkillOut(ORMOut):
@@ -143,20 +170,27 @@ class CredentialOut(ORMOut):
 class EmploymentCreate(BaseModel):
     company_name: str = Field(min_length=1, max_length=200)
     title: str = Field(min_length=1, max_length=200)
+    department: Optional[str] = Field(default=None, max_length=160)
+    location: Optional[str] = Field(default=None, max_length=160)
     employment_type: str = "full_time"
     start_date: date
     end_date: Optional[date] = None
     is_current: bool = False
+    skills_used: Optional[List[str]] = None
 
 
 class EmploymentOut(ORMOut):
     id: uuid.UUID
     company_name: str
     title: str
+    department: Optional[str] = None
+    location: Optional[str] = None
     employment_type: str
     start_date: date
     end_date: Optional[date] = None
     is_current: bool
+    skills_used: Optional[List[str]] = None
+    verification_status: str
 
 
 class WorkIdSummary(BaseModel):
