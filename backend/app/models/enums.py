@@ -262,3 +262,66 @@ SCORECARD_RECOMMENDATIONS = {
     SCORECARD_RECOMMEND_HOLD,
     SCORECARD_RECOMMEND_REJECT,
 }
+
+# --- Skill taxonomy (Phase 7) ---------------------------------------------------
+SKILL_STATUS_ACTIVE = "active"
+SKILL_STATUS_DEPRECATED = "deprecated"
+SKILL_STATUSES = {SKILL_STATUS_ACTIVE, SKILL_STATUS_DEPRECATED}
+
+# How one skill relates to another in the taxonomy graph.
+SKILL_RELATION_PARENT = "parent"          # target is a broader category
+SKILL_RELATION_CHILD = "child"            # target is a specialization
+SKILL_RELATION_RELATED = "related"
+SKILL_RELATION_COMPLEMENTARY = "complementary"
+SKILL_RELATION_SIMILAR = "similar"
+SKILL_RELATION_KINDS = {
+    SKILL_RELATION_PARENT,
+    SKILL_RELATION_CHILD,
+    SKILL_RELATION_RELATED,
+    SKILL_RELATION_COMPLEMENTARY,
+    SKILL_RELATION_SIMILAR,
+}
+
+# Where a person's claim to a skill originates (provenance, never inferred
+# as verified).
+SKILL_EVIDENCE_SELF = "self"
+SKILL_EVIDENCE_EXPERIENCE = "experience"
+SKILL_EVIDENCE_EMPLOYMENT = "employment"
+SKILL_EVIDENCE_EDUCATION = "education"
+SKILL_EVIDENCE_CERTIFICATION = "certification"
+SKILL_EVIDENCE_ASSESSMENT = "assessment"
+SKILL_EVIDENCE_TYPES = {
+    SKILL_EVIDENCE_SELF,
+    SKILL_EVIDENCE_EXPERIENCE,
+    SKILL_EVIDENCE_EMPLOYMENT,
+    SKILL_EVIDENCE_EDUCATION,
+    SKILL_EVIDENCE_CERTIFICATION,
+    SKILL_EVIDENCE_ASSESSMENT,
+}
+
+# Opportunity requirement kind (normalized from employer/job text).
+REQUIREMENT_KIND_REQUIRED = "required"
+REQUIREMENT_KIND_PREFERRED = "preferred"
+REQUIREMENT_KINDS = {REQUIREMENT_KIND_REQUIRED, REQUIREMENT_KIND_PREFERRED}
+
+# Career-path catalogue states.
+CAREER_PATH_ACTIVE = "active"
+CAREER_PATH_ARCHIVED = "archived"
+CAREER_PATH_STATUSES = {CAREER_PATH_ACTIVE, CAREER_PATH_ARCHIVED}
+
+# Candidate discovery is organisation-scoped but pools are searchable only by
+# members holding the talent permissions below.
+PERMISSION_CANDIDATES_SEARCH = "candidates.search"
+PERMISSION_POOLS_MANAGE = "pools.manage"
+
+# Explainable match modes (never a bare percentage).
+MATCH_MODE_STRONG = "strong"
+MATCH_MODE_POTENTIAL = "potential"
+MATCH_MODE_CAREER_TRANSITION = "career_transition"
+MATCH_MODE_EXPLORE = "explore"
+MATCH_MODES = {
+    MATCH_MODE_STRONG,
+    MATCH_MODE_POTENTIAL,
+    MATCH_MODE_CAREER_TRANSITION,
+    MATCH_MODE_EXPLORE,
+}

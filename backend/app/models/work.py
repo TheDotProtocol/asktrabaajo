@@ -81,6 +81,15 @@ class Education(Base, TimestampMixin):
 
 
 class Skill(Base):
+    """Canonical skill taxonomy entry.
+
+    ``name`` is the canonical, human-facing label. ``category`` /
+    ``subcategory`` provide taxonomy grouping. Free-text aliases resolve to
+    this row through ``skill_aliases`` (see ``app.models.talent``) so
+    ``React.js``, ``React JS`` and ``ReactJS`` converge on one canonical
+    skill instead of creating duplicates.
+    """
+
     __tablename__ = "skills"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
@@ -88,6 +97,9 @@ class Skill(Base):
         String(120), unique=True, index=True, nullable=False
     )
     category: Mapped[str] = mapped_column(String(60), default="general", nullable=False)
+    subcategory: Mapped[Optional[str]] = mapped_column(String(160))
+    description: Mapped[Optional[str]] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(20), default="active", nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

@@ -1,5 +1,15 @@
 """Canonical model set — import every model module so metadata is complete."""
-from app.models import audit, career, company, documents, identity, privacy, tenancy, work
+from app.models import (
+    audit,
+    career,
+    company,
+    documents,
+    identity,
+    privacy,
+    talent,
+    tenancy,
+    work,
+)
 from app.models.company import (
     CompanyProfile,
     DocumentRequest,
@@ -39,6 +49,18 @@ from app.models.tenancy import (
     Role,
     RolePermission,
 )
+from app.models.talent import (
+    CandidateSearchEvent,
+    CareerPath,
+    CareerPathStep,
+    OpportunityRequirement,
+    SavedCandidate,
+    SkillAlias,
+    SkillEvidence,
+    SkillRelationship,
+    TalentPool,
+    TalentPoolMember,
+)
 from app.models.work import (
     Credential,
     Education,
@@ -51,11 +73,15 @@ from app.models.work import (
 __all__ = [
     "ApplicationEvent",
     "AuditLogEntry",
+    "CandidateSearchEvent",
     "CareerGoal",
     "CareerMilestone",
+    "CareerPath",
+    "CareerPathStep",
     "CompanyProfile",
     "Consent",
     "Credential",
+    "OpportunityRequirement",
     "DocumentAccessGrant",
     "DocumentRequest",
     "Education",
@@ -78,8 +104,14 @@ __all__ = [
     "RefreshToken",
     "Role",
     "RolePermission",
+    "SavedCandidate",
     "ScreeningResponse",
     "Skill",
+    "SkillAlias",
+    "SkillEvidence",
+    "SkillRelationship",
+    "TalentPool",
+    "TalentPoolMember",
     "TimestampMixin",
     "User",
     "UserNotification",
