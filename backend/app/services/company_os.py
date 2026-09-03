@@ -689,7 +689,28 @@ def create_offer(
             "An offer is waiting for your decision in your Offer Center.",
             kind="offer",
         )
+    _emit_offer_event(db, app, offer, "offer.updated")
     return offer
+
+
+def _emit_offer_event(db: Session, app: JobApplication, offer: Offer, event_type: str) -> None:
+    """Minimal offer realtime event (status + references, no terms dump)."""
+    from app.models.identity import PersonProfile
+    from app.services import events as events_service
+
+    person = db.get(PersonProfile, app.person_id)
+    payload = {"status": offer.status}
+    if person is not None:
+        events_service.emit(
+            db, event_type=event_type, resource_type="offer", resource_id=offer.id,
+            recipient_user_id=person.user_id, payload=payload,
+        )
+    opp = db.get(Opportunity, app.opportunity_id)
+    if opp is not None and opp.company_id is not None:
+        events_service.emit(
+            db, event_type=event_type, resource_type="offer", resource_id=offer.id,
+            organization_id=opp.company_id, org_scope=True, payload=payload,
+        )
 
 
 def send_offer(
@@ -699,6 +720,9 @@ def send_offer(
     if offer.status != "draft":
         raise InvalidInputError(f"Cannot send an offer with status '{offer.status}'.")
     offer.status = "sent"
+    app = db.get(JobApplication, offer.application_id)
+    if app is not None:
+        _emit_offer_event(db, app, offer, "offer.updated")
     db.commit()
     db.refresh(offer)
     return offer
@@ -779,6 +803,29 @@ def create_interview(
             "An interview has been scheduled for your application.",
             kind="interview",
         )
+    from app.services import events as events_service
+
+    if user_id:
+        events_service.emit(
+            db,
+            event_type="interview.updated",
+            resource_type="interview",
+            resource_id=interview.id,
+            recipient_user_id=user_id,
+            payload={"status": interview.status},
+        )
+    opp = db.get(Opportunity, app.opportunity_id)
+    if opp is not None and opp.company_id is not None:
+        events_service.emit(
+            db,
+            event_type="interview.updated",
+            resource_type="interview",
+            resource_id=interview.id,
+            organization_id=opp.company_id,
+            org_scope=True,
+            payload={"status": interview.status},
+        )
+    db.commit()
     return interview
 
 

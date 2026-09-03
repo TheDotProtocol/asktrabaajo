@@ -168,9 +168,54 @@ def _transition(
             actor_user_id=actor_user_id,
         )
     )
+    _emit_transition_event(db, application, from_status, to_status, actor_user_id)
     db.commit()
     db.refresh(application)
     return application
+
+
+def _emit_transition_event(
+    db: Session,
+    application: JobApplication,
+    from_status: str,
+    to_status: str,
+    actor_user_id: uuid.UUID,
+) -> None:
+    """Realtime event for the two sides of one application lifecycle.
+
+    Payload is whitelisted (statuses + references only).
+    """
+    from app.models.identity import PersonProfile
+    from app.services import events as events_service
+
+    person = db.get(PersonProfile, application.person_id)
+    opp = db.get(Opportunity, application.opportunity_id)
+    payload = {
+        "from_status": from_status,
+        "to_status": to_status,
+        "opportunity_id": str(opp.id) if opp else None,
+    }
+    if person is not None:
+        events_service.emit(
+            db,
+            event_type="application.updated",
+            resource_type="job_application",
+            resource_id=application.id,
+            recipient_user_id=person.user_id,
+            actor_user_id=actor_user_id,
+            payload=payload,
+        )
+    if opp is not None and opp.company_id is not None:
+        events_service.emit(
+            db,
+            event_type="application.updated",
+            resource_type="job_application",
+            resource_id=application.id,
+            organization_id=opp.company_id,
+            org_scope=True,
+            actor_user_id=actor_user_id,
+            payload=payload,
+        )
 
 
 def transition_to_status(

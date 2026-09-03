@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_org_permission
 from app.core.errors import NotFoundError
+from app.core.ratelimit import rate_limit_dependency
 from app.db.session import get_db
 from app.models.communication import Conversation
 from app.models.enums import (
@@ -60,10 +61,15 @@ from app.schemas.talent import (
 )
 from app.services import audit as audit_service
 from app.services import communications as communications_service
+from app.services import events as events_service
 from app.services import notifications as notifications_service
 from app.services import outreach as outreach_service
 from app.services import skills_registry
 from app.services import talent as talent_service
+
+outreach_limit = rate_limit_dependency("outreach.create")
+message_send_limit = rate_limit_dependency("message.send")
+search_limit = rate_limit_dependency("candidates.search")
 
 router = APIRouter(prefix="/talent", tags=["talent"])
 
@@ -169,6 +175,7 @@ def search_candidates(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     user: User = Depends(get_current_user),
+    _rl: None = Depends(search_limit),
     db: Session = Depends(get_db),
 ) -> CandidateSearchList:
     require_org_permission(db, user, PERMISSION_CANDIDATES_SEARCH, organization_id)
@@ -524,6 +531,7 @@ def create_outreach(
     organization_id: uuid.UUID,
     body: OutreachCreate,
     user: User = Depends(get_current_user),
+    _rl: None = Depends(outreach_limit),
     db: Session = Depends(get_db),
 ) -> dict:
     """Request contact with a candidate (candidate stays in control)."""
@@ -560,6 +568,21 @@ def create_outreach(
             f"{org_name} sent you an outreach request about "
             f"{_opportunity_title(db, request.opportunity_id) or 'an opportunity'}.",
             kind="outreach",
+        )
+        events_service.emit(
+            db,
+            event_type="outreach.created",
+            resource_type="outreach_request",
+            resource_id=request.id,
+            recipient_user_id=candidate_user_id,
+            actor_user_id=user.id,
+            organization_id=organization_id,
+            payload={
+                "opportunity_id": (
+                    str(request.opportunity_id) if request.opportunity_id else None
+                ),
+                "organization_id": str(organization_id),
+            },
         )
     db.commit()
     return outreach_service.outreach_company_out(db, request)
@@ -682,6 +705,16 @@ def open_application_conversation(
             "with you through AskTrabaajo.",
             kind="communication",
         )
+        events_service.emit(
+            db,
+            event_type="conversation.opened",
+            resource_type="conversation",
+            resource_id=conversation.id,
+            recipient_user_id=candidate_user_id,
+            actor_user_id=user.id,
+            organization_id=organization_id,
+            payload={"application_id": str(app.id)},
+        )
     db.commit()
     return communications_service.conversation_out(db, conversation, user.id)
 
@@ -717,6 +750,7 @@ def send_org_message(
     conversation_id: uuid.UUID,
     body: MessageSend,
     user: User = Depends(get_current_user),
+    _rl: None = Depends(message_send_limit),
     db: Session = Depends(get_db),
 ) -> dict:
     require_org_permission(db, user, PERMISSION_COMMUNICATIONS_SEND, organization_id)
@@ -743,6 +777,17 @@ def send_org_message(
             "New message from a company",
             f"{_org_name(db, organization_id)} sent you a message in AskTrabaajo.",
             kind="communication",
+        )
+        # Realtime event: minimal metadata, NEVER the message body.
+        events_service.emit(
+            db,
+            event_type="message.sent",
+            resource_type="conversation_message",
+            resource_id=message.id,
+            recipient_user_id=candidate_user_id,
+            actor_user_id=user.id,
+            organization_id=organization_id,
+            payload={"conversation_id": str(conversation_id), "sender_side": "recruiter"},
         )
     db.commit()
     return communications_service._message_out(db, message)

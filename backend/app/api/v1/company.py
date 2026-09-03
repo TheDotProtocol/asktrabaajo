@@ -21,6 +21,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user, require_org_permission
 from app.core.errors import InvalidInputError, NotFoundError
+from app.core.ratelimit import rate_limit_dependency
 from app.db.session import get_db
 from app.models.career import Interview, JobApplication, Offer, Opportunity
 from app.models.company import CompanyProfile, InterviewScorecard
@@ -863,11 +864,15 @@ def withdraw_offer_endpoint(
 # --- Document requests ---------------------------------------------------------
 
 
+doc_request_limit = rate_limit_dependency("document.request")
+
+
 @router.post("/{organization_id}/document-requests", response_model=DocumentRequestOut, status_code=201)
 def create_document_request(
     organization_id: uuid.UUID,
     body: DocumentRequestCreate,
     user: User = Depends(get_current_user),
+    _rl: None = Depends(doc_request_limit),
     db: Session = Depends(get_db),
 ):
     require_org_permission(db, user, "applications.manage", organization_id)

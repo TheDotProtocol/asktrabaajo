@@ -20,6 +20,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import get_current_user
 from app.core.errors import InvalidInputError, NotFoundError
+from app.core.ratelimit import rate_limit_dependency
 from app.db.session import get_db
 from app.models.career import (
     ApplicationEvent,
@@ -81,6 +82,7 @@ from app.services import audit as audit_service
 from app.services import applications as applications_service
 from app.services import communications as communications_service
 from app.services import development as development_service
+from app.services import events as events_service
 from app.services import matching as matching_service
 from app.services import notifications as notifications_service
 from app.services import outreach as outreach_service
@@ -90,6 +92,9 @@ from app.services import talent as talent_service
 from app.services import work_dna as dna_service
 from app.services.auth_service import get_person_for_user
 from app.core.timeutil import utc_now_naive
+
+message_send_limit = rate_limit_dependency("message.send")
+batch_limit = rate_limit_dependency("application.batch")
 
 router = APIRouter(prefix="/jobseeker", tags=["jobseeker"])
 
@@ -543,6 +548,7 @@ def apply_to_opportunity(
 def batch_apply(
     body: BatchApplyRequest,
     user: User = Depends(get_current_user),
+    _rl: None = Depends(batch_limit),
     db: Session = Depends(get_db),
 ) -> dict:
     """Explicit batch apply — the caller lists the exact opportunities.
@@ -720,6 +726,19 @@ def decide_offer(
         resource_type="offer",
         resource_id=offer.id,
     )
+    # Org-scope realtime event so the company sees the decision instantly.
+    opp = db.get(Opportunity, app.opportunity_id)
+    if opp is not None and opp.company_id is not None:
+        events_service.emit(
+            db,
+            event_type="offer.updated",
+            resource_type="offer",
+            resource_id=offer.id,
+            organization_id=opp.company_id,
+            org_scope=True,
+            actor_user_id=user.id,
+            payload={"status": decision, "application_id": str(app.id)},
+        )
     db.commit()
     return offer
 
@@ -1162,6 +1181,7 @@ def send_candidate_message(
     conversation_id: uuid.UUID,
     body: MessageSend,
     user: User = Depends(get_current_user),
+    _rl: None = Depends(message_send_limit),
     db: Session = Depends(get_db),
 ) -> dict:
     person = _person(db, user)
@@ -1190,6 +1210,17 @@ def send_candidate_message(
             "A candidate replied to your conversation in AskTrabaajo.",
             kind="communication",
         )
+    # Org-scope realtime event for the conversation's company (no body).
+    events_service.emit(
+        db,
+        event_type="message.sent",
+        resource_type="conversation_message",
+        resource_id=message.id,
+        organization_id=conversation.organization_id,
+        org_scope=True,
+        actor_user_id=user.id,
+        payload={"conversation_id": str(conversation_id), "sender_side": "candidate"},
+    )
     db.commit()
     return communications_service._message_out(db, message)
 
@@ -1282,6 +1313,16 @@ def accept_outreach(
             "is now open in your communications center.",
             kind="communication",
         )
+        events_service.emit(
+            db,
+            event_type="outreach.accepted",
+            resource_type="outreach_request",
+            resource_id=request_id,
+            organization_id=request.organization_id,
+            org_scope=True,
+            actor_user_id=user.id,
+            payload={"conversation_id": result.get("conversation_id")},
+        )
     db.commit()
     return result
 
@@ -1314,6 +1355,15 @@ def decline_outreach(
             "The candidate declined this outreach request.",
             kind="communication",
         )
+        events_service.emit(
+            db,
+            event_type="outreach.declined",
+            resource_type="outreach_request",
+            resource_id=request_id,
+            organization_id=request.organization_id,
+            org_scope=True,
+            actor_user_id=user.id,
+        )
     db.commit()
     return result
 
@@ -1341,5 +1391,15 @@ def report_outreach(
         organization_id=request.organization_id if request else None,
         metadata={"note_present": bool(body.note)},
     )
+    if request is not None:
+        events_service.emit(
+            db,
+            event_type="outreach.blocked",
+            resource_type="outreach_request",
+            resource_id=request_id,
+            organization_id=request.organization_id,
+            org_scope=True,
+            actor_user_id=user.id,
+        )
     db.commit()
     return result
