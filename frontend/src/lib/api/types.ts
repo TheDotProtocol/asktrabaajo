@@ -168,3 +168,196 @@ export interface HealthResponse {
   service: string;
   version: string;
 }
+
+// --- Jobseeker Career OS (Phase 5) -------------------------------------------
+
+export interface DnaQuestion {
+  key: string;
+  question: string;
+  options: { value: string; label: string }[];
+}
+
+export interface DnaDimension {
+  key: string;
+  label: string;
+  signal: number;
+  confidence: number;
+}
+
+export interface DnaProfile {
+  id: string;
+  version: string;
+  source: string;
+  status: string;
+  dimensions: DnaDimension[] | null;
+  completed_at: string | null;
+}
+
+export interface CareerGoal {
+  id: string;
+  title: string;
+  target_role: string | null;
+  target_industries: string[] | null;
+  target_locations: string[] | null;
+  preferred_work_modes: string[] | null;
+  min_salary: number | null;
+  salary_currency: string | null;
+  open_to_relocation: boolean;
+  open_to_remote: boolean;
+  availability: string | null;
+  is_primary: boolean;
+  status: string;
+}
+
+export interface Opportunity {
+  id: string;
+  company_name: string;
+  title: string;
+  summary: string | null;
+  country: string | null;
+  city: string | null;
+  remote_eligible: boolean;
+  work_mode: string | null;
+  employment_type: string | null;
+  experience_level: string | null;
+  seniority: string | null;
+  industry: string | null;
+  skills_required: string[] | null;
+  min_salary: number | null;
+  max_salary: number | null;
+  salary_currency: string | null;
+}
+
+export interface MatchComponent {
+  score: number;
+  reason: string;
+  matched?: string[] | null;
+  missing?: string[] | null;
+}
+
+export interface OpportunityMatch {
+  opportunity_id: string;
+  percent: number;
+  score: number;
+  components: Record<string, MatchComponent>;
+  strengths: string[];
+  gaps: string[];
+  missing_skills: string[];
+  opportunity: Opportunity | null;
+  saved: boolean;
+  applied: boolean;
+}
+
+export interface OpportunityList {
+  items: OpportunityMatch[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface ApplicationEvent {
+  id: string;
+  from_status: string | null;
+  to_status: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface JobApplication {
+  id: string;
+  opportunity_id: string;
+  status: string;
+  cover_note: string | null;
+  applied_at: string | null;
+  last_activity_at: string;
+  opportunity: Opportunity | null;
+}
+
+export interface ApplicationDetail {
+  application: JobApplication;
+  timeline: ApplicationEvent[];
+  opportunity: Opportunity | null;
+  has_interview: boolean;
+  has_offer: boolean;
+}
+
+export interface Interview {
+  id: string;
+  application_id: string;
+  scheduled_at: string;
+  duration_minutes: number;
+  mode: string;
+  meeting_link: string | null;
+  interviewer_name: string | null;
+  status: string;
+  reschedule_reason: string | null;
+  reschedule_count: number;
+}
+
+export interface Offer {
+  id: string;
+  application_id: string;
+  status: string;
+  salary_amount: number | null;
+  salary_currency: string | null;
+  equity: string | null;
+  benefits_summary: string | null;
+  start_date: string | null;
+  location: string | null;
+  terms_summary: string | null;
+  responded_at: string | null;
+  expires_at: string | null;
+}
+
+export interface AdvisorGap {
+  kind: string;
+  title: string;
+  detail: string;
+  skill: string | null;
+  action_type: string | null;
+}
+
+export interface AdvisorSnapshot {
+  summary: string;
+  current_position: { title: string | null; company: string | null };
+  roles_held: string[];
+  strongest_skills: string[];
+  career_goal: { id: string | null; title: string | null; target_role: string | null };
+  gaps: AdvisorGap[];
+  learning_recommendations: {
+    skill: string;
+    recommendation: string;
+    kind: string;
+  }[];
+  next_actions: string[];
+  disclaimer: string;
+}
+
+export interface Dashboard {
+  profile_completion: { percent: number; missing: string[] } | null;
+  work_dna_status: string;
+  has_career_goal: boolean;
+  stats: Record<string, number>;
+  upcoming_interviews: Interview[];
+  recent_applications: JobApplication[];
+  recommended: OpportunityMatch[];
+  advisor: AdvisorSnapshot | null;
+  unread_notifications: number;
+}
+
+export interface UserNotification {
+  id: string;
+  kind: string;
+  title: string;
+  body: string | null;
+  read_at: string | null;
+  created_at: string;
+}
+
+export interface CareerMilestone {
+  id: string;
+  kind: string;
+  title: string;
+  occurred_on: string;
+  description: string | null;
+}
