@@ -7,12 +7,13 @@
  * and unread state. Every conversation exists because of a legitimate
  * relationship — never because a candidate is merely discoverable.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api } from "@/lib/api/session";
 import {
   CompanyApplication,
   ConversationRow,
+  EventsFeed,
   OutreachRequestRow,
 } from "@/lib/api/types";
 
@@ -60,6 +61,8 @@ export default function CompanyCommunicationsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [newAppId, setNewAppId] = useState("");
+  const [live, setLive] = useState(false);
+  const cursorRef = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -88,6 +91,36 @@ export default function CompanyCommunicationsPage() {
 
   useEffect(() => {
     if (orgId) void load();
+  }, [orgId, load]);
+
+  // Phase 9 realtime foundation: poll the canonical event feed. Events carry
+  // whitelisted metadata only (never message bodies), so a refresh of the
+  // existing views is all that is needed. A WebSocket/SSE transport replaces
+  // this loop later without touching the views.
+  useEffect(() => {
+    if (!orgId) return;
+    let disposed = false;
+    const poll = async () => {
+      try {
+        const params = new URLSearchParams({ limit: "25" });
+        if (cursorRef.current) params.set("after", cursorRef.current);
+        const feed = await api.get<EventsFeed>(`/events?${params.toString()}`);
+        if (disposed) return;
+        if (feed.items.length > 0) {
+          cursorRef.current = feed.next_after;
+          setLive(true);
+          window.setTimeout(() => setLive(false), 4000);
+          void load();
+        }
+      } catch {
+        /* transient poll failure — the next tick retries */
+      }
+    };
+    const timer = window.setInterval(poll, 12_000);
+    return () => {
+      disposed = true;
+      window.clearInterval(timer);
+    };
   }, [orgId, load]);
 
   async function cancelRequest(request: OutreachRequestRow) {
@@ -182,7 +215,13 @@ export default function CompanyCommunicationsPage() {
             around it.
           </p>
         </div>
-        <div className="flex gap-3 text-sm">
+        <div className="flex items-center gap-3 text-sm">
+          {live && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
+              Updated
+            </span>
+          )}
           <div className="rounded-lg border border-neutral-200 px-3 py-1.5 dark:border-neutral-800">
             <span className="font-medium">{outreach.length}</span>{" "}
             <span className="text-neutral-400">outreach</span>

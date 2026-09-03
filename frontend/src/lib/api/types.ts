@@ -830,3 +830,72 @@ export interface BlockedOrg {
   reason: string | null;
   created_at: string | null;
 }
+
+// --- Phase 9: platform governance ---------------------------------------------
+
+export interface GovernanceReportRow {
+  id: string;
+  reporter_user_id: string;
+  target_type: string;
+  target_id: string;
+  organization_id: string | null;
+  organization_name: string | null;
+  category: string;
+  severity: string;
+  status: string;
+  description: string;
+  evidence_refs: Array<{ type: string; id: string; note?: string | null }>;
+  assigned_moderator_id: string | null;
+  assigned_moderator_name: string | null;
+  resolution: string | null;
+  resolved_at: string | null;
+  reopened_count: number;
+  created_at: string | null;
+  updated_at: string | null;
+  notes?: Array<{
+    id: string;
+    author_user_id: string;
+    body: string;
+    created_at: string | null;
+  }> | null;
+  audit?: Array<{
+    action: string;
+    actor_id: string | null;
+    result: string | null;
+    created_at: string | null;
+    payload: Record<string, unknown> | null;
+  }> | null;
+}
+
+export interface GovernanceQueue {
+  items: GovernanceReportRow[];
+  total: number;
+  page: number;
+  page_size: number;
+}
+
+export interface GovernanceDashboard {
+  total: number;
+  open: number;
+  by_status: Record<string, number>;
+  by_severity: Record<string, number>;
+}
+
+// --- Phase 9: realtime event feed ---------------------------------------------
+
+export interface PlatformEventRow {
+  id: string;
+  event_type: string;
+  resource_type: string;
+  resource_id: string;
+  organization_id: string | null;
+  payload: Record<string, unknown>;
+  read: boolean;
+  created_at: string | null;
+}
+
+export interface EventsFeed {
+  items: PlatformEventRow[];
+  count: number;
+  next_after: string | null;
+}
