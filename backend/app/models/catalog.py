@@ -95,6 +95,8 @@ PERMISSIONS = [
     ("reports.assign", "Assign reports to moderators"),
     ("reports.resolve", "Resolve and reopen reports"),
     ("reports.audit", "Read governance audit history"),
+    ("reports.escalate", "Escalate cases and change priority/severity"),
+    ("reports.teams", "Manage governance teams and their members"),
     ("moderation.read", "Read moderation data"),
     ("moderation.manage", "Manage moderation data"),
     ("platform.audit.read", "Read platform-wide audit records"),
@@ -108,6 +110,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
     "moderator": [
         "users.read", "orgs.read",
         "reports.read", "reports.manage", "reports.assign", "reports.resolve",
+        "reports.escalate", "reports.teams",
         "reports.audit", "moderation.read", "platform.audit.read",
     ],
     "governance_auditor": [

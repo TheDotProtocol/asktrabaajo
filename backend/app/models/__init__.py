@@ -41,7 +41,13 @@ from app.models.communication import (
     OutreachBlock,
     OutreachRequest,
 )
-from app.models.governance import GovernanceReport, GovernanceReportNote
+from app.models.governance import (
+    GovernanceCaseLink,
+    GovernanceReport,
+    GovernanceReportNote,
+    GovernanceTeam,
+    GovernanceTeamMember,
+)
 from app.models.platform import (
     NotificationPreference,
     PlatformEvent,
@@ -106,8 +112,11 @@ __all__ = [
     "Education",
     "EmailVerificationToken",
     "Employment",
+    "GovernanceCaseLink",
     "GovernanceReport",
     "GovernanceReportNote",
+    "GovernanceTeam",
+    "GovernanceTeamMember",
     "Interview",
     "InterviewScorecard",
     "JobApplication",

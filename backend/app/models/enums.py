@@ -205,6 +205,7 @@ NOTIFICATION_KIND_CAREER = "career"
 NOTIFICATION_KIND_SYSTEM = "system"
 NOTIFICATION_KIND_OUTREACH = "outreach"
 NOTIFICATION_KIND_COMMUNICATION = "communication"
+NOTIFICATION_KIND_GOVERNANCE = "governance"
 NOTIFICATION_KINDS = {
     NOTIFICATION_KIND_APPLICATION,
     NOTIFICATION_KIND_INTERVIEW,
@@ -214,6 +215,7 @@ NOTIFICATION_KINDS = {
     NOTIFICATION_KIND_SYSTEM,
     NOTIFICATION_KIND_OUTREACH,
     NOTIFICATION_KIND_COMMUNICATION,
+    NOTIFICATION_KIND_GOVERNANCE,
 }
 
 # --- Job posting lifecycle (company-owned) -----------------------------------
@@ -397,14 +399,77 @@ REPORT_SEVERITIES = {
 REPORT_STATUS_OPEN = "open"
 REPORT_STATUS_IN_REVIEW = "in_review"
 REPORT_STATUS_ASSIGNED = "assigned"
+REPORT_STATUS_ESCALATED = "escalated"
 REPORT_STATUS_RESOLVED = "resolved"
 REPORT_STATUS_CLOSED = "closed"
 REPORT_STATUSES = {
     REPORT_STATUS_OPEN,
     REPORT_STATUS_IN_REVIEW,
     REPORT_STATUS_ASSIGNED,
+    REPORT_STATUS_ESCALATED,
     REPORT_STATUS_RESOLVED,
     REPORT_STATUS_CLOSED,
+}
+# Statuses that keep a case "open" (actionable) for the dashboard.
+REPORT_OPEN_STATUSES = {
+    REPORT_STATUS_OPEN,
+    REPORT_STATUS_IN_REVIEW,
+    REPORT_STATUS_ASSIGNED,
+    REPORT_STATUS_ESCALATED,
+}
+# --- Operational priority (Phase 10) — separate from severity. --------------
+# Severity describes the intrinsic seriousness of what happened; priority
+# describes how urgently the platform must act. A fraudulent job may be
+# severity=high, priority=urgent; a minor complaint severity=low, normal.
+REPORT_PRIORITY_LOW = "low"
+REPORT_PRIORITY_NORMAL = "normal"
+REPORT_PRIORITY_HIGH = "high"
+REPORT_PRIORITY_URGENT = "urgent"
+REPORT_PRIORITY_CRITICAL = "critical"
+REPORT_PRIORITIES = {
+    REPORT_PRIORITY_LOW,
+    REPORT_PRIORITY_NORMAL,
+    REPORT_PRIORITY_HIGH,
+    REPORT_PRIORITY_URGENT,
+    REPORT_PRIORITY_CRITICAL,
+}
+# (response_hours, resolution_hours) per priority — deterministic SLA policy.
+REPORT_SLA_HOURS: dict = {
+    REPORT_PRIORITY_LOW: (72, 240),
+    REPORT_PRIORITY_NORMAL: (24, 120),
+    REPORT_PRIORITY_HIGH: (8, 48),
+    REPORT_PRIORITY_URGENT: (4, 24),
+    REPORT_PRIORITY_CRITICAL: (1, 8),
+}
+# SLA state values (deterministic, lazy — no scheduler).
+SLA_STATE_ON_TRACK = "on_track"
+SLA_STATE_DUE_SOON = "due_soon"
+SLA_STATE_BREACHED = "breached"
+SLA_STATES = {SLA_STATE_ON_TRACK, SLA_STATE_DUE_SOON, SLA_STATE_BREACHED}
+# How close to a deadline counts as "due soon" (uniform, deterministic).
+SLA_DUE_SOON_SECONDS = 2 * 3600
+# Governance team slugs (Phase 10).
+GOVERNANCE_TEAM_SLUGS = {
+    "platform_safety",
+    "fraud",
+    "employer_integrity",
+    "candidate_integrity",
+    "communications",
+    "document_trust",
+    "technical_abuse",
+    "general_support",
+}
+# Neutral integrity-signal statuses (Phase 10). Signals are never
+# accusations; they only mark "review required".
+SIGNAL_STATUS_REVIEW_REQUIRED = "review_required"
+SIGNAL_STATUS_ACTIVITY_PATTERN = "activity_pattern"
+SIGNAL_STATUS_POLICY_SIGNAL = "policy_signal"
+SIGNAL_STATUS_INVESTIGATION_PENDING = "investigation_pending"
+SIGNAL_STATUSES = {
+    SIGNAL_STATUS_REVIEW_REQUIRED,
+    SIGNAL_STATUS_ACTIVITY_PATTERN,
+    SIGNAL_STATUS_POLICY_SIGNAL,
+    SIGNAL_STATUS_INVESTIGATION_PENDING,
 }
 # Report target kinds that may be referenced (references only, never dumps).
 REPORT_TARGET_TYPES = {
@@ -433,6 +498,12 @@ EVENT_TYPES = {
     "interview.updated",
     "offer.updated",
     "report.created",
+    "governance.case.created",
+    "governance.case.assigned",
+    "governance.case.priority_changed",
+    "governance.case.escalated",
+    "governance.case.resolved",
+    "governance.case.reopened",
 }
 
 # --- Notification channels (Phase 9) -------------------------------------------
@@ -456,6 +527,8 @@ PERMISSION_REPORTS_AUDIT = "reports.audit"
 PERMISSION_MODERATION_READ = "moderation.read"
 PERMISSION_MODERATION_MANAGE = "moderation.manage"
 PERMISSION_PLATFORM_AUDIT_READ = "platform.audit.read"
+PERMISSION_REPORTS_ESCALATE = "reports.escalate"
+PERMISSION_REPORTS_TEAMS = "reports.teams"
 
 # Explainable match modes (never a bare percentage).
 MATCH_MODE_STRONG = "strong"
