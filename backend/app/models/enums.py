@@ -99,3 +99,104 @@ CONSENT_SCOPES = {
 AUDIT_RESULT_SUCCESS = "success"
 AUDIT_RESULT_FAILURE = "failure"
 AUDIT_RESULT_DENIED = "denied"
+
+# --- Application lifecycle (jobseeker-owned, status machine) ------------------
+APPLICATION_STATUS_DISCOVERED = "discovered"
+APPLICATION_STATUS_SAVED = "saved"
+APPLICATION_STATUS_APPLIED = "applied"
+APPLICATION_STATUS_APPLICATION_RECEIVED = "application_received"
+APPLICATION_STATUS_SCREENING = "screening"
+APPLICATION_STATUS_ASSESSMENT = "assessment"
+APPLICATION_STATUS_INTERVIEW = "interview"
+APPLICATION_STATUS_OFFER = "offer"
+APPLICATION_STATUS_ACCEPTED = "accepted"
+APPLICATION_STATUS_REJECTED = "rejected"
+APPLICATION_STATUS_WITHDRAWN = "withdrawn"
+APPLICATION_STATUS_ON_HOLD = "on_hold"
+
+# The person may move through this lifecycle themselves; later employer-driven
+# transitions (screening -> interview -> offer) will be written by the company
+# pipeline through the same state machine with permission checks.
+APPLICATION_STATUSES = {
+    APPLICATION_STATUS_DISCOVERED,
+    APPLICATION_STATUS_SAVED,
+    APPLICATION_STATUS_APPLIED,
+    APPLICATION_STATUS_APPLICATION_RECEIVED,
+    APPLICATION_STATUS_SCREENING,
+    APPLICATION_STATUS_ASSESSMENT,
+    APPLICATION_STATUS_INTERVIEW,
+    APPLICATION_STATUS_OFFER,
+    APPLICATION_STATUS_ACCEPTED,
+    APPLICATION_STATUS_REJECTED,
+    APPLICATION_STATUS_WITHDRAWN,
+    APPLICATION_STATUS_ON_HOLD,
+}
+
+# Statuses reachable by the jobseeker through the self-service API. The
+# employer side (Phase 6+) advances screening/assessment/interview/offer
+# through authorized membership permissions, never by raw status writes.
+APPLICATION_STATUS_USER_ACTIONS = {
+    "apply": {
+        "from": {APPLICATION_STATUS_SAVED, APPLICATION_STATUS_DISCOVERED},
+        "to": APPLICATION_STATUS_APPLIED,
+    },
+    "withdraw": {
+        "from": {APPLICATION_STATUS_APPLIED, APPLICATION_STATUS_APPLICATION_RECEIVED,
+                 APPLICATION_STATUS_SCREENING, APPLICATION_STATUS_ON_HOLD},
+        "to": APPLICATION_STATUS_WITHDRAWN,
+    },
+}
+
+# --- Offer lifecycle -----------------------------------------------------------
+OFFER_STATUS_PENDING = "pending"
+OFFER_STATUS_ACCEPTED = "accepted"
+OFFER_STATUS_DECLINED = "declined"
+OFFER_STATUS_EXPIRED = "expired"
+OFFER_STATUS_WITHDRAWN = "withdrawn"
+OFFER_STATUSES = {
+    OFFER_STATUS_PENDING,
+    OFFER_STATUS_ACCEPTED,
+    OFFER_STATUS_DECLINED,
+    OFFER_STATUS_EXPIRED,
+    OFFER_STATUS_WITHDRAWN,
+}
+
+# --- Interview scheduling ------------------------------------------------------
+INTERVIEW_STATUS_SCHEDULED = "scheduled"
+INTERVIEW_STATUS_COMPLETED = "completed"
+INTERVIEW_STATUS_CANCELLED = "cancelled"
+INTERVIEW_STATUS_RESCHEDULE_REQUESTED = "reschedule_requested"
+INTERVIEW_STATUSES = {
+    INTERVIEW_STATUS_SCHEDULED,
+    INTERVIEW_STATUS_COMPLETED,
+    INTERVIEW_STATUS_CANCELLED,
+    INTERVIEW_STATUS_RESCHEDULE_REQUESTED,
+}
+
+INTERVIEW_MODES = {"video", "phone", "onsite", "async"}
+
+# --- Opportunity sources -------------------------------------------------------
+OPPORTUNITY_SOURCE_PLATFORM = "platform"
+OPPORTUNITY_SOURCE_COMPAT = "careers_compat"
+OPPORTUNITY_SOURCE_EXTERNAL = "external"
+OPPORTUNITY_SOURCES = {
+    OPPORTUNITY_SOURCE_PLATFORM,
+    OPPORTUNITY_SOURCE_COMPAT,
+    OPPORTUNITY_SOURCE_EXTERNAL,
+}
+
+# --- Notification kinds --------------------------------------------------------
+NOTIFICATION_KIND_APPLICATION = "application"
+NOTIFICATION_KIND_INTERVIEW = "interview"
+NOTIFICATION_KIND_OFFER = "offer"
+NOTIFICATION_KIND_DOCUMENT = "document"
+NOTIFICATION_KIND_CAREER = "career"
+NOTIFICATION_KIND_SYSTEM = "system"
+NOTIFICATION_KINDS = {
+    NOTIFICATION_KIND_APPLICATION,
+    NOTIFICATION_KIND_INTERVIEW,
+    NOTIFICATION_KIND_OFFER,
+    NOTIFICATION_KIND_DOCUMENT,
+    NOTIFICATION_KIND_CAREER,
+    NOTIFICATION_KIND_SYSTEM,
+}
