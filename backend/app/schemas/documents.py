@@ -46,7 +46,7 @@ class GrantCreate(BaseModel):
         return self
 
 
-class GrantOut(BaseModel):
+class GrantOut(ORMOut):
     id: uuid.UUID
     document_id: uuid.UUID
     grantee_user_id: Optional[uuid.UUID] = None

@@ -3,6 +3,7 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     auth,
+    company,
     consents,
     documents,
     jobseeker,
@@ -17,3 +18,4 @@ router.include_router(workid.router)
 router.include_router(consents.router, prefix="/work-id")
 router.include_router(documents.router)
 router.include_router(jobseeker.router)
+router.include_router(company.router)

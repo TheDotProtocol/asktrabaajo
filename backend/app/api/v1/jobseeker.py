@@ -34,10 +34,12 @@ from app.models.career import (
 )
 from app.models.enums import (
     INTERVIEW_STATUS_SCHEDULED,
+    OFFER_CANDIDATE_DECIDABLE,
     OFFER_STATUS_ACCEPTED,
     OFFER_STATUS_DECLINED,
     OFFER_STATUSES,
     OFFER_STATUS_PENDING,
+    OFFER_STATUS_SENT,
 )
 from app.models.identity import PersonProfile, User
 from app.models.work import UserSkill
@@ -613,8 +615,10 @@ def decide_offer(
     app = db.get(JobApplication, offer.application_id)
     if app is None or app.person_id != person.id:
         raise NotFoundError("Offer not found.")
-    if offer.status != OFFER_STATUS_PENDING:
-        raise InvalidInputError(f"Cannot respond to an offer with status '{offer.status}'.")
+    if offer.status not in OFFER_CANDIDATE_DECIDABLE:
+        raise InvalidInputError(
+            f"Cannot respond to an offer with status '{offer.status}'."
+        )
     decision = body.decision
     if decision not in (OFFER_STATUS_ACCEPTED, OFFER_STATUS_DECLINED):
         raise InvalidInputError("decision must be 'accepted' or 'declined'.")
@@ -741,7 +745,7 @@ def jobseeker_dashboard(
     pending_offers = db.scalars(
         select(Offer).where(
             Offer.application_id.in_(interview_scope),
-            Offer.status == OFFER_STATUS_PENDING,
+            Offer.status.in_(OFFER_CANDIDATE_DECIDABLE),
         )
     ).all()
 
@@ -780,6 +784,144 @@ def jobseeker_dashboard(
 
 
 # --- Notifications -----------------------------------------------------------
+
+
+# --- Document requests (candidate responses) --------------------------------
+
+
+@router.get("/document-requests", response_model=list)
+def list_my_document_requests(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list:
+    """Document requests companies have made on the candidate's applications."""
+    person = _person(db, user)
+    app_ids = db.scalars(
+        select(JobApplication.id).where(JobApplication.person_id == person.id)
+    ).all()
+    if not app_ids:
+        return []
+    from app.models.company import DocumentRequest
+
+    requests = db.scalars(
+        select(DocumentRequest)
+        .where(DocumentRequest.application_id.in_(app_ids))
+        .order_by(DocumentRequest.created_at.desc())
+    ).all()
+    return [
+        {
+            "id": str(r.id),
+            "application_id": str(r.application_id),
+            "organization_id": str(r.organization_id),
+            "organization_name": _org_name(db, r.organization_id),
+            "document_type": r.document_type,
+            "purpose": r.purpose,
+            "status": r.status,
+            "note": r.note,
+            "created_at": r.created_at,
+        }
+        for r in requests
+    ]
+
+
+def _org_name(db: Session, organization_id) -> Optional[str]:
+    from app.models.tenancy import Organization
+
+    org = db.get(Organization, organization_id)
+    return org.name if org else None
+
+
+@router.post("/document-requests/{request_id}/approve", response_model=dict)
+def approve_document_request(
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> dict:
+    """Candidate approves -> create a live org grant for the chosen document.
+
+    The candidate explicitly chooses WHICH document satisfies the request;
+    nothing is exposed automatically.
+    """
+    from app.models.company import DocumentRequest
+    from app.models.documents import PersonDocument
+    from app.services import document_access as doc_service
+
+    person = _person(db, user)
+    request = db.get(DocumentRequest, request_id)
+    if request is None:
+        raise NotFoundError("Document request not found.")
+    app = db.get(JobApplication, request.application_id)
+    if app is None or app.person_id != person.id:
+        raise NotFoundError("Document request not found.")
+    if request.status != "pending":
+        raise InvalidInputError(
+            f"This request has already been {request.status}."
+        )
+
+    # Candidate picks a matching document of the requested type.
+    documents = db.scalars(
+        select(PersonDocument).where(
+            PersonDocument.person_id == person.id,
+            PersonDocument.doc_type == request.document_type,
+            PersonDocument.is_archived.is_(False),
+        )
+    ).all()
+    if not documents:
+        raise InvalidInputError(
+            f"No document of type '{request.document_type}' is on your Work ID. "
+            "Add one first, then approve."
+        )
+    doc = documents[0]
+    doc_service.grant_document_access(
+        db,
+        document=doc,
+        grantee_user_id=None,
+        grantee_organization_id=request.organization_id,
+        actor_id=user.id,
+        purpose=request.purpose or request.document_type,
+    )
+    request.status = "approved"
+    request.responded_at = utc_now_naive()
+    request.responded_by = user.id
+    db.commit()
+    audit_service.record(
+        db,
+        actor_id=user.id,
+        action="document_request.approved",
+        resource_type="document_request",
+        resource_id=request.id,
+        organization_id=request.organization_id,
+    )
+    db.commit()
+    return {"id": str(request.id), "status": "approved", "document_id": str(doc.id)}
+
+
+@router.post("/document-requests/{request_id}/decline", response_model=dict)
+def decline_document_request(
+    request_id: uuid.UUID,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+    note: Optional[str] = Query(None, max_length=500),
+) -> dict:
+    person = _person(db, user)
+    from app.models.company import DocumentRequest
+
+    request = db.get(DocumentRequest, request_id)
+    if request is None:
+        raise NotFoundError("Document request not found.")
+    app = db.get(JobApplication, request.application_id)
+    if app is None or app.person_id != person.id:
+        raise NotFoundError("Document request not found.")
+    if request.status != "pending":
+        raise InvalidInputError(
+            f"This request has already been {request.status}."
+        )
+    request.status = "declined"
+    request.responded_at = utc_now_naive()
+    request.responded_by = user.id
+    request.note = note
+    db.commit()
+    return {"id": str(request.id), "status": "declined"}
 
 
 @router.get("/notifications", response_model=list[NotificationOut])
