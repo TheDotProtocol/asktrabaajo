@@ -66,6 +66,13 @@ class Settings(BaseSettings):
     outreach_expiry_days: int = 30
     outreach_cooldown_days: int = 7
 
+    # Rate limiting (Phase 9): enforcement toggle + store backend.
+    # ``memory`` is the development/test implementation; ``db`` is the
+    # multi-instance-safe backend over ``rate_limit_hits`` (Redis can replace
+    # the store later without changing the policy layer).
+    rate_limits_enabled: bool = True
+    rate_limit_store: str = "memory"
+
     @property
     def is_production_like(self) -> bool:
         return self.environment in {"staging", "production"}

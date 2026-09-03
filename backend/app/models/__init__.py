@@ -5,7 +5,9 @@ from app.models import (
     communication,
     company,
     documents,
+    governance,
     identity,
+    platform,
     privacy,
     talent,
     tenancy,
@@ -38,6 +40,12 @@ from app.models.communication import (
     ConversationReadState,
     OutreachBlock,
     OutreachRequest,
+)
+from app.models.governance import GovernanceReport, GovernanceReportNote
+from app.models.platform import (
+    NotificationPreference,
+    PlatformEvent,
+    RateLimitHit,
 )
 from app.models.documents import DocumentAccessGrant, PersonDocument
 from app.models.identity import (
@@ -98,11 +106,14 @@ __all__ = [
     "Education",
     "EmailVerificationToken",
     "Employment",
+    "GovernanceReport",
+    "GovernanceReportNote",
     "Interview",
     "InterviewScorecard",
     "JobApplication",
     "JobPosting",
     "Membership",
+    "NotificationPreference",
     "Offer",
     "Opportunity",
     "OpportunityInteraction",
@@ -114,6 +125,8 @@ __all__ = [
     "PersonDocument",
     "PersonProfile",
     "PersonVisibilitySetting",
+    "PlatformEvent",
+    "RateLimitHit",
     "RefreshToken",
     "Role",
     "RolePermission",

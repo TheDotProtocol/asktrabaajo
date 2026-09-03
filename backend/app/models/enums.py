@@ -359,6 +359,104 @@ PERMISSION_COMMUNICATIONS_READ = "communications.read"
 PERMISSION_COMMUNICATIONS_SEND = "communications.send"
 PERMISSION_COMMUNICATIONS_MANAGE = "communications.manage"
 
+# --- Platform governance (Phase 9) ---------------------------------------------
+REPORT_CATEGORY_ABUSE = "abuse"
+REPORT_CATEGORY_HARASSMENT = "harassment"
+REPORT_CATEGORY_FRAUD = "fraud"
+REPORT_CATEGORY_IMPERSONATION = "impersonation"
+REPORT_CATEGORY_POLICY_VIOLATION = "policy_violation"
+REPORT_CATEGORY_COMMUNICATION_DISPUTE = "communication_dispute"
+REPORT_CATEGORY_DOCUMENT_MISUSE = "document_misuse"
+REPORT_CATEGORY_RECRUITER_MISCONDUCT = "recruiter_misconduct"
+REPORT_CATEGORY_SUSPICIOUS_ACTIVITY = "suspicious_activity"
+REPORT_CATEGORY_PLATFORM_INTEGRITY = "platform_integrity"
+REPORT_CATEGORY_OTHER = "other"
+REPORT_CATEGORIES = {
+    REPORT_CATEGORY_ABUSE,
+    REPORT_CATEGORY_HARASSMENT,
+    REPORT_CATEGORY_FRAUD,
+    REPORT_CATEGORY_IMPERSONATION,
+    REPORT_CATEGORY_POLICY_VIOLATION,
+    REPORT_CATEGORY_COMMUNICATION_DISPUTE,
+    REPORT_CATEGORY_DOCUMENT_MISUSE,
+    REPORT_CATEGORY_RECRUITER_MISCONDUCT,
+    REPORT_CATEGORY_SUSPICIOUS_ACTIVITY,
+    REPORT_CATEGORY_PLATFORM_INTEGRITY,
+    REPORT_CATEGORY_OTHER,
+}
+REPORT_SEVERITY_LOW = "low"
+REPORT_SEVERITY_MEDIUM = "medium"
+REPORT_SEVERITY_HIGH = "high"
+REPORT_SEVERITY_CRITICAL = "critical"
+REPORT_SEVERITIES = {
+    REPORT_SEVERITY_LOW,
+    REPORT_SEVERITY_MEDIUM,
+    REPORT_SEVERITY_HIGH,
+    REPORT_SEVERITY_CRITICAL,
+}
+REPORT_STATUS_OPEN = "open"
+REPORT_STATUS_IN_REVIEW = "in_review"
+REPORT_STATUS_ASSIGNED = "assigned"
+REPORT_STATUS_RESOLVED = "resolved"
+REPORT_STATUS_CLOSED = "closed"
+REPORT_STATUSES = {
+    REPORT_STATUS_OPEN,
+    REPORT_STATUS_IN_REVIEW,
+    REPORT_STATUS_ASSIGNED,
+    REPORT_STATUS_RESOLVED,
+    REPORT_STATUS_CLOSED,
+}
+# Report target kinds that may be referenced (references only, never dumps).
+REPORT_TARGET_TYPES = {
+    "user",
+    "organization",
+    "opportunity",
+    "job_application",
+    "outreach_request",
+    "conversation",
+    "message",
+    "document_request",
+    "person_profile",
+}
+
+# --- Realtime event types (Phase 9) --------------------------------------------
+EVENT_TYPES = {
+    "outreach.created",
+    "outreach.accepted",
+    "outreach.declined",
+    "outreach.blocked",
+    "outreach.expired",
+    "conversation.opened",
+    "message.sent",
+    "message.read",
+    "application.updated",
+    "interview.updated",
+    "offer.updated",
+    "report.created",
+}
+
+# --- Notification channels (Phase 9) -------------------------------------------
+NOTIFICATION_CHANNEL_IN_APP = "in_app"
+NOTIFICATION_CHANNEL_EMAIL = "email"
+NOTIFICATION_CHANNEL_PUSH = "push"
+NOTIFICATION_CHANNEL_SMS = "sms"
+NOTIFICATION_CHANNELS = {
+    NOTIFICATION_CHANNEL_IN_APP,
+    NOTIFICATION_CHANNEL_EMAIL,
+    NOTIFICATION_CHANNEL_PUSH,
+    NOTIFICATION_CHANNEL_SMS,
+}
+
+# Phase 9 permission codes (also seeded in catalog + migration 0007).
+PERMISSION_REPORTS_READ = "reports.read"
+PERMISSION_REPORTS_MANAGE = "reports.manage"
+PERMISSION_REPORTS_ASSIGN = "reports.assign"
+PERMISSION_REPORTS_RESOLVE = "reports.resolve"
+PERMISSION_REPORTS_AUDIT = "reports.audit"
+PERMISSION_MODERATION_READ = "moderation.read"
+PERMISSION_MODERATION_MANAGE = "moderation.manage"
+PERMISSION_PLATFORM_AUDIT_READ = "platform.audit.read"
+
 # Explainable match modes (never a bare percentage).
 MATCH_MODE_STRONG = "strong"
 MATCH_MODE_POTENTIAL = "potential"

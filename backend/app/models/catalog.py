@@ -22,12 +22,17 @@ ROLES = [
     # --- Platform scope -------------------------------------------------------
     ("super_admin", "Super Admin", ROLE_SCOPE_PLATFORM,
      "Platform-wide administration; every action is audited."),
+    ("moderator", "Governance Moderator", ROLE_SCOPE_PLATFORM,
+     "Platform governance: report queue, notes, assignments, resolutions. "
+     "Never reads private Work ID data as a side effect of moderation."),
     ("customer_support", "Customer Support", ROLE_SCOPE_PLATFORM,
      "Company/org accounts, plans, billing views, support tickets."),
     ("tech_support", "Tech Support", ROLE_SCOPE_PLATFORM,
      "Auth diagnostics, sessions, MFA. Never views passwords."),
     ("marketing", "Marketing", ROLE_SCOPE_PLATFORM,
      "Campaigns and aggregated audience intelligence."),
+    ("governance_auditor", "Governance Auditor", ROLE_SCOPE_PLATFORM,
+     "Read-only governance + platform audit review."),
     ("finance", "Finance", ROLE_SCOPE_PLATFORM,
      "Employer billing, invoices, payments, refunds, reports."),
     # --- Organization scope ---------------------------------------------------
@@ -85,6 +90,14 @@ PERMISSIONS = [
     ("audit.read", "Read audit logs"),
     ("sessions.manage", "Manage user sessions"),
     ("workforce.aggregates.read", "Read aggregated workforce intelligence"),
+    ("reports.read", "Read the platform governance report queue"),
+    ("reports.manage", "Manage reports (status, internal notes)"),
+    ("reports.assign", "Assign reports to moderators"),
+    ("reports.resolve", "Resolve and reopen reports"),
+    ("reports.audit", "Read governance audit history"),
+    ("moderation.read", "Read moderation data"),
+    ("moderation.manage", "Manage moderation data"),
+    ("platform.audit.read", "Read platform-wide audit records"),
     ("admin.manage", "Platform administration"),
 ]
 
@@ -92,6 +105,14 @@ ALL_PERMISSION_CODES = [code for code, _ in PERMISSIONS]
 
 ROLE_PERMISSIONS: dict[str, list[str]] = {
     "super_admin": ALL_PERMISSION_CODES,
+    "moderator": [
+        "users.read", "orgs.read",
+        "reports.read", "reports.manage", "reports.assign", "reports.resolve",
+        "reports.audit", "moderation.read", "platform.audit.read",
+    ],
+    "governance_auditor": [
+        "reports.read", "reports.audit", "moderation.read", "platform.audit.read",
+    ],
     "customer_support": ["users.read", "orgs.read", "support.read", "billing.read"],
     "tech_support": ["users.read", "users.update", "sessions.manage", "audit.read"],
     "marketing": ["marketing.manage"],
