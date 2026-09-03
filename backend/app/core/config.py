@@ -59,6 +59,13 @@ class Settings(BaseSettings):
     # reschedules per interview (product principle: limited rescheduling).
     max_reschedules_per_interview: int = 2
 
+    # Talent outreach abuse controls (Phase 8): a request expires if the
+    # candidate has not responded within ``outreach_expiry_days``, and an
+    # organization cannot send another request to the same candidate within
+    # ``outreach_cooldown_days`` of the previous one (regardless of outcome).
+    outreach_expiry_days: int = 30
+    outreach_cooldown_days: int = 7
+
     @property
     def is_production_like(self) -> bool:
         return self.environment in {"staging", "production"}

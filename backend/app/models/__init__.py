@@ -2,6 +2,7 @@
 from app.models import (
     audit,
     career,
+    communication,
     company,
     documents,
     identity,
@@ -31,6 +32,13 @@ from app.models.career import (
     WorkDnaProfile,
 )
 from app.models.audit import AuditLogEntry
+from app.models.communication import (
+    Conversation,
+    ConversationMessage,
+    ConversationReadState,
+    OutreachBlock,
+    OutreachRequest,
+)
 from app.models.documents import DocumentAccessGrant, PersonDocument
 from app.models.identity import (
     EmailVerificationToken,
@@ -74,6 +82,9 @@ __all__ = [
     "ApplicationEvent",
     "AuditLogEntry",
     "CandidateSearchEvent",
+    "Conversation",
+    "ConversationMessage",
+    "ConversationReadState",
     "CareerGoal",
     "CareerMilestone",
     "CareerPath",
@@ -96,6 +107,8 @@ __all__ = [
     "Opportunity",
     "OpportunityInteraction",
     "Organization",
+    "OutreachBlock",
+    "OutreachRequest",
     "PasswordResetToken",
     "Permission",
     "PersonDocument",

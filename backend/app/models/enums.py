@@ -203,6 +203,8 @@ NOTIFICATION_KIND_OFFER = "offer"
 NOTIFICATION_KIND_DOCUMENT = "document"
 NOTIFICATION_KIND_CAREER = "career"
 NOTIFICATION_KIND_SYSTEM = "system"
+NOTIFICATION_KIND_OUTREACH = "outreach"
+NOTIFICATION_KIND_COMMUNICATION = "communication"
 NOTIFICATION_KINDS = {
     NOTIFICATION_KIND_APPLICATION,
     NOTIFICATION_KIND_INTERVIEW,
@@ -210,6 +212,8 @@ NOTIFICATION_KINDS = {
     NOTIFICATION_KIND_DOCUMENT,
     NOTIFICATION_KIND_CAREER,
     NOTIFICATION_KIND_SYSTEM,
+    NOTIFICATION_KIND_OUTREACH,
+    NOTIFICATION_KIND_COMMUNICATION,
 }
 
 # --- Job posting lifecycle (company-owned) -----------------------------------
@@ -313,6 +317,47 @@ CAREER_PATH_STATUSES = {CAREER_PATH_ACTIVE, CAREER_PATH_ARCHIVED}
 # members holding the talent permissions below.
 PERMISSION_CANDIDATES_SEARCH = "candidates.search"
 PERMISSION_POOLS_MANAGE = "pools.manage"
+
+# --- Talent outreach (Phase 8) --------------------------------------------------
+# A recruiter/company requests contact with a candidate; the candidate stays in
+# control. Only an ACCEPTED request opens a controlled AskTrabaajo conversation.
+OUTREACH_STATUS_SENT = "sent"
+OUTREACH_STATUS_VIEWED = "viewed"
+OUTREACH_STATUS_ACCEPTED = "accepted"
+OUTREACH_STATUS_DECLINED = "declined"
+OUTREACH_STATUS_EXPIRED = "expired"
+OUTREACH_STATUS_CANCELLED = "cancelled"
+OUTREACH_STATUS_BLOCKED = "blocked"
+OUTREACH_STATUSES = {
+    OUTREACH_STATUS_SENT,
+    OUTREACH_STATUS_VIEWED,
+    OUTREACH_STATUS_ACCEPTED,
+    OUTREACH_STATUS_DECLINED,
+    OUTREACH_STATUS_EXPIRED,
+    OUTREACH_STATUS_CANCELLED,
+    OUTREACH_STATUS_BLOCKED,
+}
+# Statuses the candidate may still respond to.
+OUTREACH_ACTIONABLE = {OUTREACH_STATUS_SENT, OUTREACH_STATUS_VIEWED}
+# Statuses a company may still cancel.
+OUTREACH_CANCELLABLE = {OUTREACH_STATUS_SENT, OUTREACH_STATUS_VIEWED}
+
+# --- Controlled communication channel (Phase 8) ---------------------------------
+CONVERSATION_STATUS_ACTIVE = "active"
+CONVERSATION_STATUS_CLOSED = "closed"
+CONVERSATION_STATUSES = {CONVERSATION_STATUS_ACTIVE, CONVERSATION_STATUS_CLOSED}
+# Which side of an AskTrabaajo conversation authored a message.
+MESSAGE_SIDE_CANDIDATE = "candidate"
+MESSAGE_SIDE_RECRUITER = "recruiter"
+MESSAGE_SIDES = {MESSAGE_SIDE_CANDIDATE, MESSAGE_SIDE_RECRUITER}
+
+# Phase 8 permission codes (also seeded in catalog + migration 0006).
+PERMISSION_OUTREACH_CREATE = "talent.outreach.create"
+PERMISSION_OUTREACH_READ = "talent.outreach.read"
+PERMISSION_OUTREACH_MANAGE = "talent.outreach.manage"
+PERMISSION_COMMUNICATIONS_READ = "communications.read"
+PERMISSION_COMMUNICATIONS_SEND = "communications.send"
+PERMISSION_COMMUNICATIONS_MANAGE = "communications.manage"
 
 # Explainable match modes (never a bare percentage).
 MATCH_MODE_STRONG = "strong"
