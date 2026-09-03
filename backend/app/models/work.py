@@ -16,6 +16,7 @@ from sqlalchemy import (
     DateTime,
     Float,
     ForeignKey,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -25,7 +26,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
 from app.db.base import Base
-from app.models.enums import CREDENTIAL_STATUS_UNVERIFIED
+from app.models.enums import CREDENTIAL_STATUS_UNVERIFIED, VERIFICATION_UNVERIFIED
 from app.models.identity import TimestampMixin
 
 UUID = Uuid
@@ -44,11 +45,16 @@ class WorkExperience(Base, TimestampMixin):
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
     company_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID)  # resolved later
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    department: Mapped[Optional[str]] = mapped_column(String(160))
     location: Mapped[Optional[str]] = mapped_column(String(160))
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[Optional[date]] = mapped_column(Date)
     is_current: Mapped[bool] = mapped_column(default=False, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
+    skills_used: Mapped[Optional[list]] = mapped_column(JSON)
+    verification_status: Mapped[str] = mapped_column(
+        String(20), default=VERIFICATION_UNVERIFIED, nullable=False
+    )
 
 
 class Education(Base, TimestampMixin):
@@ -62,12 +68,16 @@ class Education(Base, TimestampMixin):
         nullable=False,
     )
     institution: Mapped[str] = mapped_column(String(200), nullable=False)
+    level: Mapped[Optional[str]] = mapped_column(String(60))  # EDUCATION_LEVELS
     degree: Mapped[Optional[str]] = mapped_column(String(200))
     field_of_study: Mapped[Optional[str]] = mapped_column(String(200))
     start_date: Mapped[Optional[date]] = mapped_column(Date)
     end_date: Mapped[Optional[date]] = mapped_column(Date)
     is_current: Mapped[bool] = mapped_column(default=False, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(Text)
+    verification_status: Mapped[str] = mapped_column(
+        String(20), default=VERIFICATION_UNVERIFIED, nullable=False
+    )
 
 
 class Skill(Base):
@@ -150,9 +160,15 @@ class Employment(Base, TimestampMixin):
     company_name: Mapped[str] = mapped_column(String(200), nullable=False)
     company_id: Mapped[Optional[uuid.UUID]] = mapped_column(UUID)  # resolved later
     title: Mapped[str] = mapped_column(String(200), nullable=False)
+    department: Mapped[Optional[str]] = mapped_column(String(160))
+    location: Mapped[Optional[str]] = mapped_column(String(160))
     employment_type: Mapped[str] = mapped_column(
         String(32), default="full_time", nullable=False
     )
     start_date: Mapped[date] = mapped_column(Date, nullable=False)
     end_date: Mapped[Optional[date]] = mapped_column(Date)
     is_current: Mapped[bool] = mapped_column(default=False, nullable=False)
+    skills_used: Mapped[Optional[list]] = mapped_column(JSON)
+    verification_status: Mapped[str] = mapped_column(
+        String(20), default=VERIFICATION_UNVERIFIED, nullable=False
+    )

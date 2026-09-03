@@ -14,7 +14,7 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import Uuid
 
@@ -52,6 +52,10 @@ class User(Base, TimestampMixin):
         DateTime(timezone=True)
     )
     token_version: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    # MFA foundation (TOTP). The shared secret is stored base32-encoded;
+    # enabling it requires confirming a live code (see services/mfa.py).
+    mfa_secret: Mapped[Optional[str]] = mapped_column(String(200))
+    mfa_enabled: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
 
 class PersonProfile(Base, TimestampMixin):
@@ -69,8 +73,13 @@ class PersonProfile(Base, TimestampMixin):
     )
     headline: Mapped[Optional[str]] = mapped_column(String(200))
     summary: Mapped[Optional[str]] = mapped_column(String(4000))
-    location: Mapped[Optional[str]] = mapped_column(String(160))
+    # Contact/identity details — private by default, never exposed through
+    # ordinary profile APIs (data minimization + user-controlled disclosure).
+    preferred_name: Mapped[Optional[str]] = mapped_column(String(120))
+    city: Mapped[Optional[str]] = mapped_column(String(120))
+    state_province: Mapped[Optional[str]] = mapped_column(String(120))
     country_code: Mapped[Optional[str]] = mapped_column(String(8))
+    phone: Mapped[Optional[str]] = mapped_column(String(40))
     date_of_birth: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     profile_photo_storage_key: Mapped[Optional[str]] = mapped_column(String(255))
 
@@ -94,3 +103,41 @@ class RefreshToken(Base):
     )
     user_agent: Mapped[Optional[str]] = mapped_column(String(255))
     ip_address: Mapped[Optional[str]] = mapped_column(String(64))
+
+
+class EmailVerificationToken(Base):
+    """Single-use, time-limited email verification tokens (hashed at rest)."""
+
+    __tablename__ = "email_verification_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+
+
+class PasswordResetToken(Base):
+    """Single-use, time-limited password reset tokens (hashed at rest)."""
+
+    __tablename__ = "password_reset_tokens"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID, ForeignKey("users.id", ondelete="CASCADE"), index=True, nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(
+        String(64), unique=True, index=True, nullable=False
+    )
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )

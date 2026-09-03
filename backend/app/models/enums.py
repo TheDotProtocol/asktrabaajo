@@ -45,6 +45,56 @@ EMPLOYMENT_TYPES = {
     "internship",
 }
 
+# --- Education levels ---------------------------------------------------------
+EDUCATION_LEVELS = {
+    "school",
+    "higher_secondary",
+    "diploma",
+    "vocational",
+    "undergraduate",
+    "postgraduate",
+    "professional_qualification",
+}
+
+# --- Default verification state for self-reported records ---------------------
+VERIFICATION_UNVERIFIED = "unverified"
+VERIFICATION_PENDING = "pending"
+VERIFICATION_VERIFIED = "verified"
+
+# --- Privacy / visibility -----------------------------------------------------
+VISIBILITY_PRIVATE = "private"
+VISIBILITY_PUBLIC = "public"
+VISIBILITY_AUTHORIZED_ONLY = "authorized_only"
+VISIBILITY_LEVELS = {
+    VISIBILITY_PRIVATE,
+    VISIBILITY_PUBLIC,
+    VISIBILITY_AUTHORIZED_ONLY,
+}
+
+# Work ID sections whose visibility a person may control.
+VISIBILITY_SCOPES = {
+    "profile",
+    "contact",
+    "education",
+    "experience",
+    "employment",
+    "skills",
+    "credentials",
+    "documents",
+}
+
+# Consent resource scopes (who may access WHAT). Extended per workflow later.
+CONSENT_SCOPE_WORK_ID_DOCUMENTS = "work_id:documents"
+CONSENT_SCOPE_WORK_ID_CREDENTIALS = "work_id:credentials"
+CONSENT_SCOPE_WORK_ID_PROFILE = "work_id:profile"
+CONSENT_SCOPE_APPLICATION = "application"
+CONSENT_SCOPES = {
+    CONSENT_SCOPE_WORK_ID_DOCUMENTS,
+    CONSENT_SCOPE_WORK_ID_CREDENTIALS,
+    CONSENT_SCOPE_WORK_ID_PROFILE,
+    CONSENT_SCOPE_APPLICATION,
+}
+
 # --- Audit results ------------------------------------------------------------
 AUDIT_RESULT_SUCCESS = "success"
 AUDIT_RESULT_FAILURE = "failure"
