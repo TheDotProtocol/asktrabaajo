@@ -15,10 +15,8 @@ import {
   GovernanceTeamRow,
 } from "@/lib/api/types";
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const ghostBtn =
-  "rounded border border-neutral-300 px-2.5 py-1 text-xs text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
+import { PageHeader, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
+const ghostBtn = ghostBtnCls;
 const dangerBtn =
   "rounded border border-red-200 px-2 py-0.5 text-xs text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400";
 
@@ -100,13 +98,11 @@ export default function GovernanceTeamsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Governance teams</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Operational routing groups. Authorization stays on platform roles and
-          reports.* permissions — teams only organise the queue.
-        </p>
-      </div>
+      <PageHeader
+        kicker="Teams"
+        title="Governance teams"
+        subtitle="Operational routing and workload only. Authorization stays on platform roles and reports.* permissions."
+      />
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
@@ -150,7 +146,7 @@ export default function GovernanceTeamsPage() {
                   onChange={(e) =>
                     setPicker((p) => ({ ...p, [team.id]: e.target.value }))
                   }
-                  className="min-w-0 flex-1 rounded border border-neutral-300 bg-white px-2 py-1 text-xs dark:border-neutral-700 dark:bg-neutral-900"
+                  className={`${inputCls} min-w-0 flex-1 py-1 text-xs`}
                 >
                   <option value="">Add member…</option>
                   {moderators.map((m) => (
