@@ -796,3 +796,50 @@ AUDIT_ACTION_ATHENA_TOOL_DENIED = "athena.tool.denied"
 AUDIT_ACTION_ATHENA_CONFIRMATION_REQUESTED = "athena.confirmation.requested"
 AUDIT_ACTION_ATHENA_CONFIRMATION_DECIDED = "athena.confirmation.decided"
 AUDIT_ACTION_ATHENA_CONFIRMATION_EXPIRED = "athena.confirmation.expired"
+
+# --- Interview preparation (Phase 15) ------------------------------------------
+# Question categories the deterministic prep engine can generate.
+PREP_CATEGORY_BEHAVIORAL = "behavioral"
+PREP_CATEGORY_TECHNICAL = "technical"
+PREP_CATEGORY_ROLE_SPECIFIC = "role_specific"
+PREP_CATEGORY_COMPETENCY = "competency"
+PREP_CATEGORY_SITUATIONAL = "situational"
+PREP_CATEGORY_CAREER_HISTORY = "career_history"
+PREP_CATEGORIES = {
+    PREP_CATEGORY_BEHAVIORAL,
+    PREP_CATEGORY_TECHNICAL,
+    PREP_CATEGORY_ROLE_SPECIFIC,
+    PREP_CATEGORY_COMPETENCY,
+    PREP_CATEGORY_SITUATIONAL,
+    PREP_CATEGORY_CAREER_HISTORY,
+}
+
+PREP_SESSION_STATUS_ACTIVE = "active"
+PREP_SESSION_STATUS_COMPLETED = "completed"
+PREP_SESSION_STATUS_EXPIRED = "expired"
+PREP_SESSION_STATUSES = {
+    PREP_SESSION_STATUS_ACTIVE,
+    PREP_SESSION_STATUS_COMPLETED,
+    PREP_SESSION_STATUS_EXPIRED,
+}
+
+# Explainable answer-evaluation dimensions — never a single opaque score.
+PREP_DIMENSION_RELEVANCE = "relevance"
+PREP_DIMENSION_STRUCTURE = "structure"
+PREP_DIMENSION_EVIDENCE = "evidence"
+PREP_DIMENSION_ROLE_KNOWLEDGE = "role_knowledge"
+PREP_DIMENSION_COMMUNICATION = "communication"
+PREP_DIMENSION_COMPLETENESS = "completeness"
+PREP_DIMENSIONS = {
+    PREP_DIMENSION_RELEVANCE,
+    PREP_DIMENSION_STRUCTURE,
+    PREP_DIMENSION_EVIDENCE,
+    PREP_DIMENSION_ROLE_KNOWLEDGE,
+    PREP_DIMENSION_COMMUNICATION,
+    PREP_DIMENSION_COMPLETENESS,
+}
+
+# Audit actions for interview preparation lifecycle events.
+AUDIT_ACTION_PREP_SESSION_CREATED = "interview_prep.session.created"
+AUDIT_ACTION_PREP_SESSION_COMPLETED = "interview_prep.session.completed"
+AUDIT_ACTION_PREP_SESSION_DELETED = "interview_prep.session.deleted"

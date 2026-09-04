@@ -15,8 +15,8 @@
 --
 -- LEGACY SAFETY
 --   Only CANONICAL tables are granted. No legacy Supabase object is touched.
---   The list below is the exact 66-table canonical metadata
---   (Base.metadata, migrations 0001-0011); alembic_version is excluded.
+--   The list below is the exact 67-table canonical metadata
+--   (Base.metadata, migrations 0001-0012); alembic_version is excluded.
 --
 -- USAGE (superuser)
 --   psql "$DATABASE_URL" -f scripts/db/app_role.sql
@@ -51,7 +51,7 @@ BEGIN
                'email_verification_tokens','employments','enforcement_actions',
                'governance_case_links','governance_report_notes','governance_reports',
                'governance_team_members','governance_teams','interview_scorecards',
-               'interviews','job_applications','job_postings','memberships',
+               'interview_prep_sessions','interviews','job_applications','job_postings','memberships',
                'notification_preferences','offers','opportunities',
                'opportunity_interactions','opportunity_requirements','organizations',
                'outreach_blocks','outreach_requests','password_reset_tokens',
