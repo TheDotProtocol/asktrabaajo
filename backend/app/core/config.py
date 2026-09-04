@@ -103,6 +103,13 @@ class Settings(BaseSettings):
     athena_daily_messages_per_user: int = 100
     athena_daily_tool_calls_per_user: int = 200
 
+    # --- AI Interview Engine media (Phase 16) ----------------------------------
+    # Provider-neutral STT/TTS selection. ``none`` is the safe default:
+    # voice stays disabled and media calls fail with ai.media_unavailable
+    # (never a fabricated transcript or audio). ``mock`` is test-only.
+    ai_stt_provider: str = "none"
+    ai_tts_provider: str = "none"
+
     @field_validator("ai_provider")
     @classmethod
     def _ai_provider_allowed(cls, v: str) -> str:
