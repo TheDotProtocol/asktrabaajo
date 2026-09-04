@@ -43,6 +43,11 @@ RATE_LIMIT_POLICIES: Dict[str, Tuple[int, float]] = {
     "document.request": (15, 60),
     # Discovery — user-keyed (anti-scraping).
     "candidates.search": (60, 60),
+    # Athena (Phase 14) — user-keyed; high-risk actions are the strictest.
+    "athena.chat": (30, 60),
+    "athena.tool": (40, 60),
+    "athena.search": (30, 60),
+    "athena.high_risk": (10, 3600),
 }
 
 

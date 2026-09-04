@@ -1,5 +1,6 @@
 """Canonical model set — import every model module so metadata is complete."""
 from app.models import (
+    athena,
     audit,
     career,
     communication,
@@ -35,6 +36,12 @@ from app.models.career import (
     WorkDnaProfile,
 )
 from app.models.audit import AuditLogEntry
+from app.models.athena import (
+    AiUsageLog,
+    AthenaActionConfirmation,
+    AthenaMessage,
+    AthenaSession,
+)
 from app.models.communication import (
     Conversation,
     ConversationMessage,
@@ -95,8 +102,12 @@ from app.models.work import (
 )
 
 __all__ = [
+    "AiUsageLog",
     "Appeal",
     "ApplicationEvent",
+    "AthenaActionConfirmation",
+    "AthenaMessage",
+    "AthenaSession",
     "AuditLogEntry",
     "CandidateSearchEvent",
     "EnforcementAction",

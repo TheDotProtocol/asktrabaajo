@@ -82,6 +82,34 @@ class Settings(BaseSettings):
     # policies to take effect (owner/superuser roles bypass RLS).
     rls_session_context: bool = False
 
+    # --- Athena AI core (Phase 14) -------------------------------------------
+    # Provider selection is configuration-driven; ``none`` is the safe
+    # default (Athena degrades to a clear AI_PROVIDER_UNAVAILABLE error —
+    # it never fabricates responses). ``openai`` requires OPENAI_API_KEY.
+    ai_provider: str = "none"
+    # Server-side provider credential (env-injected; never logged).
+    openai_api_key: str = ""
+    ai_openai_model: str = "gpt-4o-mini"
+    # Maximum provider-tool loop iterations per user message (bounded).
+    ai_chat_max_turns: int = 3
+    # Sanitized message retention (days). A purge job is a later
+    # operational concern; the setting documents the policy now.
+    ai_message_retention_days: int = 90
+    # Session / confirmation lifetimes (minutes) — lazy expiry, no
+    # scheduler dependency.
+    athena_session_ttl_minutes: int = 60
+    athena_confirmation_ttl_minutes: int = 15
+    # Daily usage budgets per user (over the canonical ai_usage_log).
+    athena_daily_messages_per_user: int = 100
+    athena_daily_tool_calls_per_user: int = 200
+
+    @field_validator("ai_provider")
+    @classmethod
+    def _ai_provider_allowed(cls, v: str) -> str:
+        if v not in {"none", "openai"}:
+            raise ValueError(f"ai_provider must be one of {{'none','openai'}}, got {v!r}")
+        return v
+
     @field_validator("rls_session_context")
     @classmethod
     def _rls_context_requires_postgres(cls, v: bool, info) -> bool:
