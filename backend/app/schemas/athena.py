@@ -62,3 +62,11 @@ class AthenaUsageOut(BaseModel):
     total_tokens: int
     estimated_cost: Optional[float] = None
     created_at: str
+
+
+class AthenaStatusOut(BaseModel):
+    """Safe provider/capability status — never includes secrets or env values."""
+
+    available: bool
+    state: str  # available | not_configured | temporarily_unavailable
+    modes: List[str]

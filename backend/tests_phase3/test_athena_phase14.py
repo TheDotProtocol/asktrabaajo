@@ -546,6 +546,20 @@ def test_provider_unavailable_safe_degradation(client, make_user):
     assert response.json()["error"]["code"] == "ai.provider_unavailable"
 
 
+def test_athena_status_does_not_expose_provider_secrets(client, make_user):
+    user = make_user(f"st{uuid.uuid4().hex[:6]}@example.com")
+    response = client.get("/api/v1/athena/status", headers=user["authorization"])
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["available"] is False
+    assert body["state"] == "not_configured"
+    assert "jobseeker" in body["modes"]
+    dumped = json.dumps(body).lower()
+    assert "openai" not in dumped
+    assert "api_key" not in dumped
+    assert "secret" not in dumped
+
+
 def test_malformed_tool_arguments_rejected(client, make_user, monkeypatch):
     user = make_user(f"ma{uuid.uuid4().hex[:6]}@example.com")
     sid = _create_session(client, user, "jobseeker")

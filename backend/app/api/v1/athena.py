@@ -25,9 +25,11 @@ from app.schemas.athena import (
     AthenaMessageRequest,
     AthenaSessionCreate,
     AthenaSessionOut,
+    AthenaStatusOut,
     AthenaToolOut,
 )
 from app.services import athena as athena_service
+from app.services.ai_provider import get_provider
 from app.services.athena_tools import tools_for_modes
 
 router = APIRouter(prefix="/athena", tags=["athena"])
@@ -35,6 +37,20 @@ router = APIRouter(prefix="/athena", tags=["athena"])
 
 def _limiters(request: Request):
     return getattr(request.app.state, "rate_limiters", None)
+
+
+@router.get("/status", response_model=AthenaStatusOut)
+def athena_status(
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    """Safe capability probe. Does not expose provider names, models, or secrets."""
+    provider = get_provider()
+    return {
+        "available": provider is not None,
+        "state": "available" if provider is not None else "not_configured",
+        "modes": athena_service.available_modes(db, user),
+    }
 
 
 @router.get("/modes", response_model=List[str])
