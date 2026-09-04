@@ -9,21 +9,23 @@ STAGING READY LOCALLY
 CANDIDATE OS (WAVE 2) ACCEPTED
 EMPLOYER OS (WAVE 3) IMPLEMENTED
 ATHENA UI (WAVE 4) IMPLEMENTED + REFINED
+SUPER ADMIN (WAVE 5) IMPLEMENTED
 
 PHASE 19 COMPLETE
 WAVE 1 ACCEPTED
 WAVE 2 ACCEPTED
 WAVE 3 IMPLEMENTED
 WAVE 4 IMPLEMENTED
+WAVE 5 IMPLEMENTED
 LIVE RECONCILIATION NOT EXECUTED
 NO LIVE DATABASE WRITES PERFORMED
 ```
 
 - The canonical backend is **complete through Phase 19** plus one Wave 4 status route: 247 `/api/v1` routes, 80 canonical tables, migration head `0014`, RLS, RBAC, Athena, AI Interview, Commerce.
-- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner confirmed the product is **pre-launch**. Waves 2 and 3 validated on **isolated sqlite**. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md` and `CURSOR_WAVE_3_DB_CLASSIFICATION.md`.
-- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED** and later **refined** (workspace quality pass; no Wave 5). Next: Wave 5 only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
+- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner confirmed the product is **pre-launch**. Waves 2–5 validated on **isolated sqlite**. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md` and `CURSOR_WAVE_3_DB_CLASSIFICATION.md`.
+- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED** and later **refined**. Wave 5 (Super Admin) is **IMPLEMENTED**. Next: Wave 6 only after a separate approval prompt (`CURSOR_WAVE_6_READINESS.md`). Read `CURSOR_DO_NOT_BREAK.md` first.
 
-**Where to start:** `CURSOR_WAVE_5_READINESS.md` + `CURSOR_WAVE_4_CLOSURE.md` + `CURSOR_ATHENA_DESIGN_DECISIONS.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
+**Where to start:** `CURSOR_WAVE_5_CLOSURE.md` + `CURSOR_ADMIN_DESIGN_DECISIONS.md` + `CURSOR_WAVE_6_READINESS.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
 
 ---
 
@@ -118,13 +120,13 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 | Auth (login/register) | `login/page.tsx`, `register/page.tsx` | **WAVE 1 COMPLETE** — public pages write `asktrabaajo_at` / `asktrabaajo_rt` via `POST /api/v1/auth/*`. Refresh, `PortalGuard`, `OrgProvider`, `OsChrome` are in place. |
 | Jobseeker portal | `jobseeker/*` | **WAVE 2 COMPLETE** — CandidateShell + API-backed Employment OS |
 | Employer/company | `company/*`, `employer/ai-interviews`, `employer/billing` | **WAVE 3 COMPLETE** — EmployerShell + Employment OS. **WAVE 4** Athena HR workspace is live (degraded-honest when the provider is unset). |
-| Admin/governance | `admin/governance/*` (reports, enforcement, appeals, audit, teams) | **PARTIALLY INTEGRATED** — call canonical API |
+| Admin/governance | `admin/*` (command center, governance, enforcement, appeals, audit, teams, finance, support, operations) | **WAVE 5 COMPLETE** — Super Admin Figma shell + canonical APIs. Least privilege. No user-directory fabrication. |
 | Work ID | `id/work-id`, `id` | **WAVE 2 COMPLETE** — Candidate-styled Work ID + account/security |
 | Legacy dashboard/interviews | `dashboard/*`, `interviews/*`, `interview/*` | **LEGACY** — use `useAuth`/Supabase; leave as-is or migrate in later waves (not careers) |
 | Careers site | `careers/*` | **LEGACY — DO NOT TOUCH** (separate data source) |
 | Mock/local pages | `interview/[id]/analysis` | **LEGACY / MOCK** — mark clearly; never present as production |
 
-**Biggest remaining gaps (detail in `FRONTEND_GAP_REPORT.md`):** Athena session history API; live AI provider; first-class offices/departments/job-template catalogs; Figma workforce/performance/learning/onboarding; government portal absent; public website CTAs still placeholder. Waves 1–4 are implemented.
+**Biggest remaining gaps (detail in `FRONTEND_GAP_REPORT.md`):** Athena session history API; live AI provider; first-class offices/departments/job-template catalogs; Figma workforce/performance/learning/onboarding; Figma People/Companies/Governments directories (no APIs); government portal absent; public website CTAs still placeholder. Waves 1–5 are implemented.
 
 ---
 
@@ -134,7 +136,7 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 
 **EMPLOYER / COMPANY PORTAL** (`/company/*`, `/employer/*`): dashboard · company profile (`/company/{org}/profile`) · organization & members (`/organizations/{org}/members`) · jobs (create/publish/pause/close) · candidate pipeline · candidate discovery & Talent Graph (`/talent/*`) · applications · interviews · AI Interviews (`/employer/ai-interviews`) · candidate reports · offers · communications · **billing** (`/employer/billing`: plan, usage, entitlements, invoices; `billing.read` boundary) · analytics · settings.
 
-**GOVERNANCE / SUPER ADMIN** (`/admin/governance/*`): platform overview · governance cases (`/governance/reports`) · teams & moderators · priority/SLA/escalation · audit (`/governance/audit`) · enforcement actions + approval separation (`/enforcement/actions`) · appeals (`/enforcement/appeals`) · finance (`/finance/*` — platform finance: transactions, invoices, refunds, subscriptions; `finance.manage` only).
+**GOVERNANCE / SUPER ADMIN** (`/admin/*`): command center · governance cases (`/governance/reports`) · teams & moderators · priority/SLA/escalation · audit (`/governance/audit`) · enforcement actions + approval separation (`/enforcement/actions`) · appeals (`/enforcement/appeals`) · platform finance (`/finance/*`; `finance.read`/`finance.manage` only) · support/operations honesty pages. Super Admin is **not** unrestricted private-data access. See `CURSOR_ADMIN_DESIGN_DECISIONS.md`.
 
 **GOVERNMENT:** **architecture/foundation only** — `government_admin`/`government_user` roles with `workforce.aggregates.read`; aggregate-only surfaces. **No citizen lookup, no individual records, no government intelligence product exists.** Do not fabricate government UI beyond what exists.
 
@@ -239,6 +241,7 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 | Wave 2 Candidate E2E (`scripts/wave2_candidate_e2e.py`) | **PASS** (isolated sqlite; hosted DB untouched) |
 | Wave 3 Employer E2E (`scripts/wave3_employer_e2e.py`) | **PASS** (isolated sqlite; hosted DB untouched; cross-tenant 403/404) |
 | Wave 4 Athena E2E (`scripts/wave4_athena_e2e.py`) | **PASS** (degraded provider honest; mode/tenant isolation) |
+| Wave 5 Super Admin E2E (`scripts/wave5_admin_e2e.py`) | **PASS** (governance → enforcement separation → appeal → audit → finance/RBAC 403s) |
 | PostgreSQL RLS suite (scratch PG 16 @ 0014) | **11/11 passed** |
 | Staging-mode E2E smoke (PG 16, `ENVIRONMENT=staging`) | **PASS** (`P19_STAGING_SMOKE_PASS`: auth → org → AI interview full journey → report → human decision → billing boundary → cross-tenant denial) |
 | Frontend typecheck (`tsc --noEmit`) | PASS |

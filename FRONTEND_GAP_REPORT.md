@@ -14,6 +14,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 4 refinement (2026-09-05):** Athena workspace polish only — context band, first-use starters, native result cards, named confirmation, honest processing states, dedicated mobile layout, additional allowlisted Ask Athena links (Applications, Interviews, Work ID, Jobs). No Wave 5. No backend rewrite. See `CURSOR_ATHENA_DESIGN_DECISIONS.md` §18.
 
+**Wave 5 update (2026-09-05):** Super Admin Figma shell (`AdminShell`) + platform command center, governance, enforcement, appeals, audit, teams, finance, support (honesty), operations, notifications, and settings are wired to canonical `/api/v1`. Least privilege in nav; backend remains authoritative. Figma People/Companies/Governments/Marketing directories and platform Athena tools were **not** fabricated. Hosted DB untouched — see `CURSOR_WAVE_5_CLOSURE.md` and `CURSOR_ADMIN_DESIGN_DECISIONS.md`.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.
@@ -67,11 +69,15 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 | Offices / departments / templates | ⚠️ no first-class APIs — HQ = profile city/country; departments = distinct `job.department`; templates = clone job as draft |
 | Workforce / planning / onboarding Figma | ❌ no product APIs — not fabricated |
 
-### 5. Admin / Governance
+### 5. Admin / Governance — Wave 5 Super Admin
 | Item | State |
 |---|---|
-| Pages | ✅ `admin/governance/*` (cases, enforcement, appeals, audit, teams) import `lib/api` |
-| Role separation UX | ⚠️ enforce creator/approver separation in UI; hide finance from support; governance vs finance vs support permission-aware nav needed |
+| Shell | ✅ `AdminShell` (Figma tokens, 240px sidebar, Development badge, permission-filtered nav) |
+| Pages | ✅ command center, governance, enforcement, appeals, audit, teams, finance, support, operations, athena (unavailable), notifications, settings |
+| Data wiring | ✅ `lib/api` only; truthful counts; no invented metrics |
+| Role separation UX | ✅ nav gated by permission; finance hidden without `finance.read`; support cannot refund; creator≠approver is server-enforced |
+| People / Companies / Governments | ❌ no platform directory APIs — not fabricated |
+| Support tickets | ❌ no ticket API — honesty page only |
 
 ### 6. AI surfaces
 | Item | State |
@@ -109,7 +115,7 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 | Status | Where |
 |---|---|
 | **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | MFA enroll polish |
-| **PARTIALLY INTEGRATED** | admin/governance/* |
+| **PARTIALLY INTEGRATED** | employer billing entitlements/usage detail |
 | **UI EXISTS / API NOT CONNECTED** | none found on Candidate OS |
 | **API EXISTS / UI MISSING** | Athena session history, MFA enroll, usage/entitlements detail |
 | **BLOCKED** | live DB anything, provider-dependent features (voice/video, real payments), government citizen surfaces (forbidden) |
@@ -121,4 +127,5 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 2. **Wave 2** — ✅ Candidate Figma shell + Jobseeker Employment OS.
 3. **Wave 3** — ✅ Employer / Company Figma OS (`CURSOR_WAVE_3_CLOSURE.md`).
 4. **Wave 4** — ✅ Athena UI (`CURSOR_WAVE_4_CLOSURE.md`, `CURSOR_ATHENA_DESIGN_DECISIONS.md`).
-5. **Waves 5–9** — communications, governance, commerce polish, government (exists-only), final UX. See `CURSOR_WAVE_5_READINESS.md`.
+5. **Wave 5** — ✅ Super Admin control plane (`CURSOR_WAVE_5_CLOSURE.md`).
+6. **Waves 6–9** — communications/commerce polish, government (exists-only), final UX. See `CURSOR_WAVE_6_READINESS.md`. Do not start without a separate approval.
