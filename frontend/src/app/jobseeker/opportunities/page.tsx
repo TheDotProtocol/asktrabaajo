@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import {
   EmptyState,
   ErrorBanner,
@@ -138,6 +139,7 @@ export default function OpportunitiesPage() {
         kicker="Talent Graph"
         title="Opportunities"
         subtitle="Search the live catalogue or switch to a Career Advisor mode. Matching stays on the server."
+        actions={<AthenaAskLink portal="candidate" from="opportunities" />}
       />
 
       <div className="flex flex-wrap gap-2">

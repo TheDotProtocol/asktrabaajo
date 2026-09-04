@@ -36,7 +36,7 @@ type NavItem = {
 const PRIMARY: NavItem[] = [
   { href: '/jobseeker', label: 'Home', icon: Home },
   { href: '/id/work-id', label: 'Work ID', icon: FileText },
-  { href: '/jobseeker/athena', label: 'Athena', icon: Sparkles, coming: true },
+  { href: '/jobseeker/athena', label: 'Athena', icon: Sparkles },
   { href: '/jobseeker/work-dna', label: 'Work DNA', icon: UserRound },
   { href: '/jobseeker/career', label: 'Career', icon: BarChart3 },
   { href: '/jobseeker/opportunities', label: 'Opportunities', icon: Briefcase },

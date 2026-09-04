@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import {
   EmptyState,
   ErrorBanner,
@@ -133,6 +134,7 @@ export default function CareerPage() {
         kicker="Career Advisor"
         title="Your career map"
         subtitle="Guidance is computed from your Work ID and stated goals. The backend is authoritative — this page never invents a recommendation."
+        actions={<AthenaAskLink portal="candidate" from="career" />}
       />
       {error && <ErrorBanner message={error} onRetry={() => void load()} />}
 
