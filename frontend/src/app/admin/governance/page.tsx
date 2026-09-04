@@ -11,6 +11,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
+import { ErrorBanner, PageHeader, cardCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   GovernanceDashboard,
@@ -61,15 +62,10 @@ const slaStyle: Record<string, string> = {
   breached: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const selectCls =
-  "rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const selectCls = inputCls;
 const chipCls = (active: boolean) =>
   `rounded px-2.5 py-1 text-xs font-medium transition ${
-    active
-      ? "bg-indigo-500 text-white"
-      : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300"
+    active ? "bg-[#d4af37] text-black" : "border border-[#23272a] text-[#9ca3af] hover:text-white"
   }`;
 
 function fmt(ts: string | null): string {
@@ -160,31 +156,11 @@ export default function GovernanceControlRoomPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Platform Control Room
-          </h1>
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            Operational queue for platform integrity. Case metadata and
-            references only — private Work ID data is never surfaced here.
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Link
-            href="/admin/governance/teams"
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300"
-          >
-            Teams
-          </Link>
-          <Link
-            href="/admin/governance/audit"
-            className="rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300"
-          >
-            Audit review
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        kicker="Governance"
+        title="Case queue"
+        subtitle="Operational queue for platform integrity. Case metadata and references only — private Work ID data is never surfaced here."
+      />
 
       {dash && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-8">
@@ -295,7 +271,7 @@ export default function GovernanceControlRoomPage() {
           </span>
         </div>
 
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <ErrorBanner message={error} onRetry={() => void load()} />}
 
         <div className="space-y-2">
           {(queue?.items ?? []).length === 0 && !error && (

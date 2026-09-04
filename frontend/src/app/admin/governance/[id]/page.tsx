@@ -12,6 +12,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   GovernanceReportRow,
@@ -37,16 +38,9 @@ const slaStyle: Record<string, string> = {
   breached: "bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const primaryBtn =
-  "rounded bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-40";
-const ghostBtn =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
-const inputCls =
-  "w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
-const selectCls =
-  "rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const primaryBtn = btnCls;
+const ghostBtn = ghostBtnCls;
+const selectCls = inputCls;
 
 function fmt(ts: string | null): string {
   if (!ts) return "";
@@ -277,7 +271,7 @@ export default function GovernanceCaseDetailPage() {
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <Link
           href={`/admin/governance/enforcement?case_id=${caseId}`}
-          className="rounded border border-indigo-300 px-2.5 py-1 font-medium text-indigo-600 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950"
+          className="rounded border border-[#d4af37]/40 px-2.5 py-1 font-medium text-[#d4af37]"
         >
           Enforcement actions for this case
         </Link>
@@ -487,7 +481,7 @@ export default function GovernanceCaseDetailPage() {
                 >
                   <Link
                     href={`/admin/governance/${link.report_id}`}
-                    className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                    className="font-medium text-[#d4af37] hover:underline"
                   >
                     {link.case_ref}
                   </Link>
