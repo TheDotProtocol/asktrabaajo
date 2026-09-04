@@ -675,7 +675,7 @@ def test_expired_session_denies_tool_use(client, make_user, db, monkeypatch):
 
 def test_tools_are_explicitly_registered_and_metadata_consistent():
     """Registry hygiene: every tool has a schema, risk class, and modes."""
-    assert len(TOOLS) == 26
+    assert len(TOOLS) == 39  # 26 (Phase 14) + 13 (Phase 15 career/prep/bulk)
     for name, tool in TOOLS.items():
         assert tool.name == name
         assert tool.modes, f"{name} has no modes"
