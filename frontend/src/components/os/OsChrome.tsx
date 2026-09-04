@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 import { useCanonicalAuth } from '@/context/AuthContext';
 import { useOrg } from '@/context/OrgContext';
 import {
-  canAccessGovernance,
+  canAccessPlatform,
   hasPermission,
 } from '@/lib/api/portal';
 
@@ -35,7 +35,7 @@ export function OsChrome({ portal, title, accentClass, nav, children }: OsChrome
     <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950">
       <header className="sticky top-0 z-20 border-b border-neutral-200 bg-white/90 backdrop-blur dark:border-neutral-800 dark:bg-neutral-900/90">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-          <Link href={portal === 'admin' ? '/admin/governance' : portal === 'company' ? '/company' : '/jobseeker'} className="text-sm font-semibold tracking-tight">
+          <Link href={portal === 'admin' ? '/admin' : portal === 'company' ? '/company' : '/jobseeker'} className="text-sm font-semibold tracking-tight">
             <span className={accentClass}>AskTrabaajo</span>{' '}
             <span className="text-neutral-400">· {title}</span>
           </Link>
@@ -80,9 +80,9 @@ export function OsChrome({ portal, title, accentClass, nav, children }: OsChrome
                 Employer
               </Link>
             )}
-            {canAccessGovernance(me) && portal !== 'admin' && (
-              <Link className="rounded px-2 py-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" href="/admin/governance">
-                Governance
+            {canAccessPlatform(me) && portal !== 'admin' && (
+              <Link className="rounded px-2 py-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" href="/admin">
+                Admin
               </Link>
             )}
             <Link className="rounded px-2 py-1 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800" href="/id">

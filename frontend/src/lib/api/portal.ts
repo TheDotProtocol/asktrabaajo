@@ -15,6 +15,16 @@ export const GOVERNANCE_PERMISSIONS = [
   "admin.manage",
 ] as const;
 
+export const PLATFORM_PERMISSIONS = [
+  ...GOVERNANCE_PERMISSIONS,
+  "finance.read",
+  "finance.manage",
+  "support.read",
+  "audit.read",
+  "users.read",
+  "sessions.manage",
+] as const;
+
 export type PostAuthIntent = "jobseeker" | "employer";
 
 export function hasPermission(me: MeResponse | null, code: string): boolean {
@@ -49,6 +59,10 @@ export function canAccessGovernance(me: MeResponse | null): boolean {
   return hasAnyPermission(me, GOVERNANCE_PERMISSIONS);
 }
 
+export function canAccessPlatform(me: MeResponse | null): boolean {
+  return hasAnyPermission(me, PLATFORM_PERMISSIONS);
+}
+
 export function homeForMe(
   me: MeResponse | null,
   intent?: PostAuthIntent | null
@@ -57,7 +71,7 @@ export function homeForMe(
   if (intent === "employer") return "/company";
   if (intent === "jobseeker") return "/jobseeker";
   if (canAccessEmployer(me)) return "/company";
-  if (canAccessGovernance(me)) return "/admin/governance";
+  if (canAccessPlatform(me)) return "/admin";
   return "/jobseeker";
 }
 
