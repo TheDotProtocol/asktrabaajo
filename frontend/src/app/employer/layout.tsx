@@ -7,12 +7,11 @@ const NAV = [
   { href: "/company/jobs", label: "Jobs", permission: "jobs.view" },
   { href: "/company/pipeline", label: "Pipeline", permission: "applications.view" },
   { href: "/company/candidates", label: "Candidates", permission: "candidates.search" },
-  { href: "/company/communications", label: "Communications", permission: "communications.read" },
   { href: "/employer/ai-interviews", label: "AI Interviews", permission: "interviews.manage" },
   { href: "/employer/billing", label: "Billing", permission: "billing.read" },
 ];
 
-export default function CompanyLayout({ children }: { children: ReactNode }) {
+export default function EmployerLayout({ children }: { children: ReactNode }) {
   return (
     <PortalGuard allow="authenticated">
       <OsChrome
