@@ -26,79 +26,120 @@
   application can consume either a direct Supabase host or the
   Supabase pooler host without code changes.
 - The operator-facing secret file is **`backend/.env`** — verified
-  gitignored (`.env` and `backend/.env` are both ignored). It currently
-  contains only a `DATABASE_URL` line whose hostname is the retired
-  direct database host for this project.
+  gitignored (`.env` and `backend/.env` are both ignored). It holds the
+  `DATABASE_URL` for the live project supplied by the operator (value
+  never reproduced in documentation).
 
 ## 3. What was verified this phase (read-only only)
+
+First connection attempt used the stored (retired) direct hostname
+(`db.zrvrjqwboylvvzusorry.supabase.co` → NXDOMAIN, per Phase 13). After
+the operator supplied a current pooler connection string into
+`backend/.env`, the following read-only checks ran successfully:
 
 | Check | Result |
 | --- | --- |
 | Code expects `DATABASE_URL` (SQLAlchemy URL) | CONFIRMED |
-| Secret location (`backend/.env`, gitignored) | CONFIRMED |
-| Read-only connection attempt with the stored `DATABASE_URL` | BLOCKED — the stored hostname (`db.zrvrjqwboylvvzusorry.supabase.co`) no longer resolves (NXDOMAIN), consistent with the Phase 13 finding that the direct host was retired |
-| Project host liveness (public REST, read-only) | HOST ALIVE — `zrvrjqwboylvvzusorry.supabase.co` answers |
-| Stored anon key | STALE — REST returns 401 (key has been rotated since it was recorded) |
-| Region/host guessing (pooler regions, alternate hosts) | NOT ATTEMPTED — explicitly forbidden by phase policy |
+| Secret location (`backend/.env`, gitignored, untracked) | CONFIRMED |
+| Session-pooler connectivity | CONNECTED — Supabase pooler answered on port 5432 |
+| PostgreSQL version | 17.6 (Supabase-managed) |
+| Database name / user / schema | `postgres` / project postgres role / `public` |
+| Server timezone | UTC |
+| `alembic_version` present | NO — canonical migrations 0001–0014 have never been applied to the live database |
+| Live base tables | 21 — ALL legacy (see inventory below) |
+| Legacy jobs / companies present | YES (`jobs`, `companies`, `applications`, `interviews`, `payments`, `profiles`, …) |
+| Canonical tables present (`users`, `organizations`, `job_postings`) | NO |
+| RLS on legacy tables | 21/21 tables have RLS enabled |
+| `asktrabaajo_app` runtime role exists | NO |
+
+Live table inventory (21 legacy tables): `application_stages`,
+`applications`, `candidate_certificates`, `candidate_resumes`,
+`companies`, `company_admins`, `company_departments`, `company_media`,
+`department_catalog`, `documents`, `interviews`, `job_offers`,
+`job_templates`, `jobs`, `notifications`, `offices`, `payments`,
+`profiles`, `saved_jobs`, `talent_pool`, `test_results`.
+
+### Drift finding — `interviews` table-name collision
+
+Local migration analysis (0001–0014, 79 canonical tables) found that the
+canonical schema creates a table named **`interviews`**, and the live
+legacy database already contains a populated legacy `interviews` table.
+A naive `alembic upgrade` against the live database would therefore
+fail (or worse, collide) at that step. **Resolution is a separate,
+controlled legacy-data activity** (e.g., a reviewed pre-migration
+rename of the legacy table and remapping of its legacy references)
+before the canonical migrations may be applied. No such step was
+performed in this phase.
 
 ## 4. Status summary
 
-- **SUPABASE CONNECTION: BLOCKED** — no current, valid PostgreSQL
-  connection string is available to the repository.
-- **DATABASE IDENTITY: BLOCKED** (cannot be verified without a
-  connection).
-- **BACKUP / PITR: UNKNOWN** (cannot be verified without a connection;
-  nothing is assumed).
-- **LIVE MIGRATION REVISION: UNKNOWN** (not connected).
-- **LOCAL MIGRATION REVISION: `0014`** (applied to scratch PostgreSQL
-  only; see `PHASE_17_MIGRATION.md`).
-- **SCHEMA DRIFT: UNKNOWN** (not connected).
-- **LIVE RLS: UNKNOWN** (never enabled blindly; Phase 13 staged-RLS
-  matrix governs any future rollout).
-- **APP ROLE:** verified on scratch PostgreSQL only — 79 canonical
-  tables × 4 DML = 316 grants, no DDL/superuser/legacy grants.
+- **SUPABASE CONNECTION: CONNECTED** (session pooler, operator-supplied
+  string in `backend/.env`).
+- **DATABASE IDENTITY: VERIFIED** — host is the `aws-0-ap-northeast-1`
+  Supabase pooler and the role authenticates as project
+  `zrvrjqwboylvvzusorry`; database `postgres` holds exactly the known
+  legacy AskTrabaajo schema.
+- **BACKUP / PITR: UNKNOWN** — not verifiable over SQL; the operator
+  must confirm backup/PITR in the Supabase dashboard before any live
+  migration.
+- **LIVE MIGRATION REVISION: NONE** (no `alembic_version`; canonical
+  schema never applied).
+- **LOCAL MIGRATION REVISION: `0014`** (79 canonical tables; applied to
+  scratch PostgreSQL only — see `PHASE_17_MIGRATION.md`).
+- **SCHEMA DRIFT: FOUND** — live is legacy-only (21 tables) and cannot
+  absorb the canonical migrations without first resolving the
+  `interviews` name collision and creating the `asktrabaajo_app` role.
+- **LIVE RLS: ENABLED ON LEGACY TABLES** (21/21) — untouched; staged
+  canonical RLS follows the Phase 13 matrix after migrations land.
+- **APP ROLE:** absent on live; verified on scratch PostgreSQL only
+  (79 canonical tables × 4 DML = 316 grants, no DDL/superuser/legacy
+  grants).
 
-Because identity, backup/PITR, and migration history cannot be
-verified, **no live migration was applied and none will be attempted
-until a valid connection exists and the verification gates below pass.**
+Because backup/PITR is unverified and the `interviews` collision is
+unresolved, **no live migration was applied. Live migration remains
+blocked pending operator verification and a controlled legacy
+reconciliation step.**
 
-## 5. Operator action required (clears the blocker)
+## 5. Operator actions remaining (post-connection)
 
-1. Open the Supabase dashboard for project `zrvrjqwboylvvzusorry`
-   (Project Settings → Database → Connection string).
-2. Copy the **PostgreSQL connection string** that the architecture
-   supports — direct connection if the dashboard offers one, otherwise
-   the **pooler** connection for the same project (prefer session
-   pooling for SQLAlchemy/Alembic). Do not invent a host or region —
-   copy exactly what the dashboard shows.
-3. Paste it into the gitignored file:
-   ```
-   backend/.env
-   ```
-   as:
-   ```
-   DATABASE_URL=<PASTE_CONNECTION_STRING_HERE>
-   ```
-   The value is read by `backend/app/core/config.py` and consumed by
-   SQLAlchemy/Alembic unchanged (add `?sslmode=require` if the URL has
-   no SSL parameter and the connection requires it).
-4. Do NOT commit the file, print the value, or paste it into a
-   document or chat prompt.
+Step 1-4 (obtain the Session-pooler string and place it in
+`backend/.env` under `DATABASE_URL=…`) are COMPLETE. The remaining
+operator actions before any live migration are:
+
+1. **Confirm backup/PITR availability** for project
+   `zrvrjqwboylvvzusorry` in the Supabase dashboard (Settings →
+   Backups / PITR). Without verified backup/PITR the live migration
+   stays blocked: "Live migration blocked pending backup/PITR
+   verification."
+2. **Approve a controlled legacy-reconciliation plan** for the
+   `interviews` table-name collision (rename + reference remapping,
+   reviewed separately) and the creation of the least-privilege
+   `asktrabaajo_app` runtime role. These are deliberate, documented
+   steps — never run ad hoc.
+3. **Rotate the supplied database password** in the Supabase dashboard
+   when the connection is no longer needed, and mirror the new value
+   into `backend/.env` (gitignored) — never into git or docs.
 
 ## 6. Read-only verification gate (after the string is supplied)
 
-Before ANY live migration, run only read-only statements and confirm:
+STATUS of the read-only gate (all completed over the live connection):
 
-1. PostgreSQL version, database name, current user, schema, timezone.
+1. PostgreSQL version/database/user/schema/timezone — DONE (17.6,
+   postgres, UTC).
 2. `alembic_version` presence and live Alembic history vs local
-   `0001…0014`.
-3. Live table inventory (legacy + canonical) vs local canonical count.
-4. Database identity == project `zrvrjqwboylvvzusorry` (else STOP).
-5. Backup/PITR availability on the Supabase project (else STOP:
-   "Live migration blocked pending backup/PITR verification.").
-6. Drift report: Migration | Local | Live | Status for 0001–0014.
-7. App-role state (`asktrabaajo_app`) and grant coverage.
-8. Storage buckets + policies (inspect only — no deletion).
+   `0001…0014` — DONE (no live alembic history; local head `0014`).
+3. Live table inventory (legacy + canonical) vs local canonical count
+   — DONE (21 legacy tables; local 79 canonical).
+4. Database identity == project `zrvrjqwboylvvzusorry` — DONE
+   (VERIFIED).
+5. Backup/PITR availability — **PENDING (operator dashboard check)**;
+   live migration stays blocked until verified.
+6. Drift report — DONE (migrations 0001–0014: all `PENDING` on live;
+   `interviews` name collision FOUND).
+7. App-role state (`asktrabaajo_app`) and grant coverage — DONE
+   (role absent on live; grants verified on scratch PG only).
+8. Storage buckets + policies (inspect only — no deletion) —
+   **PENDING (operator inspection in the dashboard)**.
 
 Only when every gate passes may the Phase-13 migration runbook be
 executed, and even then commerce schema deployment waits for the
