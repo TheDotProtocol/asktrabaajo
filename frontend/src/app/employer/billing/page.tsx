@@ -10,6 +10,7 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { PageHeader, btnCls, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   BillingPlan,
@@ -19,10 +20,6 @@ import {
 } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
 const secondaryBtnCls =
   "rounded border border-neutral-300 px-4 py-2 text-sm font-medium text-neutral-700 hover:bg-neutral-100 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800";
 
@@ -132,14 +129,13 @@ export default function EmployerBillingPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-6">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">Billing</h1>
-          <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            Organization subscription, entitlements and invoices. Jobseeker core stays free.
-          </p>
-        </div>
+        <PageHeader
+          kicker="Commerce"
+          title="Billing"
+          subtitle="Organization subscription, entitlements, and invoices. Jobseeker core stays free. Mock provider — no real charges."
+        />
         {orgs.length > 1 && (
           <select
             value={orgId}
