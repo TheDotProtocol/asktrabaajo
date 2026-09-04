@@ -8,7 +8,9 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 2 update (2026-09-05):** Candidate Figma shell + Jobseeker Employment OS are wired to canonical `/api/v1`. Dashboard, Work ID, documents, credentials, Work DNA, career goals, Career Advisor (`/career-advisor/*`), opportunities (including match modes), applications, interviews, AI Interview, interview prep, offers, communications, notifications, and privacy/settings are API-backed with empty states. No mock APIs. Hosted DB untouched — see `CURSOR_WAVE_2_CLOSURE.md`.
 
-**Wave 3 update (2026-09-05):** Employer / HR Figma shell (`EmployerShell`) + Company Employment OS are wired to canonical `/api/v1`. Command center, profile, members/RBAC, jobs (including multi-step draft + clone-as-template), Talent Graph, pipeline, interviews, AI interviews + human decision, offers, communications, analytics, notifications, billing, and settings are API-backed. Athena HR is an honest Soon entry. Offices/departments/job-template catalogs have **no first-class API** and are not invented. Hosted DB untouched — see `CURSOR_WAVE_3_CLOSURE.md`.
+**Wave 3 update (2026-09-05):** Employer / HR Figma shell (`EmployerShell`) + Company Employment OS are wired to canonical `/api/v1`. Command center, profile, members/RBAC, jobs (including multi-step draft + clone-as-template), Talent Graph, pipeline, interviews, AI interviews + human decision, offers, communications, analytics, notifications, billing, and settings are API-backed. Offices/departments/job-template catalogs have **no first-class API** and are not invented. Hosted DB untouched — see `CURSOR_WAVE_3_CLOSURE.md`.
+
+**Wave 4 update (2026-09-05):** Athena workspace is a real `/api/v1/athena/*` client for Candidate and Employer. No Athena Figma — designed from the OS design system. `GET /athena/status` drives honest degraded mode. High-risk actions use exact-scope confirmation. Session history is not an API. Hosted DB untouched — see `CURSOR_WAVE_4_CLOSURE.md`.
 
 ## How the frontend is organized today
 
@@ -72,7 +74,7 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 ### 6. AI surfaces
 | Item | State |
 |---|---|
-| Athena chat | ❌ no canonical Athena UI (careers-era `ai` chat is legacy). Wave 4: Athena chat + confirmations + tools/usage display |
+| Athena chat | ✅ `/jobseeker/athena` + `/company/athena` via `/api/v1/athena/*`. Degraded when `AI_PROVIDER=none`. History list not in API. |
 | Career Advisor | ✅ `jobseeker/career` uses `/jobseeker/advisor`, intelligence, goals, and `/career-advisor/{gaps,paths,opportunities,action-plan}` |
 | Interview Prep | ⚠️ page exists; confirm mock/local bits removed or clearly labeled |
 | AI Interview candidate room | ✅ `jobseeker/ai-interview` (lobby→consent→room→feedback) via canonical API with `X-Interview-Token` |
@@ -95,7 +97,7 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 - ✅ Route guards + permission-aware nav (backend remains authoritative)
 - ✅ Candidate page-level loading/error/empty states (Wave 2)
 - ✅ Employer page-level loading/error/empty states (Wave 3)
-- ❌ Toast/confirmation-dialog system (needed for Athena confirmations, bulk apply, high-risk actions)
+- ✅ Athena confirmation dialog (exact-scope, backend-authoritative)
 - ✅ Org-context selector (`OrgProvider`, `asktrabaajo_org_id`)
 - ❌ Responsive/mobile pass and accessibility pass (keyboard, ARIA)
 - ✅ `.env` guidance: `frontend/.env.example` + `.env.development` (`NEXT_PUBLIC_API_URL` only)
@@ -104,10 +106,10 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 | Status | Where |
 |---|---|
-| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | Athena chat, MFA enroll polish |
+| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | MFA enroll polish |
 | **PARTIALLY INTEGRATED** | admin/governance/* |
 | **UI EXISTS / API NOT CONNECTED** | none found on Candidate OS |
-| **API EXISTS / UI MISSING** | Athena chat, MFA enroll, usage/entitlements detail |
+| **API EXISTS / UI MISSING** | Athena session history, MFA enroll, usage/entitlements detail |
 | **BLOCKED** | live DB anything, provider-dependent features (voice/video, real payments), government citizen surfaces (forbidden) |
 | **LEGACY — DO NOT TOUCH** | `careers/*`, `dashboard/*`, `interviews/*`, `interview/*`, `lib/careers/*`, `lib/supabase*`, `hooks/useAuth` (Careers/legacy only) |
 
@@ -116,5 +118,5 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 1. **Wave 1 foundation** — ✅ dual-auth bridge, refresh, guards, org context, functional shell.
 2. **Wave 2** — ✅ Candidate Figma shell + Jobseeker Employment OS.
 3. **Wave 3** — ✅ Employer / Company Figma OS (`CURSOR_WAVE_3_CLOSURE.md`).
-4. **Wave 4** — Athena chat + confirmations (`CURSOR_WAVE_4_READINESS.md`).
-5. **Waves 5–9** — communications, governance, commerce polish, government (exists-only), final UX.
+4. **Wave 4** — ✅ Athena UI (`CURSOR_WAVE_4_CLOSURE.md`, `CURSOR_ATHENA_DESIGN_DECISIONS.md`).
+5. **Waves 5–9** — communications, governance, commerce polish, government (exists-only), final UX. See `CURSOR_WAVE_5_READINESS.md`.
