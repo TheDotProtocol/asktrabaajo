@@ -4,9 +4,7 @@ Local visual QA only. **Not** created on hosted Supabase.
 
 ## Email
 
-`akumartrabaajo@gamail.com`
-
-Spelling is intentional (`gamail.com`). Do not “correct” it.
+`akumartrabaajo@gmail.com`
 
 ## Password
 

@@ -15,7 +15,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = join(ROOT, "wave7-qa", "localhost");
 const WEBSITE = "http://localhost:3001";
 const APP = "http://localhost:3000";
-const EMAIL = "akumartrabaajo@gamail.com";
+const EMAIL = "akumartrabaajo@gmail.com";
 
 function readPassword() {
   const raw = readFileSync(join(ROOT, "backend", ".wave7-dev-account"), "utf8");
@@ -54,14 +54,26 @@ async function main() {
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 20000 });
   await shot(page, "03-portals");
 
-  await page.goto(`${APP}/jobseeker`, { waitUntil: "networkidle" });
-  await shot(page, "04-jobseeker");
-  await page.goto(`${APP}/id/work-id`, { waitUntil: "networkidle" });
-  await shot(page, "05-work-id");
-  await page.goto(`${APP}/company`, { waitUntil: "networkidle" });
-  await shot(page, "06-employer");
-  await page.goto(`${APP}/government`, { waitUntil: "networkidle" });
-  await shot(page, "07-government");
+  for (const [name, path] of [
+    ["04-jobseeker", "/jobseeker"],
+    ["05-work-id", "/id/work-id"],
+    ["05b-career", "/jobseeker/career"],
+    ["05c-opportunities", "/jobseeker/opportunities"],
+    ["05d-applications", "/jobseeker/applications"],
+    ["05e-athena", "/jobseeker/athena"],
+    ["06-employer", "/company"],
+    ["06b-jobs", "/company/jobs"],
+    ["06c-talent", "/company/candidates"],
+    ["06d-pipeline", "/company/pipeline"],
+    ["06e-interviews", "/company/interviews"],
+    ["06f-athena", "/company/athena"],
+    ["06g-billing", "/company/settings"],
+    ["07-government", "/government"],
+  ]) {
+    const res = await page.goto(`${APP}${path}`, { waitUntil: "networkidle", timeout: 45000 });
+    if (res && res.status() >= 400) throw new Error(`${path} ${res.status()}`);
+    await shot(page, name);
+  }
 
   await browser.close();
   console.log("WAVE7 CAPTURE: PASS");

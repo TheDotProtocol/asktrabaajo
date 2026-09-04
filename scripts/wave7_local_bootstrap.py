@@ -45,7 +45,7 @@ WAVE6_USERS = (
     ("dev+wave6.admin@example.com", "DEV Wave6 Admin", "admin"),
 )
 
-WAVE7_EMAIL = "akumartrabaajo@gamail.com"
+WAVE7_EMAIL = "akumartrabaajo@gmail.com"
 WAVE7_NAME = "AskTrabaajo DEV Inspector"
 
 
