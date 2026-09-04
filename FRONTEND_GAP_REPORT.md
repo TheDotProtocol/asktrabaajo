@@ -8,6 +8,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 2 update (2026-09-05):** Candidate Figma shell + Jobseeker Employment OS are wired to canonical `/api/v1`. Dashboard, Work ID, documents, credentials, Work DNA, career goals, Career Advisor (`/career-advisor/*`), opportunities (including match modes), applications, interviews, AI Interview, interview prep, offers, communications, notifications, and privacy/settings are API-backed with empty states. No mock APIs. Hosted DB untouched — see `CURSOR_WAVE_2_CLOSURE.md`.
 
+**Wave 3 update (2026-09-05):** Employer / HR Figma shell (`EmployerShell`) + Company Employment OS are wired to canonical `/api/v1`. Command center, profile, members/RBAC, jobs (including multi-step draft + clone-as-template), Talent Graph, pipeline, interviews, AI interviews + human decision, offers, communications, analytics, notifications, billing, and settings are API-backed. Athena HR is an honest Soon entry. Offices/departments/job-template catalogs have **no first-class API** and are not invented. Hosted DB untouched — see `CURSOR_WAVE_3_CLOSURE.md`.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.
@@ -49,13 +51,17 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 | Loading/error/empty states | ✅ shared `EmptyState` / `ErrorBanner` / `LoadingState` on major Candidate screens |
 | Notifications | ✅ `/jobseeker/notifications` + header unread count |
 
-### 4. Employer / Company
+### 4. Employer / Company — Wave 3 Employer OS
 | Item | State |
 |---|---|
-| Pages | ✅ `company/*` (dashboard, jobs, candidates, pipeline, communications) + `employer/ai-interviews` + `employer/billing` import `lib/api` |
-| Org context | ✅ `OrgProvider` + shell selector (`asktrabaajo_org_id`); pages read `useOrg()`. Backend membership checks remain authoritative. |
-| Billing | ✅ `/employer/billing` is read-only self-service via canonical API (mock provider; no client payment authority — correct) |
-| Candidate reports | ⚠️ AI interview report screen exists (`employer/ai-interviews`) — verify human-decision flow (`/decision`) |
+| Shell | ✅ `EmployerShell` (HR Figma tokens, org switcher, unread badge, mobile drawer) |
+| Pages | ✅ dashboard, profile, members, jobs, jobs/new, candidates, pipeline, interviews, offers, analytics, communications, notifications, settings, athena (Soon), `/employer/ai-interviews`, `/employer/billing` |
+| Data wiring | ✅ `lib/api` only; no mock APIs; no invented production stats |
+| Org context | ✅ `OrgProvider` + shell selector (`asktrabaajo_org_id`); backend membership remains authoritative |
+| Billing | ✅ `/employer/billing` self-service via canonical API (mock provider; no client payment authority) |
+| AI reports | ✅ `/employer/ai-interviews` + explicit human `/decision` |
+| Offices / departments / templates | ⚠️ no first-class APIs — HQ = profile city/country; departments = distinct `job.department`; templates = clone job as draft |
+| Workforce / planning / onboarding Figma | ❌ no product APIs — not fabricated |
 
 ### 5. Admin / Governance
 | Item | State |
@@ -74,8 +80,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 ### 7. Communications / notifications
 | Item | State |
 |---|---|
-| Messaging | ⚠️ `jobseeker/communications` + `company/communications` exist; verify read/close/block wiring |
-| Notifications | ✅ Candidate header badge + notification center (no invented records) |
+| Messaging | ✅ Candidate + Employer communications via canonical talent/jobseeker APIs |
+| Notifications | ✅ Candidate and Employer header badge + notification center (user-scoped `/jobseeker/notifications`) |
 
 ### 8. Commerce
 | Item | State |
@@ -88,7 +94,7 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 - ✅ Shared functional OS shell (`OsChrome`) with logout, portal links, org selector
 - ✅ Route guards + permission-aware nav (backend remains authoritative)
 - ✅ Candidate page-level loading/error/empty states (Wave 2)
-- ⚠️ Employer page-level empty states remain Wave 3
+- ✅ Employer page-level loading/error/empty states (Wave 3)
 - ❌ Toast/confirmation-dialog system (needed for Athena confirmations, bulk apply, high-risk actions)
 - ✅ Org-context selector (`OrgProvider`, `asktrabaajo_org_id`)
 - ❌ Responsive/mobile pass and accessibility pass (keyboard, ARIA)
@@ -98,8 +104,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 | Status | Where |
 |---|---|
-| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | Athena chat, MFA enroll polish, employer Figma shell |
-| **PARTIALLY INTEGRATED** | company/*, admin/governance/*, employer/* (Wave 3+) |
+| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | Athena chat, MFA enroll polish |
+| **PARTIALLY INTEGRATED** | admin/governance/* |
 | **UI EXISTS / API NOT CONNECTED** | none found on Candidate OS |
 | **API EXISTS / UI MISSING** | Athena chat, MFA enroll, usage/entitlements detail |
 | **BLOCKED** | live DB anything, provider-dependent features (voice/video, real payments), government citizen surfaces (forbidden) |
@@ -109,6 +115,6 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 1. **Wave 1 foundation** — ✅ dual-auth bridge, refresh, guards, org context, functional shell.
 2. **Wave 2** — ✅ Candidate Figma shell + Jobseeker Employment OS.
-3. **Wave 3** — Employer / Company Figma OS (`CURSOR_WAVE_3_READINESS.md`).
-4. **Wave 4** — Athena chat + confirmations.
+3. **Wave 3** — ✅ Employer / Company Figma OS (`CURSOR_WAVE_3_CLOSURE.md`).
+4. **Wave 4** — Athena chat + confirmations (`CURSOR_WAVE_4_READINESS.md`).
 5. **Waves 5–9** — communications, governance, commerce polish, government (exists-only), final UX.

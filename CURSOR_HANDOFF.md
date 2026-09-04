@@ -6,20 +6,22 @@
 ASKTRABAAJO BACKEND / PLATFORM:
 DEVELOPMENT READY
 STAGING READY LOCALLY
-CANDIDATE OS (WAVE 2) IMPLEMENTED
+CANDIDATE OS (WAVE 2) ACCEPTED
+EMPLOYER OS (WAVE 3) IMPLEMENTED
 
 PHASE 19 COMPLETE
 WAVE 1 ACCEPTED
-WAVE 2 IMPLEMENTED
+WAVE 2 ACCEPTED
+WAVE 3 IMPLEMENTED
 LIVE RECONCILIATION NOT EXECUTED
 NO LIVE DATABASE WRITES PERFORMED
 ```
 
 - The canonical backend is **complete through Phase 19** and fully test-verified: 246 `/api/v1` routes, 80 canonical tables, migration head `0014`, RLS, RBAC, Athena, AI Interview, Commerce.
-- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner later confirmed the product is **pre-launch** (no real users). Wave 2 classified the hosted DB and validated the Candidate OS on **isolated sqlite** instead of writing to the hosted project. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md`.
-- Wave 1 is **ACCEPTED**. Wave 2 (Jobseeker Employment OS + Candidate Figma) is **IMPLEMENTED**. Next: Wave 3 (Employer OS) only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
+- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner confirmed the product is **pre-launch**. Waves 2 and 3 validated on **isolated sqlite**. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md` and `CURSOR_WAVE_3_DB_CLASSIFICATION.md`.
+- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS + HR Figma shell) is **IMPLEMENTED**. Next: Wave 4 (Athena UI) only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
 
-**Where to start:** `CURSOR_WAVE_3_READINESS.md` (next execution) + `CURSOR_WAVE_2_CLOSURE.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
+**Where to start:** `CURSOR_WAVE_4_READINESS.md` (next execution) + `CURSOR_WAVE_3_CLOSURE.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
 
 ---
 
@@ -112,15 +114,15 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 | Surface | Pages | Status |
 |---|---|---|
 | Auth (login/register) | `login/page.tsx`, `register/page.tsx` | **WAVE 1 COMPLETE** — public pages write `asktrabaajo_at` / `asktrabaajo_rt` via `POST /api/v1/auth/*`. Refresh, `PortalGuard`, `OrgProvider`, `OsChrome` are in place. |
-| Jobseeker portal | `jobseeker/*` (dashboard, opportunities, applications, offers, interviews, interview-prep, career, work-dna, communications, ai-interview) | **READY TO INTEGRATE / PARTIALLY INTEGRATED** — pages exist and call canonical API; verify each endpoint and add auth/session wiring |
-| Employer/company | `company/*` (dashboard, jobs, candidates, pipeline, communications), `employer/ai-interviews`, `employer/billing` | **PARTIALLY INTEGRATED** — call canonical API; billing is read-only safe by design (mock provider, no client payment authority) |
+| Jobseeker portal | `jobseeker/*` | **WAVE 2 COMPLETE** — CandidateShell + API-backed Employment OS |
+| Employer/company | `company/*`, `employer/ai-interviews`, `employer/billing` | **WAVE 3 COMPLETE** — EmployerShell (HR Figma), org switcher, dashboard, profile, members, jobs, talent, pipeline, interviews, offers, analytics, communications, notifications, billing, settings. Athena HR is honest Soon. |
 | Admin/governance | `admin/governance/*` (reports, enforcement, appeals, audit, teams) | **PARTIALLY INTEGRATED** — call canonical API |
-| Work ID | `id/work-id`, `id` | **PARTIALLY INTEGRATED** — call canonical API |
+| Work ID | `id/work-id`, `id` | **WAVE 2 COMPLETE** — Candidate-styled Work ID + account/security |
 | Legacy dashboard/interviews | `dashboard/*`, `interviews/*`, `interview/*` | **LEGACY** — use `useAuth`/Supabase; leave as-is or migrate in later waves (not careers) |
 | Careers site | `careers/*` | **LEGACY — DO NOT TOUCH** (separate data source) |
-| Mock/local pages | `employer/billing` (mock-safe notes), `jobseeker/interview-prep`, `interview/[id]/analysis` | **MOCKED OR LOCAL** — mark clearly; never present as production |
+| Mock/local pages | `interview/[id]/analysis` | **LEGACY / MOCK** — mark clearly; never present as production |
 
-**Biggest remaining gaps (detail in `FRONTEND_GAP_REPORT.md`):** jobseeker/employer screens are functional-proof (not Figma); page-level loading/empty/error states; notifications UI; Athena UI; Career Advisor `/career-advisor/*` unused; government portal absent; public website CTAs still placeholder. Dual-auth, refresh, guards, and org context were closed in Wave 1.
+**Biggest remaining gaps (detail in `FRONTEND_GAP_REPORT.md`):** Athena chat UI; first-class offices/departments/job-template catalogs (no canonical tables); Figma workforce/performance/learning/onboarding product surfaces; government portal absent; public website CTAs still placeholder. Dual-auth, refresh, guards, Candidate OS, and Employer OS were closed in Waves 1–3.
 
 ---
 
@@ -231,8 +233,9 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 
 | Check | Result |
 |---|---|
-| SQLite full suite (`backend`: `pytest tests_phase3`) | **250 passed / 11 skipped / 0 failed** (re-run Wave 2) |
+| SQLite full suite (`backend`: `pytest tests_phase3`) | **250 passed / 11 skipped / 0 failed** (re-run Wave 3) |
 | Wave 2 Candidate E2E (`scripts/wave2_candidate_e2e.py`) | **PASS** (isolated sqlite; hosted DB untouched) |
+| Wave 3 Employer E2E (`scripts/wave3_employer_e2e.py`) | **PASS** (isolated sqlite; hosted DB untouched; cross-tenant 403/404) |
 | PostgreSQL RLS suite (scratch PG 16 @ 0014) | **11/11 passed** |
 | Staging-mode E2E smoke (PG 16, `ENVIRONMENT=staging`) | **PASS** (`P19_STAGING_SMOKE_PASS`: auth → org → AI interview full journey → report → human decision → billing boundary → cross-tenant denial) |
 | Frontend typecheck (`tsc --noEmit`) | PASS |
