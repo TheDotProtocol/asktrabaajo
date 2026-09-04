@@ -7,13 +7,9 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { PageHeader, btnCls, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { useOrg } from "@/context/OrgContext";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
 
 interface SessionRow {
   session_id: string;
@@ -131,14 +127,12 @@ export default function EmployerAiInterviewsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-5xl space-y-4 p-6">
-      <div>
-        <h1 className="text-xl font-semibold">AI Interviews</h1>
-        <p className="text-sm text-neutral-500 dark:text-neutral-400">
-          AI-assisted assessment — human review required. The report is an
-          input to your decision; it is never the decision.
-        </p>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        kicker="AI Interview Engine"
+        title="AI Interviews"
+        subtitle="AI-assisted assessment. A human records the hiring decision. Integrity signals are review inputs, not automatic penalties."
+      />
 
       {error && (
         <div className="rounded border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-300">
