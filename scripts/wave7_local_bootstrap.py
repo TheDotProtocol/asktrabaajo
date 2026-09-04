@@ -32,6 +32,7 @@ import app.models  # noqa: F401,E402
 from app.db.base import Base  # noqa: E402
 from app.models.catalog import seed_catalog  # noqa: E402
 from app.models import Membership, Organization, User  # noqa: E402
+from app.models.company import CompanyProfile  # noqa: E402
 from app.models.career import CareerGoal  # noqa: E402
 from app.models.governance import GOVERNANCE_TEAM_SEEDS, GovernanceTeam  # noqa: E402
 from app.models.work import Credential, Education, WorkExperience  # noqa: E402
@@ -146,6 +147,103 @@ def seed_wave7_identity(db: Session, user: User) -> None:
         )
 
 
+def seed_wave8_workforce(db: Session, inspector: User, employer_org: Organization) -> None:
+    """Deterministic DEV cohorts for k-threshold inspection.
+
+    Development City + Python: large enough to display.
+    Sparse Town + RareSkillDEV: below the default threshold (suppressed).
+    """
+    profile = db.scalar(
+        select(CompanyProfile).where(CompanyProfile.organization_id == employer_org.id)
+    )
+    if profile is None:
+        profile = CompanyProfile(
+            organization_id=employer_org.id,
+            display_name="AskTrabaajo DEV Company",
+            industry="Technology",
+            country="DEV",
+            city="Development City",
+        )
+        db.add(profile)
+    else:
+        profile.industry = profile.industry or "Technology"
+        profile.country = profile.country or "DEV"
+        profile.city = profile.city or "Development City"
+
+    extra = company_os.create_job(
+        db,
+        employer_org.id,
+        inspector.id,
+        title="DEV Python Role",
+        summary="DEV fixture for skill demand. Not a real opening.",
+        description="Marked DEV.",
+        skills_required=["Python"],
+        industry="Technology",
+        location="Development",
+        city="Development City",
+        country="DEV",
+        remote_eligible=True,
+        employment_type="full_time",
+    )
+    company_os.publish_job(db, employer_org.id, extra.id)
+
+    for index in range(1, 12):
+        email = f"dev+gov.wf.{index:02d}@example.com"
+        register_user(db, email=email, password=WAVE6_PASSWORD, full_name=f"DEV Workforce {index:02d}")
+        user = db.scalar(select(User).where(User.email == email))
+        assert user is not None
+        person = get_person_for_user(db, user.id)
+        assert person is not None
+        person.city = "Development City"
+        person.country_code = "DEV"
+        person.headline = "DEV workforce fixture"
+        skill = skills_registry.ensure_skill(db, "Python")
+        from app.models.work import UserSkill
+
+        db.add(
+            UserSkill(
+                person_id=person.id,
+                skill_id=skill.id,
+                level="intermediate",
+                years_experience=2,
+            )
+        )
+        db.add(
+            WorkExperience(
+                person_id=person.id,
+                company_name="AskTrabaajo DEV Company",
+                title="DEV Worker",
+                location="Development",
+                start_date=date(2024, 1, 1),
+                is_current=True,
+                description="DEV fixture. Not a real employment record.",
+            )
+        )
+
+    for index in range(1, 4):
+        email = f"dev+gov.sparse.{index:02d}@example.com"
+        register_user(db, email=email, password=WAVE6_PASSWORD, full_name=f"DEV Sparse {index:02d}")
+        user = db.scalar(select(User).where(User.email == email))
+        assert user is not None
+        person = get_person_for_user(db, user.id)
+        assert person is not None
+        person.city = "Sparse Town"
+        person.country_code = "DEV"
+        person.headline = "DEV small-cohort fixture"
+        skill = skills_registry.ensure_skill(db, "RareSkillDEV")
+        from app.models.work import UserSkill
+
+        db.add(
+            UserSkill(
+                person_id=person.id,
+                skill_id=skill.id,
+                level="beginner",
+                years_experience=1,
+            )
+        )
+    db.commit()
+
+
 def main() -> None:
     password = read_wave7_password()
     write_creds_file(password)
@@ -230,6 +328,8 @@ def main() -> None:
             employment_type="full_time",
         )
         company_os.publish_job(db, employer_org.id, job.id)
+
+        seed_wave8_workforce(db, inspector, employer_org)
 
         gov = Organization(
             name="AskTrabaajo DEV Government",
