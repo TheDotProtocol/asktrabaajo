@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { ApiError } from '@/lib/api/types';
 import { loginRedirectPath } from '@/lib/api/portal';
@@ -10,8 +10,22 @@ import { useCanonicalAuth } from '@/context/AuthContext';
 import type { PostAuthIntent } from '@/lib/api/session';
 import { AuthSplit, authBtnCls, authInputCls, authLabelCls } from '@/components/auth/AuthSplit';
 
+function intentFromQuery(raw: string | null): PostAuthIntent {
+  if (raw === 'employer' || raw === 'company' || raw === 'recruiter') return 'employer';
+  return 'jobseeker';
+}
+
 export default function Register() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#0b0c0d]" />}>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register, consumeIntent } = useCanonicalAuth();
   const [formData, setFormData] = useState({
     firstName: '',
@@ -20,7 +34,9 @@ export default function Register() {
     password: '',
     confirmPassword: '',
   });
-  const [intent, setIntent] = useState<PostAuthIntent>('jobseeker');
+  const [intent, setIntent] = useState<PostAuthIntent>(() =>
+    intentFromQuery(searchParams.get('intent'))
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<{

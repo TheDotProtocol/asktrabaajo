@@ -3,13 +3,15 @@
 import { useCanonicalAuth } from '@/context/AuthContext';
 import {
   canAccessEmployer,
+  canAccessGovernance,
+  canAccessGovernment,
   canAccessJobseeker,
   canAccessPlatform,
 } from '@/lib/api/portal';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect } from 'react';
 
-export type PortalAllow = 'authenticated' | 'employer' | 'governance' | 'platform';
+export type PortalAllow = 'authenticated' | 'employer' | 'governance' | 'government' | 'platform';
 
 export function PortalGuard({
   children,
@@ -27,7 +29,11 @@ export function PortalGuard({
       ? canAccessJobseeker(me)
       : allow === 'employer'
         ? canAccessEmployer(me)
-        : canAccessPlatform(me);
+        : allow === 'government'
+          ? canAccessGovernment(me)
+          : allow === 'governance'
+            ? canAccessGovernance(me)
+            : canAccessPlatform(me);
 
   useEffect(() => {
     if (loading) return;

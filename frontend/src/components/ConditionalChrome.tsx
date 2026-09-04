@@ -55,6 +55,8 @@ const STANDALONE_PREFIXES = [
   '/login',
   '/register',
   '/forgot-password',
+  '/portals',
+  '/government',
 ]
 
 export default function ConditionalChrome({ children }: { children: React.ReactNode }) {

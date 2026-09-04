@@ -63,6 +63,41 @@ export function canAccessPlatform(me: MeResponse | null): boolean {
   return hasAnyPermission(me, PLATFORM_PERMISSIONS);
 }
 
+export function governmentMemberships(me: MeResponse | null): MembershipBrief[] {
+  if (!me) return [];
+  return me.memberships.filter((m) => m.organization_kind === "government");
+}
+
+export function canAccessGovernment(me: MeResponse | null): boolean {
+  return (
+    governmentMemberships(me).length > 0 ||
+    hasPermission(me, "workforce.aggregates.read")
+  );
+}
+
+export type PortalEntry = {
+  id: "jobseeker" | "employer" | "government" | "admin";
+  href: string;
+  label: string;
+};
+
+export function availablePortals(me: MeResponse | null): PortalEntry[] {
+  if (!me) return [];
+  const portals: PortalEntry[] = [
+    { id: "jobseeker", href: "/jobseeker", label: "Jobseeker" },
+  ];
+  if (canAccessEmployer(me)) {
+    portals.push({ id: "employer", href: "/company", label: "Employer" });
+  }
+  if (canAccessGovernment(me)) {
+    portals.push({ id: "government", href: "/government", label: "Government" });
+  }
+  if (canAccessPlatform(me)) {
+    portals.push({ id: "admin", href: "/admin", label: "Super Admin" });
+  }
+  return portals;
+}
+
 export function homeForMe(
   me: MeResponse | null,
   intent?: PostAuthIntent | null
@@ -70,6 +105,7 @@ export function homeForMe(
   if (!me) return "/login";
   if (intent === "employer") return "/company";
   if (intent === "jobseeker") return "/jobseeker";
+  if (availablePortals(me).length > 1) return "/portals";
   if (canAccessEmployer(me)) return "/company";
   if (canAccessPlatform(me)) return "/admin";
   return "/jobseeker";

@@ -24,6 +24,7 @@ import {
 
 import { useCanonicalAuth } from '@/context/AuthContext';
 import { useOrg } from '@/context/OrgContext';
+import { PortalSwitchLinks } from '@/components/os/PortalSwitchLinks';
 import { api } from '@/lib/api/session';
 
 type NavItem = {
@@ -181,6 +182,9 @@ export function EmployerShell({ children }: { children: ReactNode }) {
           <p className="truncate font-mono text-[10px] uppercase tracking-wider text-[#9ca3af]">
             {membership?.role?.replaceAll('_', ' ') ?? 'No organization'}
           </p>
+          <div className="mt-3">
+            <PortalSwitchLinks compact />
+          </div>
           <button
             type="button"
             onClick={() => void logout().then(() => { window.location.href = '/login'; })}

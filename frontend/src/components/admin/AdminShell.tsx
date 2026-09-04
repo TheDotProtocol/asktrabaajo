@@ -25,6 +25,7 @@ import {
 import { useCanonicalAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api/session';
 import { hasPermission } from '@/lib/api/portal';
+import { PortalSwitchLinks } from '@/components/os/PortalSwitchLinks';
 
 type NavItem = {
   href: string;
@@ -170,6 +171,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <div className="rounded-lg border border-[#23272a] bg-[#111315] p-3">
           <p className="truncate text-sm font-medium text-white">{me?.full_name ?? 'Account'}</p>
           <p className="truncate font-mono text-[10px] uppercase tracking-wider text-[#9ca3af]">{roleLabel}</p>
+          <div className="mt-2">
+            <PortalSwitchLinks compact />
+          </div>
           <div className="mt-3 flex items-center justify-between">
             <button
               type="button"

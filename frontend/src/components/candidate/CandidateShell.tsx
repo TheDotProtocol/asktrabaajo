@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 
 import { useCanonicalAuth } from '@/context/AuthContext';
+import { PortalSwitchLinks } from '@/components/os/PortalSwitchLinks';
 import { api } from '@/lib/api/session';
 
 type NavItem = {
@@ -139,6 +140,9 @@ export function CandidateShell({ children }: { children: ReactNode }) {
         <div className="rounded-lg border border-[#23272a] bg-[#111315] p-3">
           <p className="truncate text-sm font-medium text-white">{me?.full_name ?? 'Account'}</p>
           <p className="truncate font-mono text-[10px] uppercase tracking-wider text-[#9ca3af]">{headline}</p>
+          <div className="mt-3">
+            <PortalSwitchLinks compact />
+          </div>
           <button
             type="button"
             onClick={() => void logout().then(() => { window.location.href = '/login'; })}
