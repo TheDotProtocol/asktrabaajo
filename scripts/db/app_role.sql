@@ -15,8 +15,8 @@
 --
 -- LEGACY SAFETY
 --   Only CANONICAL tables are granted. No legacy Supabase object is touched.
---   The list below is the exact 71-table canonical metadata
---   (Base.metadata, migrations 0001-0013); alembic_version is excluded.
+--   The list below is the exact 79-table canonical metadata
+--   (Base.metadata, migrations 0001-0014); alembic_version is excluded.
 --
 -- USAGE (superuser)
 --   psql "$DATABASE_URL" -f scripts/db/app_role.sql
@@ -44,6 +44,9 @@ BEGIN
              AND tablename IN (
                'ai_interview_evaluations','ai_interview_questions','ai_interview_reports',
                'ai_interview_sessions','ai_usage_log','appeals','application_events',
+               'commerce_invoices','commerce_plan_entitlements','commerce_plans',
+               'commerce_subscriptions','payment_refunds','payment_transactions',
+               'payment_webhook_events','usage_records',
                'athena_action_confirmations','athena_messages','athena_sessions','audit_log',
                'candidate_search_events',
                'career_goals','career_milestones','career_path_steps','career_paths',

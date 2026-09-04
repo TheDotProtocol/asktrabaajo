@@ -110,6 +110,24 @@ class Settings(BaseSettings):
     ai_stt_provider: str = "none"
     ai_tts_provider: str = "none"
 
+    # --- Commerce / Payments (Phase 17) ----------------------------------------
+    # Provider-neutral payment selection. ``mock`` is the sandbox default —
+    # deterministic, no real money, HMAC-signed webhooks for local testing.
+    # ``none`` disables payments (safe degraded); ``stripe`` requires a
+    # server-side STRIPE_SECRET_KEY and is NOT wired in this phase.
+    payment_provider: str = "mock"
+    # Webhook signature secret (env-injected; never logged). The mock
+    # provider signs webhook bodies with HMAC-SHA256 using this secret.
+    payment_webhook_secret: str = ""
+    commerce_default_currency: str = "USD"
+
+    @field_validator("payment_provider")
+    @classmethod
+    def _payment_provider_allowed(cls, v: str) -> str:
+        if v not in {"none", "mock", "stripe"}:
+            raise ValueError(f"payment_provider must be one of {{'none','mock','stripe'}}, got {v!r}")
+        return v
+
     @field_validator("ai_provider")
     @classmethod
     def _ai_provider_allowed(cls, v: str) -> str:

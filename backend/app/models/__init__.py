@@ -11,6 +11,8 @@ from app.models import (
     governance,
     identity,
     interview_prep,
+    commerce,
+    payments,
     platform,
     privacy,
     talent,
@@ -45,6 +47,18 @@ from app.models.athena import (
     AthenaSession,
 )
 from app.models.interview_prep import InterviewPrepSession
+from app.models.commerce import (
+    Invoice,
+    Plan,
+    PlanEntitlement,
+    Subscription,
+    UsageRecord,
+)
+from app.models.payments import (
+    PaymentRefund,
+    PaymentTransaction,
+    PaymentWebhookEvent,
+)
 from app.models.ai_interview import (
     AiInterviewEvaluation,
     AiInterviewQuestion,
@@ -112,6 +126,14 @@ from app.models.work import (
 
 __all__ = [
     "AiInterviewEvaluation",
+    "Invoice",
+    "Plan",
+    "PlanEntitlement",
+    "PaymentRefund",
+    "PaymentTransaction",
+    "PaymentWebhookEvent",
+    "Subscription",
+    "UsageRecord",
     "AiInterviewQuestion",
     "AiInterviewReport",
     "AiInterviewSession",

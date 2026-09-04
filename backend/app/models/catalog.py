@@ -88,6 +88,8 @@ PERMISSIONS = [
     ("company.manage", "Manage the company profile"),
     ("billing.read", "Read billing data"),
     ("billing.manage", "Manage billing"),
+    ("finance.read", "Read finance records (platform)"),
+    ("finance.manage", "Authorize refunds and finance mutations (platform)"),
     ("support.read", "Read support data"),
     ("marketing.manage", "Manage marketing"),
     ("audit.read", "Read audit logs"),
@@ -137,9 +139,10 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "reports.read", "reports.audit", "moderation.read", "platform.audit.read",
     ],
     "customer_support": ["users.read", "orgs.read", "support.read", "billing.read"],
+    "finance": ["billing.read", "billing.manage", "finance.read", "finance.manage", "audit.read"],
     "tech_support": ["users.read", "users.update", "sessions.manage", "audit.read"],
     "marketing": ["marketing.manage"],
-    "finance": ["billing.read", "billing.manage", "audit.read"],
+
     "org_admin": [
         "orgs.read", "orgs.update", "members.read", "members.manage",
         "company.manage",
@@ -151,7 +154,7 @@ ROLE_PERMISSIONS: dict[str, list[str]] = {
         "applications.view", "applications.manage",
         "interviews.create", "interviews.read", "interviews.manage",
         "offers.create", "offers.manage",
-        "analytics.view", "billing.read",
+        "analytics.view", "billing.read", "billing.manage",
     ],
     "hr": [
         "orgs.read",
