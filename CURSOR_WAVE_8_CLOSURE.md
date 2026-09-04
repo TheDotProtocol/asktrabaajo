@@ -133,7 +133,7 @@ Local only. Prefix `wave8:`. Not pushed.
 
 ## 27. HEAD
 
-Recorded in `PROJECT_STATUS.json` after the Wave 8 documentation commit.
+`ad0396fe304ff1ca0b159cdf438d1c48b822e5c0` (`wave8: government QA documentation`) before the record-head commit.
 
 ## 28. Working tree
 

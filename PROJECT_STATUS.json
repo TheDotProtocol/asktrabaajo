@@ -1,7 +1,8 @@
 {
   "phase": 19,
   "status": "PASS_WITH_LIMITATIONS",
-  "git_head": "2d638fc",
+  "git_head": "ad0396f",
+  "git_head_wave8": "ad0396f",
   "git_head_phase19_freeze": "43176d9",
   "branch": "main",
   "wave_1": "ACCEPTED",
