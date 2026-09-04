@@ -67,9 +67,27 @@ Wave 7 E2E: stacked memberships, no god-mode, jobseeker + employer 200, cross-te
 
 Phase 3 pytest was last fully run in Wave 6 (PASS). Wave 7 added no backend route surface.
 
-## 14–16. Git / HEAD / tree
+## 14. Git commits
 
-See the Wave 7 commit list and `git status` after the documentation commits. Website commits live in the sibling repo.
+AskTrabaajo (`main`, local, **not pushed**):
+
+| SHA | Message |
+|---|---|
+| `49e07e0` | wave7: local multi-portal dev identity |
+| `3c46707` | wave7: portal integration |
+| `2d638fc` | wave7: documentation |
+
+Public website sibling repo (`557134f`): wave7: connect public website CTAs. **Not pushed.**
+
+## 15. Current HEAD
+
+`2d638fc` on asktrabaajo `main` (local, unpushed).
+
+## 16. Working tree
+
+Wave 7 files committed. Pre-existing Careers / legacy dirt left unstaged.
+
+**Deliberately untouched:** hosted Supabase, `backend/.env`, Legacy Careers, website visual/WebGL/copy, canonical API contracts, production RBAC rules.
 
 ## 17. Known limitations
 
