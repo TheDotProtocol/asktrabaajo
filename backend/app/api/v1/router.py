@@ -2,6 +2,7 @@
 from fastapi import APIRouter
 
 from app.api.v1 import (
+    ai_interviews,
     athena,
     auth,
     career_advisor,
@@ -28,6 +29,7 @@ router.include_router(documents.router)
 router.include_router(jobseeker.router)
 router.include_router(career_advisor.router)
 router.include_router(interview_prep.router)
+router.include_router(ai_interviews.router)
 router.include_router(company.router)
 router.include_router(talent.router)
 router.include_router(governance.router)

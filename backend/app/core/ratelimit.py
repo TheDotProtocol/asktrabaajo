@@ -48,6 +48,11 @@ RATE_LIMIT_POLICIES: Dict[str, Tuple[int, float]] = {
     "athena.tool": (40, 60),
     "athena.search": (30, 60),
     "athena.high_risk": (10, 3600),
+    # AI Interview Engine (Phase 16) — candidate-side writes are bounded
+    # so a compromised token cannot drive unbounded AI expenditure.
+    "ai_interview.create": (20, 3600),
+    "ai_interview.invite": (20, 3600),
+    "ai_interview.respond": (40, 60),
 }
 
 
