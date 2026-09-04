@@ -104,11 +104,11 @@ Created on `main` (local, **not pushed**):
 |---|---|
 | `ed2aba3` | wave6: local portal runtime setup |
 | `1fe5a96` | wave6: auth visual corrections |
-| (this docs commit + record-head) | wave6: visual qa documentation |
+| `d476d0e` | wave6: visual qa documentation |
 
 ## 20. Current HEAD
 
-See `PROJECT_STATUS.json` `git_head` after the record-head commit. Parent of this documentation set is `1fe5a96`.
+`d476d0e` on `main` (local, unpushed). A follow-up record-head commit may sit on top.
 
 ## 21. Working tree status
 
