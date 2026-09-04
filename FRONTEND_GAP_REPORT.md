@@ -2,26 +2,31 @@
 
 Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes made during the audit).
 
+**Wave 1 update (2026-09-05):** the dual-auth gap is closed for the canonical application. `/login` and `/register` write `asktrabaajo_at` / `asktrabaajo_rt` via `POST /api/v1/auth/*`. `ApiClient` rotates refresh tokens on 401 (single-flight). `PortalGuard` + `OsChrome` + `OrgProvider` wrap jobseeker / company / employer / admin / identity. `useAuth` remains **only** on legacy Careers + `/dashboard` + `/interview*` — do not use it for canonical pages. See `CURSOR_WAVE_1_REPORT.md`.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.
-- **Legacy auth layer still present:** `src/hooks/useAuth.ts` (Supabase + `localAuth.ts` local-session fallback + `testUser.ts`), `src/lib/supabase.ts`, `src/lib/supabaseStorage.ts`. Used by **8 page files**: `login`, `register`, `dashboard/*`, `interviews`, `interview/*`.
+- **Legacy auth layer still present for Careers/legacy only:** `src/hooks/useAuth.ts` (Supabase + `localAuth.ts` + `testUser.ts`). Used by `/dashboard/*`, `/interviews`, `/interview/*`, careers nav — **not** by `/login` or `/register` after Wave 1.
 - **Legacy careers layer:** `src/lib/careers/*` (api.ts, aiApi.ts, employerApi.ts, supabase.ts, types.ts, constants.ts) + `src/app/careers/*` pages — **separate data source; DO NOT TOUCH**.
 - **No raw `fetch()` calls** in app pages (everything goes through the api client, the careers client, or supabase libs).
 
 ## Category-by-category gaps
 
-### 1. Authentication — DUAL AUTH GAP (highest priority)
+### 1. Authentication — Wave 1 complete for the canonical app
 | Item | State |
 |---|---|
-| Canonical login/register API | ✅ exists (`/api/v1/auth/login`, `/register`, `lib/api/session.ts#login`) |
-| Login/register pages | ⚠️ **use legacy `useAuth`** (Supabase/local) — they do NOT write the canonical `asktrabaajo_at` token, so canonical pages have no session after login |
-| Session persistence | ⚠️ canonical tokens in localStorage (`session.ts`); refresh/rotation handler not wired (`ApiClient.onUnauthorized` only clears) |
-| Route guards / redirects | ❌ none — pages assume a token exists; no shared guard component |
-| Logout | ⚠️ canonical `logout()` exists in `session.ts`; not wired into a shared nav |
-| MFA / verify-email UX | ❌ backend exists, no UI |
+| Canonical login/register API | ✅ `/api/v1/auth/login`, `/register`, `session.ts` |
+| Login/register pages | ✅ write canonical tokens; redirect via `homeForMe` / `?next=` |
+| Session persistence | ✅ localStorage `asktrabaajo_at` / `asktrabaajo_rt`; restore on reload |
+| Refresh | ✅ `POST /auth/refresh` rotation, single-flight, retry-then-clear |
+| Route guards / redirects | ✅ `PortalGuard` on jobseeker / company / employer / admin / id |
+| Logout | ✅ shell + `POST /auth/logout` + `clearSession` |
+| MFA on login | ✅ challenge step when `mfa_required` |
+| Forgot password | ✅ `/forgot-password` → `POST /auth/forgot-password` |
+| MFA enroll / verify-email polish | ⚠️ backend exists; `/id` can send verification; enroll UI still Wave 9 |
 
-**Fix (Wave 1):** make login/register write the canonical session (`setSession`), add refresh handling + 401 auto-refresh, add route guards, wire logout, keep `useAuth` only for legacy/careers surfaces.
+`useAuth` stays for legacy/careers surfaces only.
 
 ### 2. Identity / Work ID
 | Item | State |
@@ -43,7 +48,7 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 | Item | State |
 |---|---|
 | Pages | ✅ `company/*` (dashboard, jobs, candidates, pipeline, communications) + `employer/ai-interviews` + `employer/billing` import `lib/api` |
-| Org context | ⚠️ pages fetch `/organizations` and pick `organization_id` per page; **no shared org selector/context** — introduce in Wave 1 |
+| Org context | ✅ `OrgProvider` + shell selector (`asktrabaajo_org_id`); pages read `useOrg()`. Backend membership checks remain authoritative. |
 | Billing | ✅ `/employer/billing` is read-only self-service via canonical API (mock provider; no client payment authority — correct) |
 | Candidate reports | ⚠️ AI interview report screen exists (`employer/ai-interviews`) — verify human-decision flow (`/decision`) |
 
@@ -75,28 +80,28 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 | Payment status | ✅ safe (mock); never build client-side refund/payment authority |
 
 ### 9. Missing cross-cutting surfaces
-- ❌ Shared nav/shell per portal (jobseeker layout, company layout exist but thin; no auth-aware nav)
-- ❌ Route guards + RBAC-aware navigation (hide routes the user's roles can't access)
-- ❌ Loading skeletons / error states / empty states
+- ✅ Shared functional OS shell (`OsChrome`) with logout, portal links, org selector
+- ✅ Route guards + permission-aware nav (backend remains authoritative)
+- ⚠️ Loading/error/empty states: auth/session covered; page-level polish remains Wave 2+
 - ❌ Toast/confirmation-dialog system (needed for Athena confirmations, bulk apply, high-risk actions)
-- ❌ Org-context selector for employer/admin surfaces
+- ✅ Org-context selector (`OrgProvider`, `asktrabaajo_org_id`)
 - ❌ Responsive/mobile pass and accessibility pass (keyboard, ARIA)
-- ❌ `.env` guidance: `NEXT_PUBLIC_API_URL` documented in `.env.example` (no secrets)
+- ✅ `.env` guidance: `frontend/.env.example` + `.env.development` (`NEXT_PUBLIC_API_URL` only)
 
 ## Status legend applied
 
 | Status | Where |
 |---|---|
-| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | Athena chat, notifications bell, MFA/verify-email UI, org selector, shared nav, loading/error/empty states |
+| **READY TO INTEGRATE** (backend + client exist; page to be built/connected) | Athena chat, notifications bell, MFA enroll / verify-email polish, page-level loading/error/empty states |
 | **PARTIALLY INTEGRATED** | jobseeker/*, company/*, admin/governance/*, employer/*, id/* (verify each call; remove mock/local leftovers) |
 | **UI EXISTS / API NOT CONNECTED** | none found (all audited pages either call canonical API or are explicitly legacy) |
 | **API EXISTS / UI MISSING** | Athena chat, MFA, verify-email, notifications, usage/entitlements detail, document requests detail |
 | **BLOCKED** | live DB anything, provider-dependent features (voice/video, real payments), government citizen surfaces (forbidden) |
-| **LEGACY — DO NOT TOUCH** | `careers/*`, `dashboard/*`, `interviews/*`, `interview/*`, `login`/`register` (until Wave 1 replaces), `lib/careers/*`, `lib/supabase*`, `hooks/useAuth` (until superseded) |
+| **LEGACY — DO NOT TOUCH** | `careers/*`, `dashboard/*`, `interviews/*`, `interview/*`, `lib/careers/*`, `lib/supabase*`, `hooks/useAuth` (Careers/legacy only) |
 
 ## Priority order (matches `CURSOR_UI_INTEGRATION_PLAN.md`)
 
-1. **Wave 1 foundation** — dual-auth bridge, refresh handling, route guards, org context, shared UI primitives.
+1. **Wave 1 foundation** — ✅ dual-auth bridge, refresh, guards, org context, functional shell.
 2. **Wave 2–3** — finish wiring jobseeker + employer journeys (remove mocks, add states).
 3. **Wave 4** — Athena chat + confirmations, career advisor, prep, AI interview polish.
 4. **Waves 5–9** — communications, governance, commerce polish, government (exists-only), final UX.
