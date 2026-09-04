@@ -14,6 +14,7 @@ from app.api.v1 import (
     events,
     finance,
     governance,
+    government,
     interview_prep,
     jobseeker,
     organizations,
@@ -37,5 +38,6 @@ router.include_router(finance.router)
 router.include_router(company.router)
 router.include_router(talent.router)
 router.include_router(governance.router)
+router.include_router(government.router)
 router.include_router(enforcement.router)
 router.include_router(events.router)
