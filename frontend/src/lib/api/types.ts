@@ -1529,3 +1529,69 @@ export interface CareerAdvisorActionPlan {
   actions?: { type: string; title: string; detail?: string | null; target_week?: number }[];
   disclaimer?: string;
 }
+
+export type AthenaMode = "jobseeker" | "employer" | "recruiter" | "government" | "platform_operator";
+
+export interface AthenaStatus {
+  available: boolean;
+  state: "available" | "not_configured" | "temporarily_unavailable" | string;
+  modes: AthenaMode[];
+}
+
+export interface AthenaSession {
+  session_id: string;
+  mode: AthenaMode | string;
+  purpose: string | null;
+  organization_id: string | null;
+  status: string;
+  expires_at: string | null;
+}
+
+export interface AthenaToolMeta {
+  name: string;
+  description: string;
+  risk: string;
+  read_only: boolean;
+  data_scope: string;
+  confirmation_required: boolean;
+}
+
+export interface AthenaPendingConfirmation {
+  confirmation_id: string;
+  tool: string;
+  action_summary: string;
+  expires_at: string | null;
+}
+
+export interface AthenaToolResult {
+  status?: string;
+  tool?: string;
+  result?: Record<string, unknown>;
+  error_code?: string;
+  message?: string;
+  confirmation_id?: string;
+  action_summary?: string;
+}
+
+export interface AthenaMessageOut {
+  session_id: string;
+  reply: string;
+  tool_results: AthenaToolResult[];
+  pending_confirmations: AthenaPendingConfirmation[];
+  error: string | null;
+}
+
+export interface AthenaConfirmOut {
+  status: string;
+  confirmation_id: string;
+  tool?: string | null;
+  result?: Record<string, unknown> | null;
+}
+
+export interface AthenaUsageRow {
+  feature: string;
+  status: string;
+  total_tokens: number;
+  estimated_cost?: number | null;
+  created_at: string | null;
+}
