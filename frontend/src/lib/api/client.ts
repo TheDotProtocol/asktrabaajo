@@ -29,11 +29,13 @@ export class ApiClient {
   async request<T>(
     method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     path: string,
-    body?: unknown
+    body?: unknown,
+    extraHeaders?: Record<string, string>
   ): Promise<T> {
     const token = this.getAccessToken();
     const headers: Record<string, string> = {
       Accept: "application/json",
+      ...(extraHeaders ?? {}),
     };
     if (body !== undefined) {
       headers["Content-Type"] = "application/json";
@@ -67,20 +69,20 @@ export class ApiClient {
     return payload as T;
   }
 
-  get<T>(path: string): Promise<T> {
-    return this.request<T>("GET", path);
+  get<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>("GET", path, undefined, extraHeaders);
   }
-  post<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("POST", path, body);
+  post<T>(path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>("POST", path, body, extraHeaders);
   }
-  put<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PUT", path, body);
+  put<T>(path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>("PUT", path, body, extraHeaders);
   }
-  patch<T>(path: string, body?: unknown): Promise<T> {
-    return this.request<T>("PATCH", path, body);
+  patch<T>(path: string, body?: unknown, extraHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>("PATCH", path, body, extraHeaders);
   }
-  delete<T>(path: string): Promise<T> {
-    return this.request<T>("DELETE", path);
+  delete<T>(path: string, extraHeaders?: Record<string, string>): Promise<T> {
+    return this.request<T>("DELETE", path, undefined, extraHeaders);
   }
 }
 

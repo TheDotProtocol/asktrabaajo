@@ -1275,3 +1275,112 @@ export interface AnswerEvaluation {
   stronger_response_pointer: string;
   disclaimer: string;
 }
+
+// --- Phase 16 — AI Interview Engine -------------------------------------------
+
+export interface AiInterviewSessionView {
+  session_id: string;
+  status: string;
+  interview_type: string;
+  language: string;
+  duration_minutes: number;
+  question_count: number;
+  difficulty: string;
+  opportunity_title?: string | null;
+  company_name?: string | null;
+  consent_required: boolean;
+  consent_granted: boolean;
+  consent_mic: boolean;
+  consent_camera: boolean;
+  consent_recording: boolean;
+  media_profile?: Record<string, unknown>;
+  voice_enabled: boolean;
+  video_enabled: boolean;
+  started_at: string | null;
+  completed_at: string | null;
+  expires_at: string | null;
+  created_at?: string | null;
+  note?: string;
+}
+
+export interface AiInterviewCreateResult {
+  session_id: string;
+  entry_token: string;
+  expires_at: string | null;
+}
+
+export interface AiInterviewStartOut {
+  session_id: string;
+  status: string;
+  introduction: string;
+  closing: string;
+  question_count: number;
+  duration_minutes: number;
+}
+
+export interface AiInterviewQuestionOut {
+  session_id: string;
+  question_id: string;
+  sequence: number;
+  category: string;
+  competency: string;
+  question: string;
+  difficulty: string;
+  target_skill: string | null;
+  reason: string | null;
+  suggested_dimensions: string[];
+  is_follow_up: boolean;
+  rephrased?: boolean;
+  note?: string;
+}
+
+export interface AiInterviewDimension {
+  score: number;
+  explanation: string;
+}
+
+export interface AiInterviewEvaluationOut {
+  dimensions: Record<string, AiInterviewDimension>;
+  strengths: string[];
+  improvements: string[];
+  evidence_markers: string[];
+  disclaimer: string;
+}
+
+export interface AiInterviewResponseOut {
+  session_id: string;
+  evaluation?: AiInterviewEvaluationOut;
+  next: AiInterviewQuestionOut | null;
+  status?: string;
+  reason?: string;
+  note?: string;
+}
+
+export interface AiInterviewReport {
+  session_id: string;
+  summary: string;
+  competency_evidence?: unknown[];
+  strengths?: string[];
+  improvement_areas?: string[];
+  unanswered_areas?: string[];
+  interview_quality?: {
+    answered: number;
+    total_questions: number;
+    completion_pct: number;
+    average_dimension_score: number | null;
+    note: string;
+  };
+  integrity_signals?: Array<Record<string, string>>;
+  disclaimer: string;
+  decision?: string | null;
+  decision_note?: string | null;
+}
+
+export interface AiInterviewCandidateFeedback {
+  session_id: string;
+  status: string;
+  completed_at: string | null;
+  strengths: string[];
+  preparation_areas: string[];
+  note: string;
+}
