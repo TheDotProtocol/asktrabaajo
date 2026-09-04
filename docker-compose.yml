@@ -1,24 +1,46 @@
-version: '3.8'
+# AskTrabaajo — staging/production container stack (canonical backend).
+#
+# Phase 12 hardening:
+#  - Every secret comes from the environment / local .env (never hardcoded).
+#    Required secrets fail fast with a clear error when missing.
+#  - Only services that can actually boot are included. The legacy
+#    frontend container (no Dockerfile), prometheus/grafana (missing
+#    configs), and the nginx TLS edge (missing certificates) were removed —
+#    see PHASE_12_PRODUCTION_INFRASTRUCTURE.md, section "Deployment stack".
+#  - The backend runs the CANONICAL FastAPI app (backend/app) — the
+#    image's default CMD targets the legacy MVP app, so the command is
+#    overridden here.
+#
+# Usage:
+#   cp docker-compose.env.example .env      # then fill in real values
+#   docker compose up -d
+#
+# For a hosted PostgreSQL (e.g. Supabase), skip the `postgres` service and
+# point DATABASE_URL at the managed instance instead.
 
 services:
-  # PostgreSQL Database
   postgres:
     image: postgres:15
     container_name: asktrabaajo_postgres
     environment:
-      POSTGRES_DB: asktrabaajo_prod
-      POSTGRES_USER: asktrabaajo_prod
-      POSTGRES_PASSWORD: secure_password_2024
+      POSTGRES_DB: ${POSTGRES_DB:-asktrabaajo}
+      POSTGRES_USER: ${POSTGRES_USER:-asktrabaajo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U ${POSTGRES_USER:-asktrabaajo} -d ${POSTGRES_DB:-asktrabaajo}
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - asktrabaajo_network
     restart: unless-stopped
 
-  # Redis for caching and sessions
   redis:
     image: redis:7-alpine
     container_name: asktrabaajo_redis
@@ -26,116 +48,55 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - asktrabaajo_network
     restart: unless-stopped
 
-  # Backend API
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    image: asktrabaajo-backend:latest
     container_name: asktrabaajo_backend
+    # Run the canonical FastAPI app (backend/app/main.py -> app.main:app).
+    # The image default CMD (`main:app`) boots the legacy MVP backend.
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4"]
     environment:
-      - DATABASE_URL=postgresql://asktrabaajo_prod:secure_password_2024@postgres:5432/asktrabaajo_prod
-      - REDIS_URL=redis://redis:6379
-      - SECRET_KEY=your-super-secret-production-key-change-this-immediately
-      - ALGORITHM=HS256
-      - ACCESS_TOKEN_EXPIRE_MINUTES=30
-      - SMTP_SERVER=smtp.gmail.com
-      - SMTP_PORT=587
-      - SMTP_USERNAME=noreply@asktrabaajo.com
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - FROM_EMAIL=noreply@asktrabaajo.com
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY}
-      - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-      - CRYPTO_API_KEY=${CRYPTO_API_KEY}
-      - ALLOWED_ORIGINS=https://asktrabaajo.com,https://www.asktrabaajo.com
-      - LOG_LEVEL=INFO
-      - WORKERS=4
-      - MAX_CONNECTIONS=100
-      - TIMEOUT=30
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      SECRET_KEY: ${SECRET_KEY:?SECRET_KEY is required}
+      JWT_ACCESS_TOKEN_MINUTES: ${JWT_ACCESS_TOKEN_MINUTES:-15}
+      JWT_REFRESH_TOKEN_DAYS: ${JWT_REFRESH_TOKEN_DAYS:-30}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://asktrabaajo.com}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 3
     networks:
       - asktrabaajo_network
     restart: unless-stopped
     volumes:
       - ./logs:/var/log/asktrabaajo
-      - ./uploads:/app/uploads
-
-  # Frontend
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: asktrabaajo_frontend
-    environment:
-      - NEXT_PUBLIC_API_URL=https://api.asktrabaajo.com
-      - NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    networks:
-      - asktrabaajo_network
-    restart: unless-stopped
-
-  # Nginx Reverse Proxy
-  nginx:
-    image: nginx:alpine
-    container_name: asktrabaajo_nginx
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-      - ./nginx/logs:/var/log/nginx
-    depends_on:
-      - frontend
-      - backend
-    networks:
-      - asktrabaajo_network
-    restart: unless-stopped
-
-  # Monitoring - Prometheus
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: asktrabaajo_prometheus
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    networks:
-      - asktrabaajo_network
-    restart: unless-stopped
-
-  # Monitoring - Grafana
-  grafana:
-    image: grafana/grafana:latest
-    container_name: asktrabaajo_grafana
-    ports:
-      - "3001:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin123
-    volumes:
-      - grafana_data:/var/lib/grafana
-    networks:
-      - asktrabaajo_network
-    restart: unless-stopped
 
 volumes:
   postgres_data:
   redis_data:
-  prometheus_data:
-  grafana_data:
 
 networks:
   asktrabaajo_network:
-    driver: bridge 
+    driver: bridge
