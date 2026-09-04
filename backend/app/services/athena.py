@@ -119,16 +119,21 @@ def available_modes(db: Session, user: User) -> List[str]:
 
 
 def _eligible_org_for_mode(db: Session, user: User, mode: str) -> Optional[uuid.UUID]:
-    """Org context required for employer/recruiter modes (first eligible)."""
-    if mode not in (ATHENA_MODE_EMPLOYER, ATHENA_MODE_RECRUITER):
-        return None
-    eligible_org_roles = {"recruiter", "hr", "hiring_manager", "org_admin"}
+    """Org context required for employer/recruiter/government modes."""
     memberships = db.scalars(
         select(Membership).where(Membership.user_id == user.id)
     ).all()
-    for m in memberships:
-        if m.role_code in eligible_org_roles:
-            return m.organization_id
+    if mode in (ATHENA_MODE_EMPLOYER, ATHENA_MODE_RECRUITER):
+        eligible_org_roles = {"recruiter", "hr", "hiring_manager", "org_admin"}
+        for m in memberships:
+            if m.role_code in eligible_org_roles:
+                return m.organization_id
+        return None
+    if mode == ATHENA_MODE_GOVERNMENT:
+        for m in memberships:
+            if m.role_code in {"government_admin", "government_user"}:
+                return m.organization_id
+        return None
     return None
 
 
@@ -143,7 +148,7 @@ def create_session(
         raise InvalidInputError(f"Unknown Athena mode '{mode}'.")
     if mode not in available_modes(db, user):
         raise PermissionDeniedError("This Athena mode is not available to this account.")
-    if mode in (ATHENA_MODE_EMPLOYER, ATHENA_MODE_RECRUITER):
+    if mode in (ATHENA_MODE_EMPLOYER, ATHENA_MODE_RECRUITER, ATHENA_MODE_GOVERNMENT):
         resolved_org = organization_id or _eligible_org_for_mode(db, user, mode)
         if resolved_org is None:
             raise PermissionDeniedError("An organization membership is required for this mode.")

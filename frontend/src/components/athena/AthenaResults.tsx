@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { StatusPill, cardCls } from "@/components/candidate/ui";
+import { AthenaPortal } from "@/lib/athena/context";
 import { AthenaToolResult } from "@/lib/api/types";
 
 function asRecord(value: unknown): Record<string, unknown> | null {
@@ -10,6 +11,40 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 function asList(value: unknown): Record<string, unknown>[] {
   if (!Array.isArray(value)) return [];
   return value.map(asRecord).filter(Boolean) as Record<string, unknown>[];
+}
+
+function GovernmentAggregate({ payload }: { payload: Record<string, unknown> }) {
+  const cards = asRecord(payload.cards);
+  const buckets = asList(payload.buckets);
+  const supply = asList(asRecord(payload.supply)?.buckets);
+  const rows = buckets.length ? buckets : supply;
+  return (
+    <div className="space-y-2 text-sm text-[#e5e7eb]">
+      {payload.message ? <p className="text-[#9ca3af]">{String(payload.message)}</p> : null}
+      {cards &&
+        Object.entries(cards).map(([key, raw]) => {
+          const cell = asRecord(raw);
+          const value = cell?.value;
+          const status = text(cell?.status) || "ok";
+          return (
+            <p key={key} className="flex justify-between gap-4">
+              <span>{key.replaceAll("_", " ")}</span>
+              <span className="font-mono text-[#9ca3af]">
+                {status === "ok" && value != null ? String(value) : status.replaceAll("_", " ")}
+              </span>
+            </p>
+          );
+        })}
+      {rows.slice(0, 8).map((row) => (
+        <p key={text(row.key)} className="flex justify-between gap-4">
+          <span>{text(row.key)}</span>
+          <span className="font-mono text-[#9ca3af]">
+            {text(row.status) === "ok" && row.value != null ? String(row.value) : text(row.status) || "INSUFFICIENT"}
+          </span>
+        </p>
+      ))}
+    </div>
+  );
 }
 
 function text(value: unknown): string {
@@ -168,7 +203,7 @@ export function AthenaResults({
   portal,
 }: {
   results: AthenaToolResult[];
-  portal: "candidate" | "employer";
+  portal: AthenaPortal;
 }) {
   if (results.length === 0) return null;
   return (
@@ -199,7 +234,8 @@ export function AthenaResults({
             <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#6b7280]">
               {item.tool?.replaceAll("_", " ") || "Structured intelligence"} · {item.status || "ok"}
             </p>
-            {opportunities.length > 0 && (
+            {portal === "government" && <GovernmentAggregate payload={payload} />}
+            {opportunities.length > 0 && portal !== "government" && (
               <div className="grid gap-3">
                 {opportunities.slice(0, 6).map((row, i) => (
                   <OpportunityCard key={i} row={row} />
@@ -215,7 +251,7 @@ export function AthenaResults({
                   ))}
                 </div>
               )}
-            {applications.length > 0 && (
+            {applications.length > 0 && portal !== "government" && (
               <div className="space-y-2">
                 {applications.slice(0, 8).map((row, i) => (
                   <ApplicationCard key={i} row={row} portal={portal} />
@@ -235,7 +271,7 @@ export function AthenaResults({
                 ))}
               </div>
             )}
-            {interviews.length > 0 && (
+            {interviews.length > 0 && portal !== "government" && (
               <div className="space-y-2">
                 {interviews.slice(0, 6).map((row, i) => (
                   <InterviewCard key={i} row={row} portal={portal} />

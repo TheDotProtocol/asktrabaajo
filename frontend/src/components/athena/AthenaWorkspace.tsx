@@ -98,7 +98,7 @@ export function AthenaWorkspace({
   organizationId?: string | null;
 }) {
   const from: AthenaFrom = parseAthenaFrom(fromProp ?? null);
-  const mode = portal === "employer" ? "employer" : "jobseeker";
+  const mode = portal === "employer" ? "employer" : portal === "government" ? "government" : "jobseeker";
   const [status, setStatus] = useState<AthenaStatus | null>(null);
   const [tools, setTools] = useState<AthenaToolMeta[]>([]);
   const [session, setSession] = useState<AthenaSession | null>(null);
@@ -136,7 +136,7 @@ export function AthenaWorkspace({
     const created = await api.post<AthenaSession>("/athena/session", {
       mode,
       purpose: sessionPurpose(portal, from),
-      organization_id: portal === "employer" ? organizationId || null : null,
+      organization_id: portal === "employer" || portal === "government" ? organizationId || null : null,
     });
     setSession(created);
     return created;

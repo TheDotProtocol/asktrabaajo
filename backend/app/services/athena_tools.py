@@ -30,6 +30,7 @@ from app.models.career import (
 )
 from app.models.enums import (
     ATHENA_MODE_EMPLOYER,
+    ATHENA_MODE_GOVERNMENT,
     ATHENA_MODE_JOBSEEKER,
     ATHENA_MODE_RECRUITER,
     ATHENA_RISK_HIGH_RISK_WRITE,
@@ -49,6 +50,7 @@ from app.services import matching as matching_service
 from app.services import outreach as outreach_service
 from app.services import talent as talent_service
 from app.services.company_os import candidate_summary, list_org_applications, list_org_jobs
+from app.services import government as government_service
 
 Handler = Callable[[Session, User, "AthenaSession", uuid.UUID, Dict], Dict]
 
@@ -174,6 +176,18 @@ class PrepAnswerIn(BaseModel):
 
 class BulkApplyIn(BaseModel):
     opportunity_ids: List[uuid.UUID] = Field(min_length=1, max_length=10)
+
+
+class GovernmentFilterIn(BaseModel):
+    country: Optional[str] = Field(default=None, max_length=80)
+    state_province: Optional[str] = Field(default=None, max_length=80)
+    city: Optional[str] = Field(default=None, max_length=80)
+    industry: Optional[str] = Field(default=None, max_length=80)
+    skill: Optional[str] = Field(default=None, max_length=80)
+
+
+class GovernmentReportIn(GovernmentFilterIn):
+    kind: str = Field(default="workforce", max_length=32)
 
 
 @dataclass
@@ -952,6 +966,106 @@ _register(AthenaTool(
     BulkApplyIn, {ATHENA_MODE_JOBSEEKER}, _apply_to_opportunities,
     risk=ATHENA_RISK_HIGH_RISK_WRITE, read_only=False,
     confirmation_required=True, data_scope="own",
+))
+
+
+def _gov_filters(arguments: Dict) -> government_service.IntelligenceFilters:
+    return government_service.parse_filters(
+        country=arguments.get("country"),
+        state_province=arguments.get("state_province"),
+        city=arguments.get("city"),
+        industry=arguments.get("industry"),
+        skill=arguments.get("skill"),
+    )
+
+
+def _government_get_workforce_summary(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.overview(db, _gov_filters(arguments))
+
+
+def _government_get_skill_summary(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.skills_intelligence(db, _gov_filters(arguments))
+
+
+def _government_get_skill_gap(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.skills_intelligence(db, _gov_filters(arguments))
+
+
+def _government_get_geographic_summary(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.geography(db, _gov_filters(arguments))
+
+
+def _government_get_industry_summary(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.industries(db, _gov_filters(arguments))
+
+
+def _government_get_hiring_demand(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.opportunities(db, _gov_filters(arguments), "industry")
+
+
+def _government_get_opportunity_summary(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.opportunities(db, _gov_filters(arguments), "city")
+
+
+def _government_generate_report(db, user, session, org_id, arguments):
+    government_service.require_government_reader(db, user.id, org_id or session.organization_id)
+    return government_service.report(db, arguments.get("kind") or "workforce", _gov_filters(arguments))
+
+
+_register(AthenaTool(
+    "government.get_workforce_summary",
+    "Returns privacy-protected aggregate workforce counts. Cells below the cohort threshold are suppressed. Never returns people.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_workforce_summary,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_skill_summary",
+    "Returns aggregate skill supply from Work IDs. Small cohorts are suppressed.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_skill_summary,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_skill_gap",
+    "Compares suppressed-safe skill supply with open-opportunity demand. Does not invent missing numbers.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_skill_gap,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_geographic_summary",
+    "Returns aggregate workforce by city. Addresses and individuals are never included.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_geographic_summary,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_industry_summary",
+    "Returns hiring demand by industry from published opportunities.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_industry_summary,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_hiring_demand",
+    "Returns observed hiring demand (open opportunity volume) by industry.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_hiring_demand,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.get_opportunity_summary",
+    "Returns open opportunity volume by city. Not labelled as economic growth.",
+    GovernmentFilterIn, {ATHENA_MODE_GOVERNMENT}, _government_get_opportunity_summary,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
+))
+_register(AthenaTool(
+    "government.generate_report",
+    "Builds a reproducible aggregate report (workforce, skills, regional, industry, hiring_demand, skill_gap).",
+    GovernmentReportIn, {ATHENA_MODE_GOVERNMENT}, _government_generate_report,
+    permission="workforce.aggregates.read", risk=ATHENA_RISK_READ_ONLY, data_scope="org",
 ))
 
 

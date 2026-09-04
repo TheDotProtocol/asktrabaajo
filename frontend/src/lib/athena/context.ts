@@ -1,4 +1,4 @@
-export type AthenaPortal = "candidate" | "employer";
+export type AthenaPortal = "candidate" | "employer" | "government";
 
 export type AthenaFrom =
   | "home"
@@ -55,6 +55,9 @@ export function sessionPurpose(portal: AthenaPortal, from: AthenaFrom): string {
   if (portal === "candidate") {
     return `Candidate Employment OS. User opened Athena from ${surface}. Use only jobseeker tools and the professional digest.`;
   }
+  if (portal === "government") {
+    return `Government workforce intelligence. User opened Athena from ${surface}. Use only government aggregate tools. Never search people or Work IDs. If a cohort is below the privacy threshold, say it is too small to report.`;
+  }
   return `Employer Employment OS. User opened Athena from ${surface}. Use only organization-scoped tools.`;
 }
 
@@ -86,6 +89,14 @@ export function suggestedPrompts(portal: AthenaPortal, from: AthenaFrom): Sugges
     }
     return core;
   }
+  if (portal === "government") {
+    return [
+      { label: "Summarize the workforce", message: "Give me a privacy-safe workforce summary." },
+      { label: "Where are the skill gaps?", message: "Which skills show hiring demand above observed supply?" },
+      { label: "Hiring demand by industry", message: "What is observed hiring demand by industry?" },
+      { label: "Workforce by city", message: "Show aggregate workforce by city. Suppress small cohorts." },
+    ];
+  }
   const core: SuggestedPrompt[] = [
     { label: "Find the strongest candidates", message: "Show me the strongest discoverable candidates." },
     { label: "What applications need attention?", message: "What applications need attention?" },
@@ -103,6 +114,13 @@ export function degradedLinks(portal: AthenaPortal): { href: string; label: stri
       { href: "/jobseeker/applications", label: "Applications", body: "Track the controlled application lifecycle." },
       { href: "/jobseeker/interview-prep", label: "Interview Prep", body: "Structured practice without a live model." },
       { href: "/id/work-id", label: "Work ID", body: "Keep the professional record Athena would use." },
+    ];
+  }
+  if (portal === "government") {
+    return [
+      { href: "/government", label: "Command Center", body: "Live aggregate cards without individual records." },
+      { href: "/government/skills", label: "Skills", body: "Supply, demand, and suppressed-safe gaps." },
+      { href: "/government/reports", label: "Reports", body: "Reproducible aggregate reports and exports." },
     ];
   }
   return [
