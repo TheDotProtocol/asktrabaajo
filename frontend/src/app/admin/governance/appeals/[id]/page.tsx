@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 
+import { btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { AppealRow } from "@/lib/api/types";
 
@@ -22,16 +23,9 @@ const statusStyle: Record<string, string> = {
   withdrawn: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
 };
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const primaryBtn =
-  "rounded bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-40";
-const ghostBtn =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
-const selectCls =
-  "rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900";
-const inputCls =
-  "w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
+const primaryBtn = btnCls;
+const ghostBtn = ghostBtnCls;
+const selectCls = inputCls;
 const labelCls =
   "block text-xs font-medium uppercase tracking-wide text-neutral-400";
 
@@ -196,7 +190,7 @@ export default function AppealDetailPage() {
             </h2>
             <Link
               href={`/admin/governance/enforcement/${appeal.enforcement_action_id}`}
-              className="text-sm font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+              className="text-sm font-medium text-[#d4af37] hover:underline"
             >
               Action {short(appeal.enforcement_action_id)}
             </Link>
@@ -250,7 +244,7 @@ export default function AppealDetailPage() {
               {(appeal.audit ?? []).map((entry) => (
                 <li key={`${entry.action}-${entry.created_at}`} className="text-sm">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-mono text-xs text-indigo-600 dark:text-indigo-400">
+                    <span className="font-mono text-xs text-[#d4af37]">
                       {entry.action}
                     </span>
                     <span className="text-xs text-neutral-400">

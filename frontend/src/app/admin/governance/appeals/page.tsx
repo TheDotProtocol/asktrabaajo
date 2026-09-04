@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
+import { PageHeader, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { AppealList, AppealRow } from "@/lib/api/types";
 
@@ -37,12 +38,10 @@ const decisionStyle: Record<string, string> = {
   rejected: "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300",
 };
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const chip = (active: boolean) =>
   active
-    ? "rounded-full bg-indigo-500 px-3 py-1 text-xs font-medium text-white"
-    : "rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
+    ? "rounded-full bg-[#d4af37] px-3 py-1 text-xs font-medium text-black"
+    : "rounded-full border border-[#23272a] px-3 py-1 text-xs font-medium text-[#9ca3af]";
 
 function titleCase(value: string): string {
   return value
@@ -110,9 +109,11 @@ export default function AppealsQueuePage() {
 
   return (
     <div className="space-y-5">
-      <h1 className="text-lg font-semibold tracking-tight">
-        Appeals <span className="font-normal text-neutral-500">· {total} total</span>
-      </h1>
+      <PageHeader
+        kicker="Appeals"
+        title="Appeals control room"
+        subtitle={`${total} authorized records. Decisions can create a superseding reinstatement — the backend owns that relationship.`}
+      />
 
       <div className="flex flex-wrap items-center gap-1.5">
         {FILTERS.map((f) => (
@@ -153,7 +154,7 @@ export default function AppealsQueuePage() {
                   <td className="px-4 py-2.5">
                     <Link
                       href={`/admin/governance/appeals/${row.id}`}
-                      className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                      className="font-medium text-[#d4af37] hover:underline"
                     >
                       {short(row.id)}
                     </Link>
