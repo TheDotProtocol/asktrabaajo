@@ -6,18 +6,20 @@
 ASKTRABAAJO BACKEND / PLATFORM:
 DEVELOPMENT READY
 STAGING READY LOCALLY
-READY FOR FRONTEND / UI INTEGRATION
+CANDIDATE OS (WAVE 2) IMPLEMENTED
 
 PHASE 19 COMPLETE
+WAVE 1 ACCEPTED
+WAVE 2 IMPLEMENTED
 LIVE RECONCILIATION NOT EXECUTED
 NO LIVE DATABASE WRITES PERFORMED
 ```
 
 - The canonical backend is **complete through Phase 19** and fully test-verified: 246 `/api/v1` routes, 80 canonical tables, migration head `0014`, RLS, RBAC, Athena, AI Interview, Commerce.
-- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**: no live reconciliation, no migrations, no writes. It remains gated on operator confirmation of **Backup/PITR** (a dashboard action; the operator declined to proceed without it).
-- The next major engineering activity is **frontend/UI integration** connecting the existing AskTrabaajo UI to the canonical backend. This document is the map; read `CURSOR_DO_NOT_BREAK.md` first.
+- The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner later confirmed the product is **pre-launch** (no real users). Wave 2 classified the hosted DB and validated the Candidate OS on **isolated sqlite** instead of writing to the hosted project. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md`.
+- Wave 1 is **ACCEPTED**. Wave 2 (Jobseeker Employment OS + Candidate Figma) is **IMPLEMENTED**. Next: Wave 3 (Employer OS) only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
 
-**Where to start:** `CURSOR_UI_INTEGRATION_PLAN.md` (execution waves) + `FRONTEND_GAP_REPORT.md` (what exists vs what's missing) + `API_CONTRACT.md` (the 246 routes).
+**Where to start:** `CURSOR_WAVE_3_READINESS.md` (next execution) + `CURSOR_WAVE_2_CLOSURE.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
 
 ---
 
@@ -109,7 +111,7 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 
 | Surface | Pages | Status |
 |---|---|---|
-| Auth (login/register) | `login/page.tsx`, `register/page.tsx` | **PARTIALLY INTEGRATED** — UI exists but uses legacy `useAuth` (Supabase/local). Canonical auth API ready; bridge needed (Wave 1). |
+| Auth (login/register) | `login/page.tsx`, `register/page.tsx` | **WAVE 1 COMPLETE** — public pages write `asktrabaajo_at` / `asktrabaajo_rt` via `POST /api/v1/auth/*`. Refresh, `PortalGuard`, `OrgProvider`, `OsChrome` are in place. |
 | Jobseeker portal | `jobseeker/*` (dashboard, opportunities, applications, offers, interviews, interview-prep, career, work-dna, communications, ai-interview) | **READY TO INTEGRATE / PARTIALLY INTEGRATED** — pages exist and call canonical API; verify each endpoint and add auth/session wiring |
 | Employer/company | `company/*` (dashboard, jobs, candidates, pipeline, communications), `employer/ai-interviews`, `employer/billing` | **PARTIALLY INTEGRATED** — call canonical API; billing is read-only safe by design (mock provider, no client payment authority) |
 | Admin/governance | `admin/governance/*` (reports, enforcement, appeals, audit, teams) | **PARTIALLY INTEGRATED** — call canonical API |
@@ -118,7 +120,7 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 | Careers site | `careers/*` | **LEGACY — DO NOT TOUCH** (separate data source) |
 | Mock/local pages | `employer/billing` (mock-safe notes), `jobseeker/interview-prep`, `interview/[id]/analysis` | **MOCKED OR LOCAL** — mark clearly; never present as production |
 
-**Biggest gaps (detail in `FRONTEND_GAP_REPORT.md`):** dual auth (login writes legacy session, canonical pages read canonical tokens), no route guards/RBAC-aware navigation, some pages still local/mock data, missing loading/error/empty states, no organization-context selector, notification polling absent.
+**Biggest remaining gaps (detail in `FRONTEND_GAP_REPORT.md`):** jobseeker/employer screens are functional-proof (not Figma); page-level loading/empty/error states; notifications UI; Athena UI; Career Advisor `/career-advisor/*` unused; government portal absent; public website CTAs still placeholder. Dual-auth, refresh, guards, and org context were closed in Wave 1.
 
 ---
 
@@ -140,7 +142,7 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 - **Tokens:** short-lived JWT access (15 min) + rotating refresh (30 days). `POST /auth/refresh` rotates; `POST /auth/logout` + `POST /auth/sessions/revoke-all` revoke. `GET /auth/me` returns user + roles.
 - **Session identity:** server-side only — `app/db/session.py` sets `app.current_user_id` / `app.current_org_ids` from the authenticated actor per request, reset at checkout; RLS policies (`current_setting`) are inert without it. Never client-controlled.
 - **RBAC:** `app/models/catalog.py` — roles (`org_admin`, `hr`, `recruiter`, `hiring_manager`, `customer_support`, `finance`, `government_*`, platform admins) → permissions; `require_org_permission`, `require_super_admin` in `app/api/deps` (permission checks).
-- **Frontend rule:** use `frontend/src/lib/api/session.ts` (`setSession`/`getAccessToken`/`login`/`logout`/`fetchMe`). **DO NOT create a second auth system.** Token refresh/rotation handling belongs in Wave 1 (client currently stores tokens in localStorage; production UI should move access tokens to memory with refresh handling — the `ApiClient` boundary stays identical).
+- **Frontend rule:** use `frontend/src/lib/api/session.ts` (`setSession`/`getAccessToken`/`login`/`logout`/`fetchMe`). **DO NOT create a second auth system.** Wave 1 wired rotating refresh (`POST /auth/refresh`, single-flight) on the existing `ApiClient`. Access tokens remain in localStorage (`asktrabaajo_at` / `asktrabaajo_rt`) — accepted for now; do not change backend token storage unless a later approved phase requires it.
 
 ---
 
@@ -229,7 +231,8 @@ Canonical client layer **already exists**: `frontend/src/lib/api/client.ts` (`Ap
 
 | Check | Result |
 |---|---|
-| SQLite full suite (`backend`: `pytest tests_phase3`) | **250 passed / 11 skipped / 0 failed** |
+| SQLite full suite (`backend`: `pytest tests_phase3`) | **250 passed / 11 skipped / 0 failed** (re-run Wave 2) |
+| Wave 2 Candidate E2E (`scripts/wave2_candidate_e2e.py`) | **PASS** (isolated sqlite; hosted DB untouched) |
 | PostgreSQL RLS suite (scratch PG 16 @ 0014) | **11/11 passed** |
 | Staging-mode E2E smoke (PG 16, `ENVIRONMENT=staging`) | **PASS** (`P19_STAGING_SMOKE_PASS`: auth → org → AI interview full journey → report → human decision → billing boundary → cross-tenant denial) |
 | Frontend typecheck (`tsc --noEmit`) | PASS |

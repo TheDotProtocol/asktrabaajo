@@ -1,8 +1,17 @@
 {
   "phase": 19,
   "status": "PASS_WITH_LIMITATIONS",
-  "git_head": "43176d9",
+  "git_head": "1ecf8be",
+  "git_head_phase19_freeze": "43176d9",
   "branch": "main",
+  "wave_1": "ACCEPTED",
+  "wave_2": "IMPLEMENTED",
+  "wave_1_commits": [
+    "f092bb2",
+    "28adbaf",
+    "a5eea59",
+    "1ecf8be"
+  ],
   "canonical_route_count": 246,
   "legacy_route_count": 107,
   "canonical_table_count": 80,
@@ -16,15 +25,25 @@
   "frontend_typecheck": "PASS",
   "frontend_lint": "PASS_WITH_WARNINGS",
   "frontend_build": "PASS",
+  "wave1_auth_e2e": "PASS",
+  "wave2_candidate_e2e": "PASS",
   "live_reconciliation": "NOT_EXECUTED",
   "pitr_gate": "NOT_CONFIRMED",
-  "next_phase": "FRONTEND_UI_INTEGRATION_IN_CURSOR",
+  "live_database": "UNTOUCHED",
+  "production": "UNTOUCHED",
+  "public_website_repo": "https://github.com/TheDotProtocol/trabaajowebsite",
+  "public_website_status": "ASSESSED_INDEPENDENT",
+  "next_phase": "WAVE_3_EMPLOYER_OS_PENDING_APPROVAL",
+  "hosted_database": "UNTOUCHED_CLASSIFIED_PRELAUNCH",
+  "wave2_db_rebuild": "NOT_REQUIRED_ISOLATED_SQLITE",
   "blockers": [
     "Backup/PITR not confirmed for Supabase project zrvrjqwboylvvzusorry (operator dashboard action)",
     "Live reconciliation not authorized (validated plan ready; single interviews rename + alembic 0001-0014 + app role)",
     "Remote staging infrastructure not provisioned (separate Supabase project recommended)",
     "Distributed rate limiting not configured (RATE_LIMIT_STORE=db or Redis required for multi-instance)",
     "AI/payment/email/voice-video providers not provisioned (mock/none safe defaults)",
-    "Legacy anon/service keys stale (operator rotation when legacy REST re-enabled)"
+    "Legacy anon/service keys stale (operator rotation when legacy REST re-enabled)",
+    "No production monitoring/uptime/error-tracking stack (PHASE_18_OBSERVABILITY)",
+    "Public website CTAs still point at placeholder /app /login /register on the marketing SPA, not the application origin"
   ]
 }
