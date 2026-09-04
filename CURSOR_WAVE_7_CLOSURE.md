@@ -93,7 +93,17 @@ Scanned website source, public files, and production JS:
 
 AskTrabaajo (`main`, local, **not pushed** unless listed otherwise): Wave 7 docs, DEV email correction, QA scripts.
 
-Public website (`TheDotProtocol/trabaajowebsite`): this wave’s production-readiness commits, **pushed to GitHub** so Vercel can pick them up.
+Public website (`TheDotProtocol/trabaajowebsite`): **pushed** `00bdb3b..40a0838` to `origin/main`.
+
+| SHA | Message |
+|---|---|
+| `557134f` | wave7: connect public website CTAs |
+| `83aebd2` | wave7: integrate public website navigation |
+| `40a0838` | wave7: production readiness fixes |
+
+HEAD: `40a0838e5e60c5663b6e4466b12077de1e145a6c`
+
+AskTrabaajo HEAD `e38aa32` remains local. **Not pushed.**
 
 ## Stop
 
