@@ -9,19 +9,12 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import Link from "next/link";
+
+import { EmptyState, ErrorBanner, PageHeader, StatusPill, btnCls, cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { CompanyJob } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-
-const STATUS_STYLE: Record<string, string> = {
-  draft: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
-  published: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-  paused: "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300",
-  closed: "bg-neutral-200 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-  archived: "bg-neutral-200 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400",
-};
 
 export default function CompanyJobs() {
   const router = useRouter();
@@ -82,6 +75,40 @@ export default function CompanyJobs() {
     }
   }
 
+  async function cloneJob(job: CompanyJob) {
+    setBusy(true);
+    setError("");
+    try {
+      await api.post(`/company/${orgId}/jobs`, {
+        title: `${job.title} (copy)`,
+        summary: job.summary,
+        description: job.description,
+        department: job.department,
+        requirements: job.requirements,
+        skills_required: job.skills_required,
+        preferred_skills: job.preferred_skills,
+        experience_level: job.experience_level,
+        location: job.location,
+        country: job.country,
+        city: job.city,
+        remote_eligible: job.remote_eligible,
+        work_mode: job.work_mode,
+        employment_type: job.employment_type,
+        salary_min: job.salary_min,
+        salary_max: job.salary_max,
+        salary_currency: job.salary_currency,
+        seniority: job.seniority,
+        industry: job.industry,
+        openings_count: job.openings_count,
+      });
+      await load(orgId);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function createJob() {
     if (!form.title.trim() || busy) return;
     setBusy(true);
@@ -120,14 +147,7 @@ export default function CompanyJobs() {
   }
 
   if (error && jobs.length === 0) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {error} —{" "}
-        <button onClick={() => load(orgId)} className="underline">
-          retry
-        </button>
-      </div>
-    );
+    return <ErrorBanner message={error} onRetry={() => void load(orgId)} />;
   }
 
   const inputCls =
@@ -136,18 +156,19 @@ export default function CompanyJobs() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-neutral-400">{orgName || "Company"}</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">Jobs</h1>
-        </div>
-        <button
-          onClick={() => setShowForm((v) => !v)}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-        >
-          {showForm ? "Cancel" : "Create job"}
-        </button>
-      </section>
+      <PageHeader
+        kicker={orgName || "Jobs"}
+        title="Job management"
+        subtitle="Draft, publish, pause, close. Publishing syncs into the canonical opportunity catalogue. There is no separate template API — clone an existing job as a draft instead."
+        actions={
+          <div className="flex gap-2">
+            <Link href="/company/jobs/new" className={btnCls}>Create job</Link>
+            <button type="button" className={ghostBtnCls} onClick={() => setShowForm((v) => !v)}>
+              {showForm ? "Hide quick form" : "Quick draft"}
+            </button>
+          </div>
+        }
+      />
 
       {error && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
@@ -301,12 +322,12 @@ export default function CompanyJobs() {
       )}
 
       {jobs.length === 0 && !showForm && (
-        <div className={cardCls}>
-          <p className="text-sm text-neutral-400">
-            No jobs yet. Create your first posting — publishing it opens the
-            role to jobseeker discovery in the canonical opportunity catalogue.
-          </p>
-        </div>
+        <EmptyState
+          title="No jobs yet"
+          body="Create a draft, then publish it. Publishing is never automatic."
+          actionHref="/company/jobs/new"
+          actionLabel="Create job"
+        />
       )}
 
       <section className="space-y-3">
@@ -316,11 +337,7 @@ export default function CompanyJobs() {
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <h3 className="font-medium">{job.title}</h3>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs capitalize ${STATUS_STYLE[job.status] ?? "bg-neutral-100 text-neutral-600"}`}
-                  >
-                    {job.status.replace("_", " ")}
-                  </span>
+                  <StatusPill status={job.status} />
                   {job.opportunity_id && (
                     <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs text-emerald-600 dark:bg-emerald-950 dark:text-emerald-300">
                       in catalogue
@@ -351,7 +368,7 @@ export default function CompanyJobs() {
                   <button
                     disabled={busy}
                     onClick={() => act(`/company/${orgId}/jobs/${job.id}/publish`)}
-                    className="rounded-lg bg-emerald-600 px-3 py-1.5 font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                    className={btnCls}
                   >
                     Publish
                   </button>
@@ -360,7 +377,7 @@ export default function CompanyJobs() {
                   <button
                     disabled={busy}
                     onClick={() => act(`/company/${orgId}/jobs/${job.id}/pause`)}
-                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    className={ghostBtnCls}
                   >
                     Pause
                   </button>
@@ -369,11 +386,14 @@ export default function CompanyJobs() {
                   <button
                     disabled={busy}
                     onClick={() => act(`/company/${orgId}/jobs/${job.id}/close`)}
-                    className="rounded-lg border border-neutral-300 px-3 py-1.5 text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    className={ghostBtnCls}
                   >
                     Close
                   </button>
                 )}
+                <button type="button" disabled={busy} className={ghostBtnCls} onClick={() => void cloneJob(job)}>
+                  Use as template
+                </button>
               </div>
             </div>
           </div>
