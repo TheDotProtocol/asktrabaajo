@@ -38,3 +38,10 @@ wave6-qa/localhost/
 wave6-qa/figma/
 wave6-qa/package-lock.json
 wave6-qa/package.json
+
+# Wave 7 local-only DEV credentials + capture artifacts
+backend/.wave7-dev-account
+wave7-qa/node_modules/
+wave7-qa/localhost/
+wave7-qa/package-lock.json
+wave7-qa/package.json
