@@ -10,15 +10,14 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { api, getAccessToken } from "@/lib/api/session";
+import { api } from "@/lib/api/session";
 import {
   ApplicationReview,
   CompanyApplication,
   CompanyOffer,
   DocumentRequestRow,
 } from "@/lib/api/types";
-
-const ORG_KEY = "asktrabaajo_org_id";
+import { useOrg } from "@/context/OrgContext";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 
@@ -34,6 +33,7 @@ const LIVE_STATUSES = new Set([
 
 export default function CompanyPipeline() {
   const router = useRouter();
+  const { organizationId } = useOrg();
   const [orgId, setOrgId] = useState("");
   const [apps, setApps] = useState<CompanyApplication[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -73,18 +73,13 @@ export default function CompanyPipeline() {
   );
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.push("/id");
-      return;
-    }
-    const id = window.localStorage.getItem(ORG_KEY) ?? "";
-    if (!id) {
+    if (!organizationId) {
       router.push("/company");
       return;
     }
-    setOrgId(id);
-    load(id).catch((e) => setError(String((e as Error).message ?? e)));
-  }, [router, load]);
+    setOrgId(organizationId);
+    load(organizationId).catch((e) => setError(String((e as Error).message ?? e)));
+  }, [router, load, organizationId]);
 
   async function selectApp(app: CompanyApplication) {
     setSelectedId(app.id);

@@ -8,7 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { api } from "@/lib/api/session";
-import { MeResponse } from "@/lib/api/types";
+import { useOrg } from "@/context/OrgContext";
 
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
@@ -61,31 +61,16 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 export default function EmployerAiInterviewsPage() {
-  const [orgId, setOrgId] = useState("");
-  const [orgs, setOrgs] = useState<Array<{ organization_id: string; name: string }>>([]);
+  const { organizationId: orgId, memberships, selectOrganization } = useOrg();
+  const orgs = memberships.map((m) => ({
+    organization_id: m.organization_id,
+    name: m.organization_name,
+  }));
   const [rows, setRows] = useState<SessionRow[]>([]);
   const [report, setReport] = useState<Report | null>(null);
   const [selected, setSelected] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    api
-      .get<MeResponse>("/auth/me")
-      .then((me) => {
-        const employerOrgs = (me.memberships ?? []).filter(
-          (m) => m.organization_kind === "employer"
-        );
-        setOrgs(
-          employerOrgs.map((m) => ({
-            organization_id: m.organization_id,
-            name: m.organization_name ?? m.organization_id,
-          }))
-        );
-        if (employerOrgs.length > 0) setOrgId(employerOrgs[0].organization_id);
-      })
-      .catch((err) => setError((err as Error).message));
-  }, []);
 
   const load = useCallback(async () => {
     if (!orgId) return;
@@ -165,7 +150,7 @@ export default function EmployerAiInterviewsPage() {
         <select
           className="rounded border border-neutral-300 px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900"
           value={orgId}
-          onChange={(e) => setOrgId(e.target.value)}
+          onChange={(e) => selectOrganization(e.target.value)}
         >
           {orgs.length === 0 && <option value="">No employer organizations</option>}
           {orgs.map((o) => (

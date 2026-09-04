@@ -17,8 +17,7 @@ import {
   GapAnalysis,
   OutreachRequestRow,
 } from "@/lib/api/types";
-
-const ORG_KEY = "asktrabaajo_org_id";
+import { useOrg } from "@/context/OrgContext";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const ghostBtnCls =
@@ -35,6 +34,7 @@ export default function CandidateDetailPage() {
   const params = useParams<{ id: string }>();
   const search = useSearchParams();
   const personId = params.id;
+  const { organizationId } = useOrg();
   const [orgId, setOrgId] = useState("");
   const [profile, setProfile] = useState<CandidateProfile | null>(null);
   const [jobs, setJobs] = useState<CompanyJob[]>([]);
@@ -67,19 +67,18 @@ export default function CandidateDetailPage() {
   );
 
   useEffect(() => {
-    const id = window.localStorage.getItem(ORG_KEY) ?? "";
-    setOrgId(id);
-    if (id) {
+    setOrgId(organizationId);
+    if (organizationId) {
       api
-        .get<CompanyJob[]>(`/company/${id}/jobs`)
+        .get<CompanyJob[]>(`/company/${organizationId}/jobs`)
         .then((rows) => setJobs(rows.filter((j) => j.status === "published")))
         .catch(() => setJobs([]));
       api
-        .get<OutreachRequestRow[]>(`/talent/${id}/outreach`)
+        .get<OutreachRequestRow[]>(`/talent/${organizationId}/outreach`)
         .then((rows) => setOutreach(rows.filter((r) => r.candidate?.person_id === personId)))
         .catch(() => setOutreach([]));
     }
-  }, [personId]);
+  }, [personId, organizationId]);
 
   useEffect(() => {
     if (orgId && personId) {

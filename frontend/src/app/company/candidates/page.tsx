@@ -19,8 +19,7 @@ import {
   SavedCandidate,
   TalentPool,
 } from "@/lib/api/types";
-
-const ORG_KEY = "asktrabaajo_org_id";
+import { useOrg } from "@/context/OrgContext";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const inputCls =
@@ -40,6 +39,7 @@ const modeStyle: Record<string, string> = {
 type Tab = "search" | "saved" | "pools" | "matches";
 
 export default function CompanyCandidatesPage() {
+  const { organizationId } = useOrg();
   const [orgId, setOrgId] = useState("");
   const [tab, setTab] = useState<Tab>("search");
 
@@ -86,14 +86,13 @@ export default function CompanyCandidatesPage() {
   }, [orgId]);
 
   useEffect(() => {
-    const id = window.localStorage.getItem(ORG_KEY) ?? "";
-    setOrgId(id);
-    if (id) {
+    setOrgId(organizationId);
+    if (organizationId) {
       loadSaved();
       loadPools();
       loadJobs();
     }
-  }, [loadSaved, loadPools, loadJobs]);
+  }, [loadSaved, loadPools, loadJobs, organizationId]);
 
   async function runSearch(page = 1) {
     if (!orgId || busy) return;

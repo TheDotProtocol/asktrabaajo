@@ -9,10 +9,9 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { api, getAccessToken } from "@/lib/api/session";
+import { api } from "@/lib/api/session";
 import { CompanyJob } from "@/lib/api/types";
-
-const ORG_KEY = "asktrabaajo_org_id";
+import { useOrg } from "@/context/OrgContext";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 
@@ -26,6 +25,7 @@ const STATUS_STYLE: Record<string, string> = {
 
 export default function CompanyJobs() {
   const router = useRouter();
+  const { organizationId } = useOrg();
   const [orgId, setOrgId] = useState("");
   const [orgName, setOrgName] = useState("");
   const [jobs, setJobs] = useState<CompanyJob[]>([]);
@@ -61,18 +61,13 @@ export default function CompanyJobs() {
   );
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.push("/id");
-      return;
-    }
-    const id = window.localStorage.getItem(ORG_KEY) ?? "";
-    if (!id) {
+    if (!organizationId) {
       router.push("/company");
       return;
     }
-    setOrgId(id);
-    load(id).catch((e) => setError(String((e as Error).message ?? e)));
-  }, [router, load]);
+    setOrgId(organizationId);
+    load(organizationId).catch((e) => setError(String((e as Error).message ?? e)));
+  }, [router, load, organizationId]);
 
   async function act(path: string, refresh = true) {
     setBusy(true);

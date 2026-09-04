@@ -16,8 +16,7 @@ import {
   EventsFeed,
   OutreachRequestRow,
 } from "@/lib/api/types";
-
-const ORG_KEY = "asktrabaajo_org_id";
+import { useOrg } from "@/context/OrgContext";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const primaryBtn =
@@ -52,6 +51,7 @@ function fmt(ts: string | null): string {
 }
 
 export default function CompanyCommunicationsPage() {
+  const { organizationId } = useOrg();
   const [orgId, setOrgId] = useState("");
   const [outreach, setOutreach] = useState<OutreachRequestRow[]>([]);
   const [conversations, setConversations] = useState<ConversationRow[]>([]);
@@ -80,14 +80,13 @@ export default function CompanyCommunicationsPage() {
   }, [orgId]);
 
   useEffect(() => {
-    const id = window.localStorage.getItem(ORG_KEY) ?? "";
-    setOrgId(id);
-    if (!id) return;
+    setOrgId(organizationId);
+    if (!organizationId) return;
     api
-      .get<CompanyApplication[]>(`/company/${id}/applications`)
+      .get<CompanyApplication[]>(`/company/${organizationId}/applications`)
       .then(setApplications)
       .catch(() => setApplications([]));
-  }, []);
+  }, [organizationId]);
 
   useEffect(() => {
     if (orgId) void load();

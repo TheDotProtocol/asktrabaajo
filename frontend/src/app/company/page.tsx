@@ -8,25 +8,21 @@
  * every number comes from the canonical /api/v1/company dashboard.
  */
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
-import { api, getAccessToken } from "@/lib/api/session";
+import { api } from "@/lib/api/session";
 import { CompanyDashboard, MyOrganization } from "@/lib/api/types";
+import { useCanonicalAuth } from "@/context/AuthContext";
+import { useOrg } from "@/context/OrgContext";
 
-const ORG_KEY = "asktrabaajo_org_id";
 const cardCls =
   "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const statCls = "text-3xl font-semibold tracking-tight";
 const labelCls = "text-xs uppercase tracking-wide text-neutral-400";
 
-function orgFromStorage(): string {
-  if (typeof window === "undefined") return "";
-  return window.localStorage.getItem(ORG_KEY) ?? "";
-}
-
 export default function CompanyHome() {
-  const router = useRouter();
+  const { reload } = useCanonicalAuth();
+  const { organizationId, selectOrganization } = useOrg();
   const [orgs, setOrgs] = useState<MyOrganization[]>([]);
   const [activeOrg, setActiveOrg] = useState<MyOrganization | null>(null);
   const [dash, setDash] = useState<CompanyDashboard | null>(null);
@@ -40,38 +36,37 @@ export default function CompanyHome() {
       (r) => r.kind === "employer" || r.kind === "recruiter"
     );
     setOrgs(employers);
-    const stored = orgFromStorage();
     const match =
-      employers.find((o) => o.organization_id === stored) ?? employers[0] ?? null;
+      employers.find((o) => o.organization_id === organizationId) ??
+      employers[0] ??
+      null;
     setActiveOrg(match);
     return employers;
-  }, []);
+  }, [organizationId]);
 
   const loadDash = useCallback(async (orgId: string) => {
     setDash(await api.get<CompanyDashboard>(`/company/${orgId}/dashboard`));
   }, []);
 
   useEffect(() => {
-    if (!getAccessToken()) {
-      router.push("/id");
-      return;
-    }
     loadOrgs()
       .then((employers) => {
         if (employers.length > 0) {
           const match =
-            employers.find((o) => o.organization_id === orgFromStorage()) ??
+            employers.find((o) => o.organization_id === organizationId) ??
             employers[0];
-          window.localStorage.setItem(ORG_KEY, match.organization_id);
+          if (match.organization_id !== organizationId) {
+            selectOrganization(match.organization_id);
+          }
           return loadDash(match.organization_id);
         }
       })
       .catch((e) => setError(String((e as Error).message ?? e)));
-  }, [loadOrgs, loadDash, router]);
+  }, [loadOrgs, loadDash, organizationId, selectOrganization]);
 
   async function selectOrg(org: MyOrganization) {
     setActiveOrg(org);
-    window.localStorage.setItem(ORG_KEY, org.organization_id);
+    selectOrganization(org.organization_id);
     setError("");
     try {
       await loadDash(org.organization_id);
@@ -90,6 +85,7 @@ export default function CompanyHome() {
         { name: newName.trim(), kind: "employer" }
       );
       setNewName("");
+      await reload();
       const fresh = await loadOrgs();
       const org =
         fresh.find((o) => o.organization_id === created.id) ?? null;
