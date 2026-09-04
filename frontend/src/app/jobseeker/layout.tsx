@@ -15,6 +15,7 @@ const NAV = [
   { href: "/jobseeker/opportunities", label: "Opportunities" },
   { href: "/jobseeker/applications", label: "Applications" },
   { href: "/jobseeker/interviews", label: "Interviews" },
+  { href: "/jobseeker/interview-prep", label: "Interview Prep" },
   { href: "/jobseeker/offers", label: "Offers" },
   { href: "/jobseeker/communications", label: "Messages" },
 ];

@@ -1074,3 +1074,204 @@ export interface DerivedPlatformState {
   }>;
   derived_at: string;
 }
+
+// --- Phase 15: Career Advisor + Interview Preparation -------------------------
+
+export interface CareerDigest {
+  person_id: string;
+  professional_summary: string;
+  current_position: { title: string | null; company: string | null };
+  experience_summary: {
+    roles_held: number;
+    years_experience: number;
+    recent_roles: Array<{
+      title: string;
+      company: string;
+      start_date: string | null;
+      end_date: string | null;
+      current: boolean;
+    }>;
+  };
+  education_summary: Array<{
+    level: string | null;
+    degree: string | null;
+    institution: string | null;
+    field: string | null;
+  }>;
+  credentials: {
+    verified: Array<{ name: string; issuer: string | null }>;
+    unverified: Array<{ name: string; issuer: string | null; status: string }>;
+    note: string;
+  };
+  skills: {
+    all: Array<{ name: string; level: string }>;
+    strongest: Array<{ name: string; level: string }>;
+  };
+  career_goal: {
+    title: string | null;
+    target_role: string | null;
+    target_industries: string[];
+    target_locations: string[];
+    preferred_work_modes: string[];
+    availability: string | null;
+  };
+  career_milestones: Array<{
+    title: string;
+    kind: string;
+    occurred_on: string | null;
+  }>;
+  application_status_counts: Record<string, number>;
+  disclaimer: string;
+}
+
+export interface CareerSkillGap {
+  skill: string;
+  status: string;
+  note?: string;
+  related_skills?: string[];
+  level?: string;
+}
+
+export interface CareerGaps {
+  target: Record<string, unknown> | null;
+  target_kind: string;
+  required_skill_count: number;
+  matched_skills: CareerSkillGap[];
+  partial_skills: CareerSkillGap[];
+  missing_skills: CareerSkillGap[];
+  skill_coverage: number | null;
+  experience_gap: Record<string, unknown> | null;
+  credential_gap: Record<string, unknown> | null;
+  summary: string;
+  disclaimer: string;
+}
+
+export interface CareerPathView {
+  path: string;
+  target_role: string;
+  classification: string;
+  current_step: string | null;
+  steps: string[];
+  next_step: {
+    role_title: string | null;
+    seniority?: string | null;
+    description?: string | null;
+  } | null;
+  gap_to_next_step?: { from_role: string; to_role: string } | null;
+  note?: string;
+}
+
+export interface CareerPaths {
+  anchor: string | null;
+  anchored_from: string | null;
+  paths: CareerPathView[];
+  disclaimer: string;
+}
+
+export interface CareerRecommendation {
+  opportunity_id: string;
+  title: string;
+  company: string;
+  location: string | null;
+  country: string | null;
+  work_mode: string | null;
+  seniority: string | null;
+  percent: number;
+  strengths: string[];
+  missing_skills: string[];
+  career_signal: { signals: string[] } | null;
+}
+
+export interface CareerRecommendations {
+  mode: string;
+  count: number;
+  items: CareerRecommendation[];
+  note: string;
+  disclaimer: string;
+}
+
+export interface ApplicationAnalysis {
+  application_count: number;
+  applied_count: number;
+  advanced_count: number;
+  status_counts: Record<string, number>;
+  outcome_counts: Record<string, number>;
+  movement_rate: number | null;
+  movement_note: string;
+  stuck_applications: Array<{
+    application_id: string;
+    company: string;
+    title: string | null;
+    days: number;
+  }>;
+  top_companies: Array<{ company: string; applications: number }>;
+  advice: string[];
+}
+
+export interface CareerActionPlan {
+  goal: {
+    title: string | null;
+    target_role: string | null;
+  };
+  current_state: Record<string, unknown>;
+  gap_summary: string;
+  actions: Array<{
+    type: string;
+    title: string;
+    detail?: string;
+    target_week: number;
+  }>;
+  milestone_suggestions: Array<{
+    kind: string;
+    title: string;
+    occurred_on: string;
+    suggested: boolean;
+  }>;
+  note: string;
+}
+
+export interface PrepSession {
+  id: string;
+  status: string;
+  opportunity_id: string | null;
+  application_id: string | null;
+  interview_id: string | null;
+  focus_areas: string[];
+  questions_generated: number;
+  answers_evaluated: number;
+  created_at: string | null;
+  expires_at: string | null;
+  completed_at: string | null;
+}
+
+export interface PrepQuestion {
+  question: string;
+  category: string;
+  competency: string;
+  difficulty: string;
+  reason: string;
+  target_skill: string | null;
+  suggested_answer_dimensions: string[];
+}
+
+export interface PrepQuestions {
+  session_id: string;
+  count: number;
+  questions: PrepQuestion[];
+  note: string;
+}
+
+export interface AnswerDimension {
+  score: number;
+  explanation: string;
+}
+
+export interface AnswerEvaluation {
+  session_id: string;
+  dimensions: Record<string, AnswerDimension>;
+  what_you_did_well: string[];
+  what_was_missing: string[];
+  how_to_improve: string[];
+  stronger_response_pointer: string;
+  disclaimer: string;
+}
