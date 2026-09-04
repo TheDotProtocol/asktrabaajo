@@ -1,6 +1,6 @@
 # CURSOR WAVE 7 CLOSURE — Final public website
 
-**Wave 8:** not started  
+**Wave 8:** CLOSED — see `CURSOR_WAVE_8_CLOSURE.md`  
 **Hosted database:** **UNTOUCHED**  
 **Canonical application GitHub push:** **NO**  
 **Website GitHub push:** see matrix below
