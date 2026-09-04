@@ -8,15 +8,9 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { PageHeader, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { GovernanceAuditPage, GovernanceAuditRow } from "@/lib/api/types";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const inputCls =
-  "rounded border border-neutral-300 bg-white px-2 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900";
-const chipCls =
-  "rounded px-2 py-1 text-xs font-medium bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300";
 
 function fmt(ts: string | null): string {
   if (!ts) return "";
@@ -36,10 +30,15 @@ function fmt(ts: string | null): string {
 export default function AuditReviewPage() {
   const [pageData, setPageData] = useState<GovernanceAuditPage | null>(null);
   const [actionPrefix, setActionPrefix] = useState("");
+  const [action, setAction] = useState("");
   const [actor, setActor] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
   const [resourceType, setResourceType] = useState("");
   const [resourceId, setResourceId] = useState("");
   const [result, setResult] = useState("");
+  const [requestId, setRequestId] = useState("");
+  const [fromTs, setFromTs] = useState("");
+  const [toTs, setToTs] = useState("");
   const [page, setPage] = useState(1);
   const [error, setError] = useState("");
   const [forbidden, setForbidden] = useState(false);
@@ -48,10 +47,15 @@ export default function AuditReviewPage() {
     setError("");
     const params = new URLSearchParams({ page: String(page), page_size: "50" });
     if (actionPrefix) params.set("action_prefix", actionPrefix);
+    if (action) params.set("action", action);
     if (actor) params.set("actor", actor);
+    if (organizationId) params.set("organization_id", organizationId);
     if (resourceType) params.set("resource_type", resourceType);
     if (resourceId) params.set("resource_id", resourceId);
     if (result) params.set("result", result);
+    if (requestId) params.set("request_id", requestId);
+    if (fromTs) params.set("from_ts", new Date(fromTs).toISOString());
+    if (toTs) params.set("to_ts", new Date(toTs).toISOString());
     try {
       const data = await api.get<GovernanceAuditPage>(
         `/governance/audit?${params.toString()}`
@@ -62,7 +66,7 @@ export default function AuditReviewPage() {
       if (err.status === 403) setForbidden(true);
       setError(String(err.message ?? e));
     }
-  }, [page, actionPrefix, actor, resourceType, resourceId, result]);
+  }, [page, actionPrefix, action, actor, organizationId, resourceType, resourceId, result, requestId, fromTs, toTs]);
 
   useEffect(() => {
     void load();
@@ -87,39 +91,40 @@ export default function AuditReviewPage() {
       label: "Action prefix",
       value: actionPrefix,
       set: setActionPrefix,
-      placeholder: "e.g. governance.",
+      placeholder: "e.g. governance. | enforcement. | appeal.",
     },
+    { label: "Exact action", value: action, set: setAction, placeholder: "e.g. appeal.decided" },
     { label: "Actor UUID", value: actor, set: setActor, placeholder: "…" },
+    { label: "Organization UUID", value: organizationId, set: setOrganizationId, placeholder: "…" },
     {
       label: "Resource type",
       value: resourceType,
       set: setResourceType,
-      placeholder: "e.g. offer",
+      placeholder: "case | enforcement_action | appeal | user",
     },
-    { label: "Resource ID", value: resourceId, set: setResourceId, placeholder: "…" },
+    { label: "Resource / case / enforcement ID", value: resourceId, set: setResourceId, placeholder: "…" },
     {
       label: "Result",
       value: result,
       set: setResult,
       placeholder: "success | failure",
     },
+    { label: "Request ID", value: requestId, set: setRequestId, placeholder: "…" },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">Audit review</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Who did what, to what, when — with context and result. Secrets and
-          message bodies are never shown.
-        </p>
-      </div>
+      <PageHeader
+        kicker="Audit"
+        title="Metadata-only review"
+        subtitle="Who did what, to what, when. Passwords, credentials, message bodies, and private documents never appear. Severity is not a first-class audit filter — use action prefix and result instead."
+      />
 
       <div className={`${cardCls} space-y-3`}>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {fields.map((field) => (
             <label key={field.label} className="block">
-              <span className="text-xs font-medium text-neutral-500">
+              <span className="text-xs font-medium text-[#9ca3af]">
                 {field.label}
               </span>
               <input
@@ -133,26 +138,56 @@ export default function AuditReviewPage() {
               />
             </label>
           ))}
+          <label className="block">
+            <span className="text-xs font-medium text-[#9ca3af]">From</span>
+            <input
+              type="datetime-local"
+              value={fromTs}
+              onChange={(e) => {
+                setFromTs(e.target.value);
+                setPage(1);
+              }}
+              className={`${inputCls} mt-1 w-full`}
+            />
+          </label>
+          <label className="block">
+            <span className="text-xs font-medium text-[#9ca3af]">To</span>
+            <input
+              type="datetime-local"
+              value={toTs}
+              onChange={(e) => {
+                setToTs(e.target.value);
+                setPage(1);
+              }}
+              className={`${inputCls} mt-1 w-full`}
+            />
+          </label>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
+            type="button"
             onClick={() => {
               setActionPrefix("");
+              setAction("");
               setActor("");
+              setOrganizationId("");
               setResourceType("");
               setResourceId("");
               setResult("");
+              setRequestId("");
+              setFromTs("");
+              setToTs("");
               setPage(1);
             }}
-            className={chipCls}
+            className={ghostBtnCls}
           >
             Clear filters
           </button>
-          <span className="ml-auto text-xs text-neutral-500">
+          <span className="ml-auto text-xs text-[#9ca3af]">
             {pageData ? `${pageData.total} event${pageData.total === 1 ? "" : "s"}` : "…"}
           </span>
         </div>
-        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className="text-sm text-red-400">{error}</p>}
       </div>
 
       <div className={`${cardCls} space-y-2`}>
