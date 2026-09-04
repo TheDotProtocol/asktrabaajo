@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useState } from 'react';
-import Image from 'next/image';
+import Logo from '@/components/Logo';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { User, Building, Users, Shield, Globe, Check, Eye, EyeOff } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { ApiError } from '@/lib/api/types';
+import { loginRedirectPath } from '@/lib/api/portal';
+import { useCanonicalAuth } from '@/context/AuthContext';
+import type { PostAuthIntent } from '@/lib/api/session';
 
 export default function Register() {
   const router = useRouter();
-  const { signUp } = useAuth();
+  const { register, consumeIntent } = useCanonicalAuth();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -17,12 +20,17 @@ export default function Register() {
     password: '',
     confirmPassword: '',
     company: '',
-    role: ''
+    role: 'jobseeker',
   });
-  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedRole, setSelectedRole] = useState('jobseeker');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errors, setErrors] = useState<{general?: string; email?: string; password?: string; confirmPassword?: string}>({});
+  const [errors, setErrors] = useState<{
+    general?: string;
+    email?: string;
+    password?: string;
+    confirmPassword?: string;
+  }>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const roles = [
@@ -30,38 +38,51 @@ export default function Register() {
       id: 'jobseeker',
       title: 'Job Seeker',
       description: 'Looking for opportunities',
-      icon: User
+      icon: User,
     },
     {
       id: 'employer',
       title: 'Employer',
       description: 'Hiring talent',
-      icon: Building
+      icon: Building,
     },
     {
       id: 'hr_consultant',
       title: 'HR Consultant',
       description: 'Helping companies hire',
-      icon: Users
+      icon: Users,
     },
     {
       id: 'government',
       title: 'Government',
       description: 'Public sector hiring',
-      icon: Shield
+      icon: Shield,
     },
     {
       id: 'foreign_company',
       title: 'Foreign Company',
       description: 'International operations',
-      icon: Globe
-    }
+      icon: Globe,
+    },
   ];
+
+  const intentForRole = (role: string): PostAuthIntent => {
+    if (role === 'employer' || role === 'hr_consultant' || role === 'foreign_company') {
+      return 'employer';
+    }
+    return 'jobseeker';
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setErrors({});
+
+    if (formData.password.length < 8) {
+      setErrors({ password: 'Password must be at least 8 characters.' });
+      setIsLoading(false);
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       setErrors({ confirmPassword: 'Passwords do not match' });
@@ -69,20 +90,33 @@ export default function Register() {
       return;
     }
 
-    const { error } = await signUp(formData.email, formData.password, {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      role: selectedRole,
-      company_name: formData.company
-    });
-    
-    if (error) {
-      setErrors({ general: error.message });
-    } else {
-      router.push('/dashboard');
+    const fullName = `${formData.firstName} ${formData.lastName}`.trim();
+    if (!fullName) {
+      setErrors({ general: 'Please enter your name.' });
+      setIsLoading(false);
+      return;
     }
-    
-    setIsLoading(false);
+
+    try {
+      const outcome = await register(
+        formData.email,
+        formData.password,
+        fullName,
+        intentForRole(selectedRole)
+      );
+      if (!outcome.ok) {
+        setErrors({ general: outcome.message ?? 'Unable to create the account.' });
+        return;
+      }
+      const intent = consumeIntent();
+      router.push(loginRedirectPath(outcome.me, null, intent));
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : 'Unable to create the account.';
+      setErrors({ general: message });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,24 +124,19 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white p-4">
-      <div className="w-full max-w-2xl bg-white/5 border border-white/10 rounded-xl p-8 shadow-2xl backdrop-blur-sm">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-black text-gray-900 dark:text-white p-4 pt-24">
+      <div className="w-full max-w-2xl bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl p-8 shadow-2xl backdrop-blur-sm">
         <div className="text-center mb-8">
-          <Image
-            src="/trabaajo-logo.png"
-            alt="Ask Trabaajo Logo"
-            width={60}
-            height={60}
-            className="mx-auto mb-4"
-          />
-          <h1 className="text-3xl font-bold text-white mb-2">
+          <div className="flex justify-center mb-4">
+            <Logo showWordmark={false} variant="gold" />
+          </div>
+          <h1 className="text-3xl font-bold mb-2">
             Join <span className="text-[#D4AF37]">AskTrabaajo</span>
           </h1>
-          <p className="text-white/70">Create your account to get started</p>
+          <p className="text-gray-600 dark:text-white/70">Create your account to get started</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Role Selection */}
           <div>
             <label className="block text-sm font-medium text-white/80 mb-4">
               I am a...
@@ -145,9 +174,13 @@ export default function Register() {
                 </div>
               ))}
             </div>
+            <p className="mt-3 text-xs text-white/50">
+              Your account is created as a person on AskTrabaajo. Employer workspaces are
+              created after sign-in. Government and platform roles are assigned by an
+              administrator — they are not self-selected.
+            </p>
           </div>
 
-          {/* Personal Information */}
           <div className="grid md:grid-cols-2 gap-6">
             <div>
               <label htmlFor="firstName" className="block text-sm font-medium text-white/80 mb-2">
@@ -192,6 +225,7 @@ export default function Register() {
               value={formData.email}
               onChange={handleChange}
               required
+              autoComplete="email"
               className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-[#D4AF37] focus:outline-none transition-colors"
               placeholder="you@example.com"
             />
@@ -226,6 +260,8 @@ export default function Register() {
                 value={formData.password}
                 onChange={handleChange}
                 required
+                minLength={8}
+                autoComplete="new-password"
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-[#D4AF37] focus:outline-none transition-colors pr-12"
                 placeholder="••••••••"
               />
@@ -237,6 +273,7 @@ export default function Register() {
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            {errors.password && <p className="text-red-400 text-sm mt-2">{errors.password}</p>}
           </div>
 
           <div>
@@ -251,6 +288,7 @@ export default function Register() {
                 value={formData.confirmPassword}
                 onChange={handleChange}
                 required
+                autoComplete="new-password"
                 className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:border-[#D4AF37] focus:outline-none transition-colors pr-12"
                 placeholder="••••••••"
               />
@@ -262,6 +300,9 @@ export default function Register() {
                 {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>
             </div>
+            {errors.confirmPassword && (
+              <p className="text-red-400 text-sm mt-2">{errors.confirmPassword}</p>
+            )}
           </div>
 
           <div className="flex items-center">
