@@ -11,6 +11,7 @@
   "wave_4_refinement": "IMPLEMENTED",
   "wave_5": "IMPLEMENTED",
   "wave_6": "IMPLEMENTED",
+  "wave_7": "IMPLEMENTED",
   "wave_1_commits": [
     "f092bb2",
     "28adbaf",
@@ -47,8 +48,14 @@
   "live_database": "UNTOUCHED",
   "production": "UNTOUCHED",
   "public_website_repo": "https://github.com/TheDotProtocol/trabaajowebsite",
-  "public_website_status": "ASSESSED_INDEPENDENT",
-  "next_phase": "WAVE_7_PENDING_APPROVAL",
+  "public_website_status": "INTEGRATED_LOCAL_CTAS",
+  "next_phase": "WAVE_8_PENDING_APPROVAL",
+  "wave7_website_port": 3001,
+  "wave7_app_port": 3000,
+  "wave7_api_port": 8000,
+  "wave7_hosted_database": "UNTOUCHED",
+  "wave7_dev_e2e": "PASS",
+  "wave7_pixel_perfect": "NOT_CLAIMED",
   "wave6_browser_qa": "PLAYWRIGHT_LOCALHOST",
   "wave6_figma_qa": "MCP_SCREENSHOTS_COMPARED",
   "wave6_pixel_perfect": "NOT_CLAIMED",
@@ -66,6 +73,6 @@
     "AI/payment/email/voice-video providers not provisioned (mock/none safe defaults)",
     "Legacy anon/service keys stale (operator rotation when legacy REST re-enabled)",
     "No production monitoring/uptime/error-tracking stack (PHASE_18_OBSERVABILITY)",
-    "Public website CTAs still point at placeholder /app /login /register on the marketing SPA, not the application origin"
+    "Public website production origin still needs REACT_APP_CANONICAL_APP_URL when deployed; local CTAs now point at localhost:3000"
   ]
 }

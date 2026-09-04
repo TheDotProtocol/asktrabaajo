@@ -11,6 +11,7 @@ EMPLOYER OS (WAVE 3) IMPLEMENTED
 ATHENA UI (WAVE 4) IMPLEMENTED + REFINED
 SUPER ADMIN (WAVE 5) IMPLEMENTED
 LOCALHOST QA (WAVE 6) IMPLEMENTED
+PUBLIC WEBSITE + MULTI-PORTAL DEMO (WAVE 7) IMPLEMENTED
 
 PHASE 19 COMPLETE
 WAVE 1 ACCEPTED
@@ -19,15 +20,16 @@ WAVE 3 IMPLEMENTED
 WAVE 4 IMPLEMENTED
 WAVE 5 IMPLEMENTED
 WAVE 6 IMPLEMENTED
+WAVE 7 IMPLEMENTED
 LIVE RECONCILIATION NOT EXECUTED
 NO LIVE DATABASE WRITES PERFORMED
 ```
 
 - The canonical backend is **complete through Phase 19** plus one Wave 4 status route: 247 `/api/v1` routes, 80 canonical tables, migration head `0014`, RLS, RBAC, Athena, AI Interview, Commerce.
 - The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner confirmed the product is **pre-launch**. Waves 2–5 validated on **isolated sqlite**. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md` and `CURSOR_WAVE_3_DB_CLASSIFICATION.md`.
-- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED** and later **refined**. Wave 5 (Super Admin) is **IMPLEMENTED**. Wave 6 (localhost QA + Figma visual validation) is **IMPLEMENTED**. Next: Wave 7 only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
+- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED** and later **refined**. Wave 5 (Super Admin) is **IMPLEMENTED**. Wave 6 (localhost QA + Figma visual validation) is **IMPLEMENTED**. Wave 7 (public website integration + local multi-portal demo) is **IMPLEMENTED**. Next: Wave 8 only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
 
-**Where to start:** `CURSOR_WAVE_6_LOCALHOST_GUIDE.md` + `CURSOR_WAVE_6_CLOSURE.md` + `CURSOR_WAVE_5_CLOSURE.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
+**Where to start:** `CURSOR_WAVE_7_LOCALHOST_GUIDE.md` + `CURSOR_WAVE_7_CLOSURE.md` + `CURSOR_WAVE_6_LOCALHOST_GUIDE.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
 
 ---
 

@@ -18,6 +18,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 6 update (2026-09-05):** Localhost QA. Isolated SQLite + Playwright opened every implemented portal. Login/register restyled to the Candidate Figma split-screen and removed from marketing chrome. Not pixel-perfect. Government still absent. See `CURSOR_WAVE_6_CLOSURE.md`.
 
+**Wave 7 update (2026-09-05):** Public website (`TheDotProtocol/trabaajowebsite`) is the local landing page on :3001. CTAs resolve through `REACT_APP_CANONICAL_APP_URL` to the canonical app. `/portals` picks Jobseeker / Employer / Government from real memberships. `/government` is an honesty foundation page — no fabricated intelligence. See `CURSOR_WAVE_7_CLOSURE.md`.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.
