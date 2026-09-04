@@ -121,6 +121,10 @@ class Settings(BaseSettings):
     payment_webhook_secret: str = ""
     commerce_default_currency: str = "USD"
 
+    # Government intelligence k-anonymity threshold. Cells below this
+    # person-cohort size are returned as SUPPRESSED / INSUFFICIENT_COHORT.
+    government_min_cohort_size: int = 10
+
     @field_validator("payment_provider")
     @classmethod
     def _payment_provider_allowed(cls, v: str) -> str:

@@ -56,6 +56,9 @@ RATE_LIMIT_POLICIES: Dict[str, Tuple[int, float]] = {
     # Commerce / billing (Phase 17) — subscription state changes are
     # strictly bounded; org-keyed.
     "billing.change": (20, 3600),
+    # Government intelligence (Wave 8) — aggregate queries and exports.
+    "government.query": (60, 60),
+    "government.export": (10, 3600),
 }
 
 
