@@ -5,12 +5,14 @@ from app.api.v1 import (
     ai_interviews,
     athena,
     auth,
+    billing,
     career_advisor,
     company,
     consents,
     documents,
     enforcement,
     events,
+    finance,
     governance,
     interview_prep,
     jobseeker,
@@ -30,6 +32,8 @@ router.include_router(jobseeker.router)
 router.include_router(career_advisor.router)
 router.include_router(interview_prep.router)
 router.include_router(ai_interviews.router)
+router.include_router(billing.router)
+router.include_router(finance.router)
 router.include_router(company.router)
 router.include_router(talent.router)
 router.include_router(governance.router)

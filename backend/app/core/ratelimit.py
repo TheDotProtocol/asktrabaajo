@@ -53,6 +53,9 @@ RATE_LIMIT_POLICIES: Dict[str, Tuple[int, float]] = {
     "ai_interview.create": (20, 3600),
     "ai_interview.invite": (20, 3600),
     "ai_interview.respond": (40, 60),
+    # Commerce / billing (Phase 17) — subscription state changes are
+    # strictly bounded; org-keyed.
+    "billing.change": (20, 3600),
 }
 
 
