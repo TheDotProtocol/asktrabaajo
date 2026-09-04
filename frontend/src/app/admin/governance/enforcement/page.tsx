@@ -10,6 +10,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
+import { PageHeader, btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { EnforcementActionList, EnforcementActionRow } from "@/lib/api/types";
 
@@ -46,12 +47,10 @@ const statusStyle: Record<string, string> = {
   rejected: "bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300",
 };
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const chip = (active: boolean) =>
   active
-    ? "rounded-full bg-indigo-500 px-3 py-1 text-xs font-medium text-white"
-    : "rounded-full bg-neutral-100 px-3 py-1 text-xs font-medium text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
+    ? "rounded-full bg-[#d4af37] px-3 py-1 text-xs font-medium text-black"
+    : "rounded-full border border-[#23272a] px-3 py-1 text-xs font-medium text-[#9ca3af] hover:text-white";
 
 function titleCase(value: string): string {
   return value
@@ -90,6 +89,16 @@ export default function EnforcementQueuePage() {
   const [total, setTotal] = useState(0);
   const [error, setError] = useState("");
   const [forbidden, setForbidden] = useState(false);
+  const [showPropose, setShowPropose] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [propose, setPropose] = useState({
+    action_type: "warning",
+    scope: "account",
+    reason_code: "policy_violation",
+    target_user_id: "",
+    case_id: "",
+    note: "",
+  });
 
   const load = useCallback(async () => {
     setError("");
@@ -127,9 +136,68 @@ export default function EnforcementQueuePage() {
 
   return (
     <div className="space-y-5">
+      <PageHeader
+        kicker="Enforcement"
+        title="Action lifecycle"
+        subtitle="PROPOSED → APPROVED → ACTIVE → EXPIRED / REVOKED. Creator cannot approve their own severe actions."
+        actions={
+          <button type="button" className={ghostBtnCls} onClick={() => setShowPropose((v) => !v)}>
+            {showPropose ? "Hide proposal" : "Propose action"}
+          </button>
+        }
+      />
+      {showPropose && (
+        <form
+          className={`${cardCls} grid gap-3 sm:grid-cols-2`}
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBusy(true);
+            api
+              .post("/enforcement/actions", {
+                action_type: propose.action_type,
+                scope: propose.scope,
+                reason_code: propose.reason_code,
+                target_user_id: propose.target_user_id || null,
+                case_id: propose.case_id || caseId || null,
+                note: propose.note || null,
+                effective_at: new Date().toISOString(),
+              })
+              .then(() => {
+                setShowPropose(false);
+                return load();
+              })
+              .catch((err) => setError(String((err as Error).message ?? err)))
+              .finally(() => setBusy(false));
+          }}
+        >
+          <select className={inputCls} value={propose.action_type} onChange={(e) => setPropose((p) => ({ ...p, action_type: e.target.value }))}>
+            <option value="warning">warning</option>
+            <option value="communication_restriction">communication_restriction</option>
+            <option value="account_restriction">account_restriction</option>
+            <option value="suspension">suspension</option>
+          </select>
+          <select className={inputCls} value={propose.scope} onChange={(e) => setPropose((p) => ({ ...p, scope: e.target.value }))}>
+            <option value="account">account</option>
+            <option value="communications">communications</option>
+            <option value="applications">applications</option>
+            <option value="platform_access">platform_access</option>
+          </select>
+          <select className={inputCls} value={propose.reason_code} onChange={(e) => setPropose((p) => ({ ...p, reason_code: e.target.value }))}>
+            <option value="policy_violation">policy_violation</option>
+            <option value="harassment">harassment</option>
+            <option value="outreach_abuse">outreach_abuse</option>
+            <option value="suspicious_activity">suspicious_activity</option>
+          </select>
+          <input className={inputCls} placeholder="Target user UUID" value={propose.target_user_id} onChange={(e) => setPropose((p) => ({ ...p, target_user_id: e.target.value }))} />
+          <input className={inputCls} placeholder="Linked case UUID (optional)" value={propose.case_id} onChange={(e) => setPropose((p) => ({ ...p, case_id: e.target.value }))} />
+          <input className={inputCls} placeholder="Sanitized note" value={propose.note} onChange={(e) => setPropose((p) => ({ ...p, note: e.target.value }))} />
+          <button type="submit" className={btnCls} disabled={busy || !propose.target_user_id}>
+            Submit proposal
+          </button>
+        </form>
+      )}
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-lg font-semibold tracking-tight">Enforcement actions</h1>
-        <span className="text-sm text-neutral-500">· {total} total</span>
+        <span className="text-sm text-[#9ca3af]">{total} total</span>
         {caseId && (
           <Link
             href="/admin/governance"
@@ -180,7 +248,7 @@ export default function EnforcementQueuePage() {
                   <td className="px-4 py-2.5">
                     <Link
                       href={`/admin/governance/enforcement/${row.id}`}
-                      className="font-medium text-indigo-600 hover:underline dark:text-indigo-400"
+                      className="font-medium text-[#d4af37] hover:underline"
                     >
                       {titleCase(row.action_type)}
                     </Link>
