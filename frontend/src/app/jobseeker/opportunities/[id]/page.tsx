@@ -10,15 +10,9 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { btnCls, cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { JobseekerOpportunityDetail } from "@/lib/api/types";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
-const ghostBtnCls =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-amber-400 dark:border-neutral-700 dark:text-neutral-300";
 
 export default function OpportunityDetailPage() {
   const params = useParams<{ id: string }>();
@@ -42,6 +36,7 @@ export default function OpportunityDetailPage() {
 
   async function apply() {
     setError("");
+    if (!window.confirm("Submit this application? This is an explicit action and cannot be silent.")) return;
     try {
       await api.post("/jobseeker/applications", {
         opportunity_id: oppId,

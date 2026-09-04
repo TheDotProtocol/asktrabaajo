@@ -1,44 +1,73 @@
 "use client";
 /**
- * Opportunity discovery — one catalogue, explainable matching.
- *
- * Every card shows WHY it matches (per-component reasons) and what is
- * missing, never a bare percentage. Save / apply are explicit actions.
+ * Opportunity discovery — catalogue search plus Career Advisor match modes.
+ * Matching is never recomputed in the browser.
  */
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  EmptyState,
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  btnCls,
+  cardCls,
+  ghostBtnCls,
+  inputCls,
+} from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
-import { OpportunityList, OpportunityMatch } from "@/lib/api/types";
+import {
+  CareerAdvisorOpportunities,
+  OpportunityList,
+  OpportunityMatch,
+} from "@/lib/api/types";
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const inputCls =
-  "rounded border border-neutral-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
-const ghostBtnCls =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-amber-400 dark:border-neutral-700 dark:text-neutral-300";
+const MODES = [
+  { id: "all", label: "All active" },
+  { id: "strong", label: "Strong" },
+  { id: "potential", label: "Potential" },
+  { id: "transition", label: "Career transition" },
+  { id: "explore", label: "Explore" },
+] as const;
+
+type Mode = (typeof MODES)[number]["id"];
 
 export default function OpportunitiesPage() {
   const [list, setList] = useState<OpportunityList | null>(null);
+  const [recs, setRecs] = useState<CareerAdvisorOpportunities | null>(null);
   const [query, setQuery] = useState("");
+  const [workMode, setWorkMode] = useState("");
+  const [mode, setMode] = useState<Mode>("all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const load = useCallback(async (q = "") => {
+  const loadCatalog = useCallback(async (q = "", wm = "") => {
     setBusy(true);
     setError("");
     try {
-      const result = await api.get<OpportunityList>(
-        `/jobseeker/opportunities${q ? `?q=${encodeURIComponent(q)}` : ""}`
-      );
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (wm) params.set("work_mode", wm);
+      const qs = params.toString();
+      const result = await api.get<OpportunityList>(`/jobseeker/opportunities${qs ? `?${qs}` : ""}`);
       setList(result);
-      setAppliedIds(
-        new Set(result.items.filter((i) => i.applied).map((i) => i.opportunity_id))
-      );
+      setAppliedIds(new Set(result.items.filter((i) => i.applied).map((i) => i.opportunity_id)));
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const loadMode = useCallback(async (next: Exclude<Mode, "all">) => {
+    setBusy(true);
+    setError("");
+    try {
+      setRecs(await api.get<CareerAdvisorOpportunities>(`/career-advisor/opportunities?mode=${next}&limit=20`));
     } catch (e) {
       setError(String((e as Error).message ?? e));
     } finally {
@@ -47,166 +76,250 @@ export default function OpportunitiesPage() {
   }, []);
 
   useEffect(() => {
-    load();
-  }, [load]);
+    if (mode === "all") void loadCatalog(query, workMode);
+    else void loadMode(mode);
+    // query/workMode are applied only when Search is clicked or mode returns to all
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mode, loadCatalog, loadMode]);
 
-  async function apply(item: OpportunityMatch) {
+  async function apply(id: string, title?: string | null) {
     setError("");
+    if (!window.confirm(`Submit an application to ${title || "this opportunity"}?`)) return;
     try {
       await api.post("/jobseeker/applications", {
-        opportunity_id: item.opportunity_id,
-        cover_note: "I found this through my AskTrabaajo Career OS.",
+        opportunity_id: id,
+        cover_note: "Submitted from the AskTrabaajo Candidate OS.",
       });
-      setNotice(`Applied to ${item.opportunity?.title}.`);
-      setAppliedIds((prev) => new Set(prev).add(item.opportunity_id));
+      setNotice(`Applied to ${title || "the opportunity"}.`);
+      setAppliedIds((prev) => new Set(prev).add(id));
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
   }
 
-  async function save(item: OpportunityMatch) {
+  async function save(id: string) {
     try {
-      await api.post(`/jobseeker/opportunities/${item.opportunity_id}/save`);
-      await load(query);
+      await api.post(`/jobseeker/opportunities/${id}/save`);
+      if (mode === "all") await loadCatalog(query, workMode);
     } catch (e) {
       setError(String((e as Error).message ?? e));
     }
   }
+
+  async function batchApply() {
+    const ids = Array.from(selected);
+    if (ids.length < 1) return;
+    const typed = window.prompt(
+      `High-risk batch apply. Type the exact number of selected IDs (${ids.length}) to confirm.\n\n${ids.join("\n")}`
+    );
+    if (typed !== String(ids.length)) {
+      setError("Batch apply cancelled — confirmation did not match the selected count.");
+      return;
+    }
+    try {
+      const result = await api.post<{ applied: unknown[]; failed: unknown[] }>("/jobseeker/applications/batch", {
+        opportunity_ids: ids,
+      });
+      setNotice(`Batch apply recorded: ${result.applied?.length ?? 0} applied, ${result.failed?.length ?? 0} failed.`);
+      setSelected(new Set());
+      if (mode === "all") await loadCatalog(query, workMode);
+    } catch (e) {
+      setError(String((e as Error).message ?? e));
+    }
+  }
+
+  const catalogItems = list?.items ?? [];
+  const recItems = recs?.items ?? [];
+  const empty = mode === "all" ? catalogItems.length === 0 : recItems.length === 0;
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Opportunities</h1>
-          <p className="mt-1 max-w-2xl text-sm text-neutral-500 dark:text-neutral-400">
-            Ranked for you with reasons — not a black-box percentage. Strengthen
-            your Work ID to sharpen every match.
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        kicker="Talent Graph"
+        title="Opportunities"
+        subtitle="Search the live catalogue or switch to a Career Advisor mode. Matching stays on the server."
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {MODES.map((item) => (
+          <button key={item.id} type="button" className={mode === item.id ? btnCls : ghostBtnCls} onClick={() => setMode(item.id)}>
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      {mode === "all" && (
+        <div className="flex flex-wrap gap-2">
           <input
-            className={inputCls}
+            className={`${inputCls} max-w-sm`}
             placeholder="Search roles, companies, skills…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && load(query)}
+            onKeyDown={(e) => e.key === "Enter" && void loadCatalog(query, workMode)}
           />
-          <button type="button" className={btnCls} onClick={() => load(query)} disabled={busy}>
+          <input
+            className={`${inputCls} max-w-[10rem]`}
+            placeholder="work mode"
+            value={workMode}
+            onChange={(e) => setWorkMode(e.target.value)}
+          />
+          <button type="button" className={btnCls} onClick={() => void loadCatalog(query, workMode)} disabled={busy}>
             Search
           </button>
-        </div>
-      </section>
-
-      {notice && (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          {notice}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
+          {selected.size > 0 && (
+            <button type="button" className={ghostBtnCls} onClick={() => void batchApply()}>
+              Batch apply ({selected.size})
+            </button>
+          )}
         </div>
       )}
 
-      {busy && !list && <p className="text-center text-neutral-400">Matching…</p>}
+      {recs?.note && mode !== "all" && <p className="text-sm text-[#9ca3af]">{recs.note}</p>}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <ErrorBanner message={error} />}
+      {busy && empty && <LoadingState label="Matching…" />}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        {(list?.items ?? []).map((item) => {
-          const opp = item.opportunity;
-          const alreadyApplied = appliedIds.has(item.opportunity_id);
-          return (
+      {mode === "all" && !empty && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {catalogItems.map((item) => {
+            const opp = item.opportunity;
+            const already = appliedIds.has(item.opportunity_id);
+            return (
+              <article key={item.opportunity_id} className={cardCls}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <Link href={`/jobseeker/opportunities/${item.opportunity_id}`} className="font-semibold hover:text-[#d4af37]">
+                      {opp?.title}
+                    </Link>
+                    <p className="text-sm text-[#9ca3af]">
+                      {opp?.company_name}
+                      {opp?.city ? ` · ${opp.city}` : ""}
+                      {opp?.work_mode ? ` · ${opp.work_mode}` : ""}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-semibold text-[#d4af37]">{item.percent}%</p>
+                    <p className="font-mono text-[10px] uppercase text-[#6b7280]">match</p>
+                  </div>
+                </div>
+                <MatchBits strengths={item.strengths} gaps={item.gaps} missing={item.missing_skills} />
+                <Actions
+                  already={already}
+                  saved={item.saved}
+                  onApply={() => void apply(item.opportunity_id, opp?.title)}
+                  onSave={() => void save(item.opportunity_id)}
+                  selected={selected.has(item.opportunity_id)}
+                  onSelect={() =>
+                    setSelected((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(item.opportunity_id)) next.delete(item.opportunity_id);
+                      else next.add(item.opportunity_id);
+                      return next;
+                    })
+                  }
+                />
+              </article>
+            );
+          })}
+        </div>
+      )}
+
+      {mode !== "all" && !empty && (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {recItems.map((item) => (
             <article key={item.opportunity_id} className={cardCls}>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <Link
-                    href={`/jobseeker/opportunities/${item.opportunity_id}`}
-                    className="font-semibold hover:text-amber-600"
-                  >
-                    {opp?.title}
+                  <Link href={`/jobseeker/opportunities/${item.opportunity_id}`} className="font-semibold hover:text-[#d4af37]">
+                    {item.title}
                   </Link>
-                  <p className="text-sm text-neutral-500 dark:text-neutral-400">
-                    {opp?.company_name}
-                    {opp?.city ? ` · ${opp.city}${opp.country ? `, ${opp.country}` : ""}` : ""}
-                    {opp?.work_mode ? ` · ${opp.work_mode}` : ""}
-                  </p>
+                  <p className="text-sm text-[#9ca3af]">{item.company}{item.location ? ` · ${item.location}` : ""}</p>
                 </div>
-                <div className="text-right">
-                  <p className="text-xl font-semibold text-amber-500">{item.percent}%</p>
-                  <p className="text-[10px] uppercase tracking-wide text-neutral-400">match</p>
-                </div>
+                <p className="text-xl font-semibold text-[#d4af37]">{item.percent}%</p>
               </div>
-
-              {opp?.summary && (
-                <p className="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
-                  {opp.summary}
-                </p>
+              {item.career_signal?.signals?.[0] && (
+                <p className="mt-2 text-xs text-[#9ca3af]">{item.career_signal.signals[0]}</p>
               )}
-
-              <div className="mt-3 space-y-1 text-xs">
-                {item.strengths.slice(0, 2).map((s, i) => (
-                  <p key={`s-${i}`} className="text-emerald-600 dark:text-emerald-400">
-                    ✓ {s}
-                  </p>
-                ))}
-                {item.gaps.slice(0, 2).map((g, i) => (
-                  <p key={`g-${i}`} className="text-amber-600 dark:text-amber-400">
-                    ▲ {g}
-                  </p>
-                ))}
-              </div>
-
-              {item.missing_skills.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {item.missing_skills.slice(0, 3).map((ms) => (
-                    <span
-                      key={ms}
-                      className="rounded-full bg-neutral-100 px-2 py-0.5 text-[11px] text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
-                    >
-                      − {ms}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {opp?.min_salary ? (
-                <p className="mt-2 text-xs text-neutral-400">
-                  {opp.salary_currency} {opp.min_salary.toLocaleString()}
-                  {opp.max_salary ? ` – ${opp.max_salary.toLocaleString()}` : ""}
-                </p>
-              ) : null}
-
-              <div className="mt-4 flex gap-2">
-                {alreadyApplied ? (
-                  <span className="rounded bg-emerald-100 px-3 py-1.5 text-sm font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-                    Applied ✓
-                  </span>
-                ) : (
-                  <>
-                    <button type="button" className={btnCls} onClick={() => apply(item)}>
-                      Apply
-                    </button>
-                    <button
-                      type="button"
-                      className={ghostBtnCls}
-                      onClick={() => save(item)}
-                    >
-                      {item.saved ? "Saved ✓" : "Save"}
-                    </button>
-                  </>
-                )}
-              </div>
+              <MatchBits strengths={item.strengths} gaps={[]} missing={item.missing_skills} />
+              <Actions
+                already={appliedIds.has(item.opportunity_id)}
+                saved={false}
+                onApply={() => void apply(item.opportunity_id, item.title)}
+                onSave={() => void save(item.opportunity_id)}
+              />
             </article>
-          );
-        })}
-      </div>
-
-      {(list?.items ?? []).length === 0 && !busy && (
-        <div className={cardCls}>
-          <p className="text-center text-sm text-neutral-400">
-            No opportunities match your filters.
-          </p>
+          ))}
         </div>
+      )}
+
+      {!busy && empty && (
+        <EmptyState
+          title="No opportunities in this view"
+          body="The catalogue is empty or your Work ID does not yet produce matches. Complete your identity, then return — we will not invent roles."
+          actionHref="/id/work-id"
+          actionLabel="Complete Work ID"
+        />
       )}
     </div>
   );
 }
+
+function MatchBits({ strengths, gaps, missing }: { strengths: string[]; gaps: string[]; missing: string[] }) {
+  return (
+    <>
+      <div className="mt-3 space-y-1 text-xs">
+        {strengths.slice(0, 2).map((s, i) => (
+          <p key={`s-${i}`} className="text-emerald-400">✓ {s}</p>
+        ))}
+        {gaps.slice(0, 2).map((g, i) => (
+          <p key={`g-${i}`} className="text-[#d4af37]">▲ {g}</p>
+        ))}
+      </div>
+      {missing.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1">
+          {missing.slice(0, 3).map((ms) => (
+            <span key={ms} className="rounded-full border border-[#23272a] px-2 py-0.5 text-[11px] text-[#9ca3af]">
+              − {ms}
+            </span>
+          ))}
+        </div>
+      )}
+    </>
+  );
+}
+
+function Actions({
+  already,
+  saved,
+  onApply,
+  onSave,
+  selected,
+  onSelect,
+}: {
+  already: boolean;
+  saved: boolean;
+  onApply: () => void;
+  onSave: () => void;
+  selected?: boolean;
+  onSelect?: () => void;
+}) {
+  return (
+    <div className="mt-4 flex flex-wrap gap-2">
+      {already ? (
+        <span className="rounded bg-emerald-500/10 px-3 py-1.5 text-sm font-medium text-emerald-400">Applied</span>
+      ) : (
+        <>
+          <button type="button" className={btnCls} onClick={onApply}>Apply</button>
+          <button type="button" className={ghostBtnCls} onClick={onSave}>{saved ? "Saved" : "Save"}</button>
+          {onSelect && (
+            <button type="button" className={ghostBtnCls} onClick={onSelect}>
+              {selected ? "Selected" : "Select"}
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+export type { OpportunityMatch };
