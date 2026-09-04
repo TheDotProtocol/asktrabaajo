@@ -9,6 +9,7 @@ from app.models import (
     enforcement,
     governance,
     identity,
+    interview_prep,
     platform,
     privacy,
     talent,
@@ -42,6 +43,7 @@ from app.models.athena import (
     AthenaMessage,
     AthenaSession,
 )
+from app.models.interview_prep import InterviewPrepSession
 from app.models.communication import (
     Conversation,
     ConversationMessage,

@@ -4,12 +4,14 @@ from fastapi import APIRouter
 from app.api.v1 import (
     athena,
     auth,
+    career_advisor,
     company,
     consents,
     documents,
     enforcement,
     events,
     governance,
+    interview_prep,
     jobseeker,
     organizations,
     talent,
@@ -24,6 +26,8 @@ router.include_router(workid.router)
 router.include_router(consents.router, prefix="/work-id")
 router.include_router(documents.router)
 router.include_router(jobseeker.router)
+router.include_router(career_advisor.router)
+router.include_router(interview_prep.router)
 router.include_router(company.router)
 router.include_router(talent.router)
 router.include_router(governance.router)
