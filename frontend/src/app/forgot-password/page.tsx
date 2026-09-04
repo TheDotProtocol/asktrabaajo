@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useState } from 'react';
 import { api } from '@/lib/api/session';
 import { ApiError } from '@/lib/api/types';
-import Logo from '@/components/Logo';
+import { AuthSplit, authBtnCls, authInputCls, authLabelCls } from '@/components/auth/AuthSplit';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -28,40 +28,36 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4 pt-24 dark:bg-black">
-      <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 dark:border-white/10 dark:bg-white/5">
-        <div className="mb-6 flex justify-center">
-          <Logo showWordmark={false} variant="gold" />
-        </div>
-        <h1 className="text-2xl font-semibold">Reset your password</h1>
-        <p className="mt-2 text-sm text-neutral-500">
-          If an account exists for this email, AskTrabaajo will send a reset code.
-        </p>
-        <form onSubmit={onSubmit} className="mt-6 space-y-4">
+    <AuthSplit
+      title="Reset your password"
+      subtitle="If an account exists for this email, AskTrabaajo will send a reset code."
+      footer={
+        <Link href="/login" className="font-medium text-[#d4af37] hover:underline">
+          Back to sign in
+        </Link>
+      }
+    >
+      <form onSubmit={onSubmit} className="space-y-5">
+        <div>
+          <label htmlFor="email" className={authLabelCls}>
+            Email
+          </label>
           <input
+            id="email"
             type="email"
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-gray-300 px-4 py-3 dark:border-white/20 dark:bg-white/10"
+            className={authInputCls}
           />
-          {error && <p className="text-sm text-red-500">{error}</p>}
-          {notice && <p className="text-sm text-emerald-600">{notice}</p>}
-          <button
-            type="submit"
-            disabled={busy}
-            className="w-full rounded-lg bg-[#D4AF37] px-4 py-3 font-semibold text-black disabled:opacity-50"
-          >
-            {busy ? 'Sending…' : 'Send reset instructions'}
-          </button>
-        </form>
-        <p className="mt-6 text-center text-sm text-neutral-500">
-          <Link href="/login" className="text-[#D4AF37] hover:underline">
-            Back to sign in
-          </Link>
-        </p>
-      </div>
-    </div>
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        {notice && <p className="text-sm text-emerald-700">{notice}</p>}
+        <button type="submit" disabled={busy} className={authBtnCls}>
+          {busy ? 'Sending…' : 'Send reset instructions'}
+        </button>
+      </form>
+    </AuthSplit>
   );
 }

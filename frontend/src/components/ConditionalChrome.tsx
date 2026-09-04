@@ -52,6 +52,9 @@ const STANDALONE_PREFIXES = [
   '/admin',
   '/id',
   '/forbidden',
+  '/login',
+  '/register',
+  '/forgot-password',
 ]
 
 export default function ConditionalChrome({ children }: { children: React.ReactNode }) {
