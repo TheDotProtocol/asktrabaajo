@@ -7,15 +7,10 @@
  */
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, StatusPill, btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { Interview } from "@/lib/api/types";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
+import Link from "next/link";
 
 export default function InterviewsPage() {
   const [interviews, setInterviews] = useState<Interview[]>([]);
@@ -51,31 +46,28 @@ export default function InterviewsPage() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="text-2xl font-semibold tracking-tight">Interviews</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Your interview center. Rescheduling is limited and reason-based.
-        </p>
-      </section>
+      <PageHeader
+        kicker="Calendar"
+        title="Interviews"
+        subtitle="Upcoming and past interviews. Rescheduling is limited by backend policy — this page cannot bypass it."
+        actions={
+          <div className="flex gap-2">
+            <Link href="/jobseeker/ai-interview" className={ghostBtnCls}>AI Interview</Link>
+            <Link href="/jobseeker/interview-prep" className={ghostBtnCls}>Interview prep</Link>
+          </div>
+        }
+      />
 
-      {notice && (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          {notice}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <ErrorBanner message={error} />}
 
       {interviews.length === 0 && (
-        <div className={cardCls}>
-          <p className="text-center text-sm text-neutral-400">
-            No interviews scheduled yet. They appear here once a company
-            schedules one on your application.
-          </p>
-        </div>
+        <EmptyState
+          title="No interviews scheduled"
+          body="When a company schedules an interview on one of your applications, it will appear here. You cannot invent a slot from this screen."
+          actionHref="/jobseeker/applications"
+          actionLabel="View applications"
+        />
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -92,20 +84,12 @@ export default function InterviewsPage() {
                     minute: "2-digit",
                   })}
                 </p>
-                <p className="mt-1 text-sm capitalize text-neutral-500 dark:text-neutral-400">
+                <p className="mt-1 text-sm capitalize text-[#9ca3af]">
                   {i.mode} interview · {i.duration_minutes} minutes
                   {i.interviewer_name ? ` · with ${i.interviewer_name}` : ""}
                 </p>
               </div>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs capitalize ${
-                  i.status === "completed"
-                    ? "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
-                    : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-                }`}
-              >
-                {i.status.replace("_", " ")}
-              </span>
+              <StatusPill status={i.status} />
             </div>
 
             {i.meeting_link && i.status === "scheduled" && (

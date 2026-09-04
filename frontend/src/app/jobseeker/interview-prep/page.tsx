@@ -9,6 +9,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { btnCls, cardCls, inputCls } from "@/components/candidate/ui";
 import { api, getAccessToken } from "@/lib/api/session";
 import {
   AnswerEvaluation,
@@ -16,12 +17,6 @@ import {
   PrepSession,
 } from "@/lib/api/types";
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
 const ghostBtn =
   "rounded border border-neutral-300 px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800";
 const labelCls = "text-xs uppercase tracking-wide text-neutral-400";
