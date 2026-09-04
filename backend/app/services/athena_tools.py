@@ -13,13 +13,14 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import dataclass, field
+from datetime import date
 from typing import Callable, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.errors import PermissionDeniedError
+from app.core.errors import InvalidInputError, PermissionDeniedError
 from app.models.career import (
     CareerGoal,
     Interview,
@@ -41,7 +42,9 @@ from app.models.enums import (
 from app.models.identity import PersonProfile, User
 from app.models.work import Credential, Education, Skill, UserSkill, WorkExperience
 from app.services import applications as applications_service
+from app.services import career_advisor
 from app.services import communications as communications_service
+from app.services import interview_prep
 from app.services import matching as matching_service
 from app.services import outreach as outreach_service
 from app.services import talent as talent_service
@@ -127,6 +130,50 @@ class CreateOutreachIn(BaseModel):
     opportunity_id: Optional[uuid.UUID] = None
     message: str = Field(min_length=1, max_length=2000)
     context: Optional[str] = Field(default=None, max_length=1000)
+
+
+# --- Phase 15 inputs (career advisor + interview preparation) -----------------
+
+class GapAnalysisIn(BaseModel):
+    opportunity_id: Optional[uuid.UUID] = None
+
+
+class RecommendationsIn(BaseModel):
+    mode: str = Field(default="strong", max_length=16)
+    limit: int = Field(default=10, ge=1, le=25)
+
+
+class MilestoneIn(BaseModel):
+    title: str = Field(min_length=1, max_length=200)
+    kind: str = Field(default="achievement", max_length=32)
+    occurred_on: Optional[date] = None
+
+
+class PrepSessionCreateIn(BaseModel):
+    opportunity_id: Optional[uuid.UUID] = None
+    application_id: Optional[uuid.UUID] = None
+    interview_id: Optional[uuid.UUID] = None
+    focus_areas: Optional[List[str]] = Field(default=None, max_length=6)
+
+
+class PrepSessionIdIn(BaseModel):
+    session_id: uuid.UUID
+
+
+class PrepQuestionsIn(BaseModel):
+    session_id: uuid.UUID
+    count: int = Field(default=5, ge=1, le=10)
+    categories: Optional[List[str]] = Field(default=None, max_length=6)
+
+
+class PrepAnswerIn(BaseModel):
+    session_id: uuid.UUID
+    question: str = Field(min_length=1, max_length=2000)
+    answer: str = Field(min_length=1, max_length=6000)
+
+
+class BulkApplyIn(BaseModel):
+    opportunity_ids: List[uuid.UUID] = Field(min_length=1, max_length=10)
 
 
 @dataclass
@@ -579,6 +626,122 @@ def _create_outreach(db: Session, user: User, session, org_id, args) -> Dict:
     return {"outreach_id": str(request.id), "status": request.status}
 
 
+# --- Phase 15: Career Advisor tools (jobseeker, own data) ---------------------
+
+def _career_person(db: Session, user: User):
+    """PersonProfile for the owning jobseeker (tools are own-data only)."""
+    return _person_for_user(db, user.id)
+
+
+def _career_profile_digest(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.profile_digest(db, person.id)
+
+
+def _career_skill_gaps(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.skill_gap_analysis(
+        db, person.id, opportunity_id=args.get("opportunity_id")
+    )
+
+
+def _career_paths(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.career_paths(db, person.id)
+
+
+def _career_recommendations(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.opportunity_recommendations(
+        db, person.id, mode=args.get("mode", "strong"), limit=args.get("limit", 10)
+    )
+
+
+def _career_application_analysis(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.application_analysis(db, person.id)
+
+
+def _career_action_plan(db: Session, user: User, session, org_id, args) -> Dict:
+    person = _career_person(db, user)
+    return career_advisor.action_plan(db, person.id)
+
+
+def _career_create_milestone(db: Session, user: User, session, org_id, args) -> Dict:
+    """Low-risk own-data write: a milestone on the caller's own timeline."""
+    person = _career_person(db, user)
+    milestone = career_advisor.create_own_milestone(
+        db,
+        person.id,
+        title=args["title"],
+        kind=args.get("kind", "achievement"),
+        occurred_on=args.get("occurred_on"),
+    )
+    return {
+        "milestone_id": str(milestone.id),
+        "title": milestone.title,
+        "occurred_on": milestone.occurred_on.isoformat() if milestone.occurred_on else None,
+    }
+
+
+# --- Phase 15: Interview preparation tools (jobseeker, own data) --------------
+
+def _prep_start_session(db: Session, user: User, session, org_id, args) -> Dict:
+    prep_session = interview_prep.create_session(
+        db,
+        user.id,
+        opportunity_id=args.get("opportunity_id"),
+        application_id=args.get("application_id"),
+        interview_id=args.get("interview_id"),
+        focus_areas=args.get("focus_areas"),
+    )
+    return interview_prep.session_out(prep_session)
+
+
+def _prep_questions(db: Session, user: User, session, org_id, args) -> Dict:
+    return interview_prep.generate_questions(
+        db,
+        user.id,
+        args["session_id"],
+        count=args.get("count", 5),
+        categories=args.get("categories"),
+    )
+
+
+def _prep_answer(db: Session, user: User, session, org_id, args) -> Dict:
+    return interview_prep.evaluate_answer(
+        db,
+        user.id,
+        args["session_id"],
+        question=args["question"],
+        answer=args["answer"],
+    )
+
+
+def _prep_complete(db: Session, user: User, session, org_id, args) -> Dict:
+    prep_session = interview_prep.complete_session(db, user.id, args["session_id"])
+    return interview_prep.session_out(prep_session)
+
+
+def _prep_session_view(db: Session, user: User, session, org_id, args) -> Dict:
+    prep_session = interview_prep.get_session_for_user(db, user.id, args["session_id"])
+    return interview_prep.session_out(prep_session)
+
+
+def _apply_to_opportunities(db: Session, user: User, session, org_id, args) -> Dict:
+    """Bulk apply (HIGH-RISK): runs only after an exact-scope confirmation.
+
+    Each opportunity is applied to independently through the canonical
+    service; per-item failures are isolated and reported, never silently
+    swallowed. The confirmation gate (Phase 14) binds the exact
+    ``opportunity_ids`` list via scope hash.
+    """
+    person = _career_person(db, user)
+    ids = [str(oid) for oid in args["opportunity_ids"]]
+    result = applications_service.apply_to_matching(db, person.id, user.id, ids)
+    return result
+
+
 # --- Registry ------------------------------------------------------------------
 
 TOOLS: Dict[str, AthenaTool] = {}
@@ -705,6 +868,90 @@ _register(AthenaTool(
     CreateOutreachIn, {ATHENA_MODE_EMPLOYER, ATHENA_MODE_RECRUITER}, _create_outreach,
     permission="talent.outreach.create", risk=ATHENA_RISK_HIGH_RISK_WRITE,
     read_only=False, confirmation_required=True, data_scope="org",
+))
+
+# --- Phase 15 registrations ---------------------------------------------------
+# Career Advisor + interview preparation live in the JOBSEEKER mode over the
+# candidate's OWN data. All career.* / interview.* tools are own-data; only
+# bulk apply is high-risk (confirmation-gated with an exact-scope binding).
+_register(AthenaTool(
+    "career.get_profile_digest",
+    "Returns the caller's structured career profile digest (skills, experience, education, credentials with verification state, goals, milestones, application counts). Never includes contact or identity-sensitive data.",
+    EmptyIn, {ATHENA_MODE_JOBSEEKER}, _career_profile_digest,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.get_skill_gaps",
+    "Deterministic gap analysis against one opportunity (or the caller's goal): matched, partial, and missing skills plus experience and credential gaps.",
+    GapAnalysisIn, {ATHENA_MODE_JOBSEEKER}, _career_skill_gaps,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.get_career_paths",
+    "Advisory career-path steps from the platform catalogue anchored to the caller's history or goal (direct/transition/exploratory classifications).",
+    EmptyIn, {ATHENA_MODE_JOBSEEKER}, _career_paths,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.get_recommendations",
+    "Explainable opportunity recommendations for the caller: strong, potential, transition, or explore modes with reasons and missing skills.",
+    RecommendationsIn, {ATHENA_MODE_JOBSEEKER}, _career_recommendations,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.get_application_analysis",
+    "Deterministic read of the caller's own application history: funnel counts, movement rate, stuck applications, and honest advice.",
+    EmptyIn, {ATHENA_MODE_JOBSEEKER}, _career_application_analysis,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.get_action_plan",
+    "A structured, suggestion-only action plan derived from the caller's Work ID and goal (skills to develop, actions, milestone suggestions).",
+    EmptyIn, {ATHENA_MODE_JOBSEEKER}, _career_action_plan,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "career.create_milestone",
+    "Adds a milestone to the caller's OWN career timeline (low-risk write on own data).",
+    MilestoneIn, {ATHENA_MODE_JOBSEEKER}, _career_create_milestone,
+    risk=ATHENA_RISK_LOW_RISK_WRITE, read_only=False, data_scope="own",
+))
+_register(AthenaTool(
+    "interview.start_prep_session",
+    "Starts a candidate-owned interview preparation session, optionally anchored to an opportunity/application/interview.",
+    PrepSessionCreateIn, {ATHENA_MODE_JOBSEEKER}, _prep_start_session,
+    risk=ATHENA_RISK_LOW_RISK_WRITE, read_only=False, data_scope="own",
+))
+_register(AthenaTool(
+    "interview.get_questions",
+    "Generates structured practice questions for the caller's prep session from the posted role requirements and the caller's own skills.",
+    PrepQuestionsIn, {ATHENA_MODE_JOBSEEKER}, _prep_questions,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "interview.submit_answer",
+    "Evaluates one mock-interview answer with explainable dimension feedback (relevance, structure, evidence, role knowledge, communication, completeness). Never a hireability score.",
+    PrepAnswerIn, {ATHENA_MODE_JOBSEEKER}, _prep_answer,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "interview.complete_prep_session",
+    "Marks the caller's prep session as completed.",
+    PrepSessionIdIn, {ATHENA_MODE_JOBSEEKER}, _prep_complete,
+    risk=ATHENA_RISK_LOW_RISK_WRITE, read_only=False, data_scope="own",
+))
+_register(AthenaTool(
+    "interview.get_prep_session",
+    "Returns one of the caller's own interview preparation sessions.",
+    PrepSessionIdIn, {ATHENA_MODE_JOBSEEKER}, _prep_session_view,
+    risk=ATHENA_RISK_READ_ONLY, data_scope="own",
+))
+_register(AthenaTool(
+    "apply_to_opportunities",
+    "Applies the caller to up to 10 opportunities. HIGH-RISK: requires one explicit confirmation bound to the EXACT opportunity list.",
+    BulkApplyIn, {ATHENA_MODE_JOBSEEKER}, _apply_to_opportunities,
+    risk=ATHENA_RISK_HIGH_RISK_WRITE, read_only=False,
+    confirmation_required=True, data_scope="own",
 ))
 
 
