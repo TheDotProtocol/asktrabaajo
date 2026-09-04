@@ -6,12 +6,9 @@
 import Link from "next/link";
 import { useState } from "react";
 
+import { btnCls, cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api, setSession } from "@/lib/api/session";
 import { useCanonicalAuth } from "@/context/AuthContext";
-
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
-const rowCls = "rounded-lg border border-neutral-200 p-4 dark:border-neutral-800";
 
 export default function IdentityPage() {
   const { me, reload, logout } = useCanonicalAuth();
@@ -52,21 +49,21 @@ export default function IdentityPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">My identity</h1>
-        <p className="mt-1 text-sm text-neutral-500">
-          Canonical account settings. Sign-in happens at /login.
+        <h1 className="text-2xl font-semibold">Account & security</h1>
+        <p className="mt-1 text-sm text-[#9ca3af]">
+          Canonical account settings. Sign-in happens at /login. Profile visibility lives under Settings.
         </p>
       </div>
 
-      {notice && <p className="text-sm text-emerald-700">{notice}</p>}
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <p className="text-sm text-red-300">{error}</p>}
 
-      <section className={rowCls}>
+      <section className={cardCls}>
         <h2 className="mb-2 font-medium">Account</h2>
         <p className="text-sm">
           {me.full_name} · {me.email}
         </p>
-        <p className="text-sm text-neutral-500">
+        <p className="text-sm text-[#9ca3af]">
           Email {me.email_verified ? "verified ✓" : "not verified"}{" "}
           {!me.email_verified && (
             <button className="underline" onClick={doSendVerification}>
@@ -77,13 +74,13 @@ export default function IdentityPage() {
         </p>
         <div className="mt-3 flex flex-wrap gap-2 text-xs">
           <button
-            className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-700"
+            className={ghostBtnCls}
             onClick={doChangePassword}
           >
             Change password
           </button>
           <button
-            className="rounded border border-neutral-300 px-2 py-1 dark:border-neutral-700"
+            className={ghostBtnCls}
             onClick={async () => {
               await api.post("/auth/sessions/revoke-all", {});
               setNotice("All sessions revoked — log in again.");
