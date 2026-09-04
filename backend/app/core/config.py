@@ -73,6 +73,28 @@ class Settings(BaseSettings):
     rate_limits_enabled: bool = True
     rate_limit_store: str = "memory"
 
+    # PostgreSQL RLS session context (Phase 13): when True, every request
+    # sets ``app.current_user_id`` / ``app.current_org_ids`` on its database
+    # session from the authenticated actor and resets them on close, so
+    # database-level RLS policies (defense in depth) see the canonical
+    # identity. Only meaningful on PostgreSQL (SQLite is unaffected); the
+    # app must connect as the least-privilege ``asktrabaajo_app`` role for
+    # policies to take effect (owner/superuser roles bypass RLS).
+    rls_session_context: bool = False
+
+    @field_validator("rls_session_context")
+    @classmethod
+    def _rls_context_requires_postgres(cls, v: bool, info) -> bool:
+        environment = info.data.get("environment", "development")
+        if v and environment in {"staging", "production"}:
+            database_url = info.data.get("database_url", "")
+            if database_url.startswith("sqlite"):
+                raise ValueError(
+                    "RLS_SESSION_CONTEXT requires a PostgreSQL DATABASE_URL in "
+                    f"{environment}; sqlite cannot carry database-level RLS."
+                )
+        return v
+
     @property
     def is_production_like(self) -> bool:
         return self.environment in {"staging", "production"}

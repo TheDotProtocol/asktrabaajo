@@ -9,15 +9,17 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.core import context
+from app.core.config import get_settings
 from app.core.errors import UnauthorizedError
 from app.core.security import decode_access_token
-from app.db.session import get_db
+from app.db.session import get_db, set_session_identity
 from app.models.enums import (
     USER_STATUS_ACTIVE,
     USER_STATUS_PENDING_VERIFICATION,
     USER_STATUS_SUSPENDED,
 )
 from app.models.identity import User
+from app.models.tenancy import Membership
 from app.services import authz
 
 _bearer = HTTPBearer(auto_error=False)
@@ -61,6 +63,21 @@ def _resolve_token_user(
 
     if user.token_version != int(payload.get("token_version", -1)):
         raise UnauthorizedError("Access token has been revoked.")
+
+    # PostgreSQL RLS session identity (Phase 13): stamp the request's DB
+    # session with the canonical actor so database-level policies see the
+    # same identity the application authorized. Reset happens in get_db's
+    # finally; values are never client-supplied.
+    if get_settings().rls_session_context and db.bind is not None and (
+        db.bind.dialect.name == "postgresql"
+    ):
+        org_ids = [
+            m.organization_id
+            for m in db.query(Membership)
+            .filter(Membership.user_id == user.id)
+            .all()
+        ]
+        set_session_identity(db, user.id, org_ids)
 
     meta = context.get_request_context()
     meta["actor_id"] = str(user.id)

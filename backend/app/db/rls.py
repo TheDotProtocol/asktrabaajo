@@ -1,5 +1,14 @@
 """PostgreSQL Row-Level Security foundation (Phase 9) — PREPARED, NOT APPLIED.
 
+Phase 13 note: migration ``0010_rls_stage1_private`` implements the first
+safe stage (strictly owner-private tables) with the session-identity
+mechanism in ``app/db/session.py`` + ``app/api/deps.py``; the full
+per-table design and staged enablement order live in
+PHASE_13_RLS_MATRIX.md. Column names below were re-verified against the
+canonical models — ``talent_pool_members`` is person-scoped
+(``person_id``, indirect via ``talent_pools``), not org-scoped as listed
+in the original Phase 9 draft.
+
 This module is a reviewed artifact + validation target, not a migration.
 Enabling RLS on a shared PostgreSQL requires:
 
@@ -33,13 +42,13 @@ ORG_TENANT_TABLES: List[tuple] = [
     ("company_profiles", "organization_id"),
     ("job_postings", "organization_id"),
     ("talent_pools", "organization_id"),
-    ("talent_pool_members", "organization_id"),
     ("saved_candidates", "organization_id"),
     ("outreach_requests", "organization_id"),
     ("outreach_blocks", "organization_id"),
     ("conversations", "organization_id"),
     ("conversation_messages", None),   # via conversations.organization_id
     ("conversation_read_states", None),  # via conversations.organization_id
+    ("talent_pool_members", None),  # via talent_pools.organization_id
     ("governance_reports", "organization_id"),
     ("memberships", "organization_id"),
 ]
