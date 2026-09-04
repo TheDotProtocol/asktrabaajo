@@ -15,8 +15,8 @@
 --
 -- LEGACY SAFETY
 --   Only CANONICAL tables are granted. No legacy Supabase object is touched.
---   The list below is the exact 67-table canonical metadata
---   (Base.metadata, migrations 0001-0012); alembic_version is excluded.
+--   The list below is the exact 71-table canonical metadata
+--   (Base.metadata, migrations 0001-0013); alembic_version is excluded.
 --
 -- USAGE (superuser)
 --   psql "$DATABASE_URL" -f scripts/db/app_role.sql
@@ -42,8 +42,10 @@ BEGIN
   FOR t IN SELECT tablename FROM pg_tables
            WHERE schemaname = 'public'
              AND tablename IN (
-               'ai_usage_log','appeals','application_events','athena_action_confirmations',
-               'athena_messages','athena_sessions','audit_log','candidate_search_events',
+               'ai_interview_evaluations','ai_interview_questions','ai_interview_reports',
+               'ai_interview_sessions','ai_usage_log','appeals','application_events',
+               'athena_action_confirmations','athena_messages','athena_sessions','audit_log',
+               'candidate_search_events',
                'career_goals','career_milestones','career_path_steps','career_paths',
                'company_profiles','consents','conversation_messages',
                'conversation_read_states','conversations','credentials',

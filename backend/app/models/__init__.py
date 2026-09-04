@@ -1,5 +1,6 @@
 """Canonical model set — import every model module so metadata is complete."""
 from app.models import (
+    ai_interview,
     athena,
     audit,
     career,
@@ -44,6 +45,12 @@ from app.models.athena import (
     AthenaSession,
 )
 from app.models.interview_prep import InterviewPrepSession
+from app.models.ai_interview import (
+    AiInterviewEvaluation,
+    AiInterviewQuestion,
+    AiInterviewReport,
+    AiInterviewSession,
+)
 from app.models.communication import (
     Conversation,
     ConversationMessage,
@@ -104,6 +111,10 @@ from app.models.work import (
 )
 
 __all__ = [
+    "AiInterviewEvaluation",
+    "AiInterviewQuestion",
+    "AiInterviewReport",
+    "AiInterviewSession",
     "AiUsageLog",
     "Appeal",
     "ApplicationEvent",

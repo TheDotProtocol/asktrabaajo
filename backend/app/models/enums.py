@@ -641,6 +641,12 @@ EVENT_TYPES = {
     "enforcement.action.revoked",
     "appeal.assigned",
     "appeal.decided",
+    "ai_interview.invited",
+    "ai_interview.started",
+    "ai_interview.completed",
+    "ai_interview.cancelled",
+    "ai_interview.report_ready",
+    "ai_interview.decision_recorded",
 }
 
 # --- Notification channels (Phase 9) -------------------------------------------
@@ -843,3 +849,164 @@ PREP_DIMENSIONS = {
 AUDIT_ACTION_PREP_SESSION_CREATED = "interview_prep.session.created"
 AUDIT_ACTION_PREP_SESSION_COMPLETED = "interview_prep.session.completed"
 AUDIT_ACTION_PREP_SESSION_DELETED = "interview_prep.session.deleted"
+
+# --- AI Interview Engine (Phase 16) --------------------------------------------
+AI_INTERVIEW_TYPE_SCREENING = "screening"
+AI_INTERVIEW_TYPE_BEHAVIORAL = "behavioral"
+AI_INTERVIEW_TYPE_COMPETENCY = "competency"
+AI_INTERVIEW_TYPE_ROLE_SPECIFIC = "role_specific"
+AI_INTERVIEW_TYPE_TECHNICAL = "technical"
+AI_INTERVIEW_TYPE_MIXED = "mixed"
+AI_INTERVIEW_TYPES = {
+    AI_INTERVIEW_TYPE_SCREENING,
+    AI_INTERVIEW_TYPE_BEHAVIORAL,
+    AI_INTERVIEW_TYPE_COMPETENCY,
+    AI_INTERVIEW_TYPE_ROLE_SPECIFIC,
+    AI_INTERVIEW_TYPE_TECHNICAL,
+    AI_INTERVIEW_TYPE_MIXED,
+}
+
+# Session state machine. Every transition is explicit and audited; the
+# engine rejects impossible transitions instead of silently mutating state.
+AI_INTERVIEW_STATUS_SCHEDULED = "scheduled"
+AI_INTERVIEW_STATUS_CONSENT_REQUIRED = "consent_required"
+AI_INTERVIEW_STATUS_READY = "ready"
+AI_INTERVIEW_STATUS_IN_PROGRESS = "in_progress"
+AI_INTERVIEW_STATUS_PAUSED = "paused"
+AI_INTERVIEW_STATUS_COMPLETED = "completed"
+AI_INTERVIEW_STATUS_CANCELLED = "cancelled"
+AI_INTERVIEW_STATUS_EXPIRED = "expired"
+AI_INTERVIEW_STATUS_FAILED = "failed"
+AI_INTERVIEW_STATUSES = {
+    AI_INTERVIEW_STATUS_SCHEDULED,
+    AI_INTERVIEW_STATUS_CONSENT_REQUIRED,
+    AI_INTERVIEW_STATUS_READY,
+    AI_INTERVIEW_STATUS_IN_PROGRESS,
+    AI_INTERVIEW_STATUS_PAUSED,
+    AI_INTERVIEW_STATUS_COMPLETED,
+    AI_INTERVIEW_STATUS_CANCELLED,
+    AI_INTERVIEW_STATUS_EXPIRED,
+    AI_INTERVIEW_STATUS_FAILED,
+}
+AI_INTERVIEW_TRANSITIONS = {
+    AI_INTERVIEW_STATUS_SCHEDULED: {
+        AI_INTERVIEW_STATUS_CONSENT_REQUIRED,  # invited
+        AI_INTERVIEW_STATUS_CANCELLED,          # employer withdraws
+    },
+    AI_INTERVIEW_STATUS_CONSENT_REQUIRED: {
+        AI_INTERVIEW_STATUS_READY,              # consent granted
+        AI_INTERVIEW_STATUS_CANCELLED,          # consent refused / withdrawn
+        AI_INTERVIEW_STATUS_EXPIRED,            # lazy expiry
+    },
+    AI_INTERVIEW_STATUS_READY: {
+        AI_INTERVIEW_STATUS_IN_PROGRESS,        # candidate starts
+        AI_INTERVIEW_STATUS_EXPIRED,            # lazy expiry
+        AI_INTERVIEW_STATUS_CANCELLED,
+    },
+    AI_INTERVIEW_STATUS_IN_PROGRESS: {
+        AI_INTERVIEW_STATUS_PAUSED,             # candidate pauses
+        AI_INTERVIEW_STATUS_COMPLETED,          # finished within budget
+        AI_INTERVIEW_STATUS_CANCELLED,          # consent withdrawn mid-flow
+        AI_INTERVIEW_STATUS_EXPIRED,            # time budget exhausted
+        AI_INTERVIEW_STATUS_FAILED,             # terminal provider/media failure
+    },
+    AI_INTERVIEW_STATUS_PAUSED: {
+        AI_INTERVIEW_STATUS_IN_PROGRESS,        # resume
+        AI_INTERVIEW_STATUS_CANCELLED,
+        AI_INTERVIEW_STATUS_EXPIRED,
+    },
+    AI_INTERVIEW_STATUS_EXPIRED: set(),
+    AI_INTERVIEW_STATUS_COMPLETED: set(),
+    AI_INTERVIEW_STATUS_CANCELLED: set(),
+    AI_INTERVIEW_STATUS_FAILED: set(),
+}
+
+# Evaluation dimensions — explainable, job-relevant, never a single score.
+AI_EVAL_DIMENSION_RELEVANCE = "relevance"
+AI_EVAL_DIMENSION_CLARITY = "clarity"
+AI_EVAL_DIMENSION_STRUCTURE = "structure"
+AI_EVAL_DIMENSION_EVIDENCE = "evidence"
+AI_EVAL_DIMENSION_COMPLETENESS = "completeness"
+AI_EVAL_DIMENSION_ROLE_KNOWLEDGE = "role_knowledge"
+AI_EVAL_DIMENSION_TECHNICAL_ACCURACY = "technical_accuracy"
+AI_EVAL_DIMENSION_PROBLEM_SOLVING = "problem_solving"
+AI_EVAL_DIMENSION_COMMUNICATION = "communication"
+AI_EVAL_DIMENSIONS = {
+    AI_EVAL_DIMENSION_RELEVANCE,
+    AI_EVAL_DIMENSION_CLARITY,
+    AI_EVAL_DIMENSION_STRUCTURE,
+    AI_EVAL_DIMENSION_EVIDENCE,
+    AI_EVAL_DIMENSION_COMPLETENESS,
+    AI_EVAL_DIMENSION_ROLE_KNOWLEDGE,
+    AI_EVAL_DIMENSION_TECHNICAL_ACCURACY,
+    AI_EVAL_DIMENSION_PROBLEM_SOLVING,
+    AI_EVAL_DIMENSION_COMMUNICATION,
+}
+
+# Adaptive follow-up kinds — each stays linked to the original competency.
+AI_FOLLOWUP_TYPE_CLARIFICATION = "clarification"
+AI_FOLLOWUP_TYPE_EVIDENCE = "evidence"
+AI_FOLLOWUP_TYPE_DEPTH = "depth"
+AI_FOLLOWUP_TYPE_EXAMPLE = "example"
+AI_FOLLOWUP_TYPE_SCENARIO = "scenario"
+AI_FOLLOWUP_TYPE_TECHNICAL_DETAIL = "technical_detail"
+AI_FOLLOWUP_TYPES = {
+    AI_FOLLOWUP_TYPE_CLARIFICATION,
+    AI_FOLLOWUP_TYPE_EVIDENCE,
+    AI_FOLLOWUP_TYPE_DEPTH,
+    AI_FOLLOWUP_TYPE_EXAMPLE,
+    AI_FOLLOWUP_TYPE_SCENARIO,
+    AI_FOLLOWUP_TYPE_TECHNICAL_DETAIL,
+}
+
+# Objective session-level integrity SIGNALS only. They are never proof of
+# wrongdoing and never affect evaluation or decisions — they are labeled
+# review signals for authorized humans.
+AI_INTEGRITY_SIGNAL_SESSION_DISCONNECT = "session_disconnect"
+AI_INTEGRITY_SIGNAL_SESSION_RECONNECT = "session_reconnect"
+AI_INTEGRITY_SIGNAL_UNEXPECTED_TERMINATION = "unexpected_termination"
+AI_INTEGRITY_SIGNAL_MIC_STATE_CHANGED = "mic_state_changed"
+AI_INTEGRITY_SIGNAL_CAMERA_STATE_CHANGED = "camera_state_changed"
+AI_INTEGRITY_SIGNAL_SESSION_DUPLICATE = "session_duplicate"
+AI_INTEGRITY_SIGNAL_TYPES = {
+    AI_INTEGRITY_SIGNAL_SESSION_DISCONNECT,
+    AI_INTEGRITY_SIGNAL_SESSION_RECONNECT,
+    AI_INTEGRITY_SIGNAL_UNEXPECTED_TERMINATION,
+    AI_INTEGRITY_SIGNAL_MIC_STATE_CHANGED,
+    AI_INTEGRITY_SIGNAL_CAMERA_STATE_CHANGED,
+    AI_INTEGRITY_SIGNAL_SESSION_DUPLICATE,
+}
+
+# Employer decision kinds — the human (never the AI) decides.
+AI_INTERVIEW_DECISION_ADVANCE = "advance"
+AI_INTERVIEW_DECISION_REJECT = "reject"
+AI_INTERVIEW_DECISION_HOLD = "hold"
+AI_INTERVIEW_DECISION_REQUEST_FOLLOWUP = "request_followup"
+AI_INTERVIEW_DECISION_REQUEST_HUMAN_INTERVIEW = "request_human_interview"
+AI_INTERVIEW_DECISIONS = {
+    AI_INTERVIEW_DECISION_ADVANCE,
+    AI_INTERVIEW_DECISION_REJECT,
+    AI_INTERVIEW_DECISION_HOLD,
+    AI_INTERVIEW_DECISION_REQUEST_FOLLOWUP,
+    AI_INTERVIEW_DECISION_REQUEST_HUMAN_INTERVIEW,
+}
+
+# Audit actions for the AI interview engine.
+AUDIT_ACTION_AI_INTERVIEW_CREATED = "ai_interview.created"
+AUDIT_ACTION_AI_INTERVIEW_INVITED = "ai_interview.invited"
+AUDIT_ACTION_AI_INTERVIEW_CONSENT_GRANTED = "ai_interview.consent.granted"
+AUDIT_ACTION_AI_INTERVIEW_CONSENT_WITHDRAWN = "ai_interview.consent.withdrawn"
+AUDIT_ACTION_AI_INTERVIEW_STARTED = "ai_interview.started"
+AUDIT_ACTION_AI_INTERVIEW_PLAN_GENERATED = "ai_interview.plan.generated"
+AUDIT_ACTION_AI_INTERVIEW_QUESTION_ASKED = "ai_interview.question.asked"
+AUDIT_ACTION_AI_INTERVIEW_RESPONSE_EVALUATED = "ai_interview.response.evaluated"
+AUDIT_ACTION_AI_INTERVIEW_PAUSED = "ai_interview.paused"
+AUDIT_ACTION_AI_INTERVIEW_RESUMED = "ai_interview.resumed"
+AUDIT_ACTION_AI_INTERVIEW_COMPLETED = "ai_interview.completed"
+AUDIT_ACTION_AI_INTERVIEW_CANCELLED = "ai_interview.cancelled"
+AUDIT_ACTION_AI_INTERVIEW_EXPIRED = "ai_interview.expired"
+AUDIT_ACTION_AI_INTERVIEW_REPORT_GENERATED = "ai_interview.report.generated"
+AUDIT_ACTION_AI_INTERVIEW_REPORT_VIEWED = "ai_interview.report.viewed"
+AUDIT_ACTION_AI_INTERVIEW_DECISION_RECORDED = "ai_interview.decision.recorded"
+AUDIT_ACTION_AI_INTERVIEW_INTEGRITY_SIGNAL = "ai_interview.integrity.signal"
+AUDIT_ACTION_AI_INTERVIEW_MEDIA_FAILURE = "ai_interview.media.failure"
