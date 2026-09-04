@@ -28,12 +28,16 @@ import {
 import {
   AthenaFrom,
   AthenaPortal,
+  contextLabel,
   degradedLinks,
   parseAthenaFrom,
+  phaseLabel,
   providerStateLabel,
   sessionPurpose,
   suggestedPrompts,
 } from "@/lib/athena/context";
+
+type ItemState = "information" | "recommendation" | "proposed" | "confirming" | "executing" | "completed" | "failed";
 
 type ChatItem = {
   id: string;
@@ -41,13 +45,32 @@ type ChatItem = {
   text: string;
   at: string;
   results?: AthenaToolResult[];
-  state?: "information" | "proposed" | "confirming" | "executing" | "completed" | "failed";
+  state?: ItemState;
 };
+
+const STATE_LABEL: Record<ItemState, string> = {
+  information: "Information",
+  recommendation: "Recommendation",
+  proposed: "Proposed action",
+  confirming: "Confirmation required",
+  executing: "Executing",
+  completed: "Completed",
+  failed: "Failed",
+};
+
+function stateTone(state: ItemState): string {
+  if (state === "failed") return "border-red-900/80 bg-red-950/20 text-red-200";
+  if (state === "completed") return "border-emerald-900/60 bg-emerald-950/20 text-emerald-300";
+  if (state === "proposed" || state === "confirming") return "border-[#d4af37]/40 bg-[#d4af37]/5 text-[#d4af37]";
+  if (state === "recommendation") return "border-[#d4af37]/25 bg-[#111315] text-[#d4af37]";
+  if (state === "executing") return "border-[#23272a] bg-[#111315] text-[#9ca3af]";
+  return "border-[#23272a] bg-[#111315] text-[#9ca3af]";
+}
 
 function humanError(error: unknown): string {
   if (error instanceof ApiError) {
     if (error.code === "ai.provider_unavailable") {
-      return "Athena's live intelligence service is not connected. Deterministic AskTrabaajo tools remain available.";
+      return "Athena intelligence is currently unavailable. The Employment OS remains available.";
     }
     if (error.status === 401) return "Your session expired. Sign in again to continue.";
     if (error.status === 403) return "Athena is not allowed to do that with your current permissions.";
@@ -55,6 +78,14 @@ function humanError(error: unknown): string {
     return error.message;
   }
   return String((error as Error).message ?? error);
+}
+
+function StateMark({ state }: { state: ItemState }) {
+  return (
+    <span className={`inline-flex rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider ${stateTone(state)}`}>
+      {STATE_LABEL[state]}
+    </span>
+  );
 }
 
 export function AthenaWorkspace({
@@ -74,12 +105,13 @@ export function AthenaWorkspace({
   const [items, setItems] = useState<ChatItem[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
-  const [phase, setPhase] = useState<"idle" | "preparing" | "confirming" | "executing">("idle");
+  const [phase, setPhase] = useState<"idle" | "understanding" | "preparing" | "confirming" | "executing">("idle");
   const [error, setError] = useState("");
   const [pending, setPending] = useState<AthenaPendingConfirmation | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const prompts = suggestedPrompts(portal, from);
   const links = degradedLinks(portal);
+  const surface = contextLabel(from);
 
   const loadStatus = useCallback(async () => {
     const next = await api.get<AthenaStatus>("/athena/status");
@@ -114,11 +146,11 @@ export function AthenaWorkspace({
     const message = text.trim();
     if (!message || busy) return;
     if (status && !status.available) {
-      setError("Live Athena is not connected. Use the deterministic links instead of a simulated reply.");
+      setError("Athena intelligence is currently unavailable. Use the Employment OS instead of a simulated reply.");
       return;
     }
     setBusy(true);
-    setPhase("preparing");
+    setPhase("understanding");
     setError("");
     setDraft("");
     const userItem: ChatItem = {
@@ -130,12 +162,14 @@ export function AthenaWorkspace({
     setItems((prev) => [...prev, userItem]);
     try {
       const current = await ensureSession();
+      setPhase("preparing");
       const out = await api.post<AthenaMessageOut>("/athena/message", {
         session_id: current.session_id,
         message,
       });
       const nextPending = out.pending_confirmations[0] ?? null;
       setPending(nextPending);
+      const hasResults = (out.tool_results?.length ?? 0) > 0;
       setItems((prev) => [
         ...prev,
         {
@@ -144,7 +178,7 @@ export function AthenaWorkspace({
           text: out.reply,
           at: new Date().toISOString(),
           results: out.tool_results,
-          state: nextPending ? "proposed" : "information",
+          state: nextPending ? "proposed" : hasResults ? "recommendation" : "information",
         },
       ]);
       setPhase(nextPending ? "confirming" : "idle");
@@ -183,7 +217,7 @@ export function AthenaWorkspace({
           id: `c-${Date.now()}`,
           role: "athena",
           text: approve
-            ? `Action completed: ${out.tool ?? "confirmed action"}. Athena only reports what the backend executed.`
+            ? `Completed: ${out.tool ?? "confirmed action"}. Athena only reports what the backend executed.`
             : "You cancelled the proposed action. Nothing was sent or applied.",
           at: new Date().toISOString(),
           results: out.result ? [{ status: out.status, tool: out.tool ?? undefined, result: out.result }] : [],
@@ -232,23 +266,28 @@ export function AthenaWorkspace({
 
   const available = Boolean(status?.available);
   const modeAllowed = Boolean(status?.modes.includes(mode));
+  const livePhase = phaseLabel(phase);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:min-h-[70vh] lg:flex-row">
+    <div className="mx-auto flex max-w-6xl flex-col gap-5 lg:min-h-[70vh] lg:flex-row lg:gap-8">
       <section className="flex min-w-0 flex-1 flex-col">
-        <header className="mb-6 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#d4af37]">Athena</p>
-            <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-              {portal === "candidate" ? "Employment intelligence" : "Hiring intelligence"}
-            </h1>
-            <p className="mt-2 max-w-xl text-sm text-[#9ca3af]">
-              Athena orchestrates AskTrabaajo. It does not invent facts, and it never executes a
-              consequential action without an exact confirmation.
-            </p>
+        <header className="mb-4 flex flex-wrap items-start justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <span className="mt-1 size-[18px] shrink-0 rounded-[3px] bg-[#d4af37] shadow-[0_0_8px_#d4af37]" aria-hidden />
+            <div>
+              <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#d4af37]">Athena</p>
+              <h1 className="mt-1 text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+                {portal === "candidate" ? "Career intelligence" : "Hiring intelligence"}
+              </h1>
+              <p className="mt-2 max-w-xl text-sm text-[#9ca3af]">
+                {portal === "candidate"
+                  ? "Athena sits on the Candidate OS — career, skills, opportunities, applications, and interviews."
+                  : "Athena sits on the Employer OS — jobs, talent, pipeline, interviews, and offers."}
+              </p>
+            </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <StatusPill status={mode} tone="gold" />
+            <StatusPill status={portal === "candidate" ? "Candidate" : "Employer"} tone="gold" />
             <StatusPill
               status={providerStateLabel(status?.state ?? "limited")}
               tone={available ? "green" : "muted"}
@@ -259,80 +298,120 @@ export function AthenaWorkspace({
           </div>
         </header>
 
-        {error && <div className="mb-4"><ErrorBanner message={error} onRetry={() => void loadStatus()} /></div>}
-        {!modeAllowed && status && (
-          <ErrorBanner message="This Athena mode is not available on this account." />
+        <div className="mb-4 rounded-xl border border-[#d4af37]/20 bg-[#111315] px-4 py-3">
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#d4af37]">Ask Athena</p>
+          <p className="mt-1 text-sm text-white">
+            Context: <span className="text-[#e5e7eb]">{surface}</span>
+          </p>
+          <p className="mt-1 text-xs text-[#6b7280]">
+            Athena receives a professional digest from the backend. This page does not serialize extra personal data.
+          </p>
+        </div>
+
+        {error && (
+          <div className="mb-4">
+            <ErrorBanner message={error} onRetry={() => void loadStatus()} />
+          </div>
         )}
+        {!modeAllowed && status && <ErrorBanner message="This Athena mode is not available on this account." />}
+
+        <p className="sr-only" aria-live="polite">
+          {livePhase}
+        </p>
 
         <div
           ref={scroller}
-          className="min-h-[22rem] flex-1 space-y-4 overflow-y-auto rounded-xl border border-[#23272a] bg-[#0b0c0d] p-4 sm:p-6"
+          className="min-h-[22rem] flex-1 space-y-5 overflow-y-auto overflow-x-hidden rounded-xl border border-[#23272a] bg-[#0b0c0d] p-4 sm:p-6"
           aria-live="polite"
         >
           {items.length === 0 && (
-            <div className="flex h-full flex-col justify-center gap-6 py-10 text-center">
-              <div>
-                <p className="text-lg font-semibold text-white">
-                  {portal === "candidate"
-                    ? "Tell Athena what you want to accomplish."
-                    : "Tell Athena what you need to get done."}
-                </p>
-                <p className="mx-auto mt-2 max-w-md text-sm text-[#9ca3af]">
-                  {available
-                    ? "Starter prompts map to registered Athena tools. Nothing here is a previous conversation."
-                    : "Live intelligence is not connected. Use the operating system itself — Athena will not invent a reply."}
-                </p>
-              </div>
-              <div className="flex flex-wrap justify-center gap-2">
-                {available
-                  ? prompts.map((prompt) => (
+            <div className="flex h-full flex-col justify-center gap-6 py-8">
+              {available ? (
+                <>
+                  <div className="max-w-lg">
+                    <p className="text-xl font-semibold text-white sm:text-2xl">
+                      {portal === "candidate"
+                        ? "Tell Athena what you want to accomplish."
+                        : "Tell Athena what you need to get done."}
+                    </p>
+                    <p className="mt-2 text-sm text-[#9ca3af]">
+                      Starter actions map to registered Athena tools. Nothing here is a previous conversation.
+                    </p>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {prompts.map((prompt) => (
                       <button
                         key={prompt.label}
                         type="button"
-                        className={ghostBtnCls}
+                        className={`${ghostBtnCls} h-auto justify-start px-4 py-3 text-left`}
                         onClick={() => void send(prompt.message)}
                       >
                         {prompt.label}
                       </button>
-                    ))
-                  : links.map((link) => (
-                      <Link key={link.href} href={link.href} className={ghostBtnCls}>
-                        {link.label}
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="max-w-lg">
+                    <p className="text-xl font-semibold text-white sm:text-2xl">
+                      Athena intelligence is currently unavailable.
+                    </p>
+                    <p className="mt-2 text-sm text-[#9ca3af]">
+                      Live conversation is not simulated. The {portal === "candidate" ? "Candidate" : "Employer"} OS
+                      remains available.
+                    </p>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {links.map((link) => (
+                      <Link key={link.href} href={link.href} className={`${cardCls} hover:border-[#d4af37]/40`}>
+                        <p className="font-medium text-white">{link.label}</p>
+                        <p className="mt-1 text-xs text-[#9ca3af]">{link.body}</p>
                       </Link>
                     ))}
-              </div>
+                  </div>
+                </>
+              )}
             </div>
           )}
 
-          {items.map((item) => (
-            <article
-              key={item.id}
-              className={`max-w-[40rem] rounded-xl border px-4 py-3 text-sm ${
-                item.role === "user"
-                  ? "ml-auto border-[#d4af37]/30 bg-[#111315] text-white"
-                  : "border-[#23272a] bg-[#111315] text-[#e5e7eb]"
-              }`}
-            >
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[#6b7280]">
-                {item.role === "user" ? "You" : "Athena"}
-                {item.state && item.state !== "information" ? ` · ${item.state}` : ""}
+          {items.map((item) =>
+            item.role === "user" ? (
+              <p key={item.id} className="text-right text-sm text-[#9ca3af]">
+                <span className="font-mono text-[10px] uppercase tracking-wider text-[#6b7280]">You · </span>
+                {item.text}
               </p>
-              <p className="mt-2 whitespace-pre-wrap leading-relaxed">{item.text}</p>
-              {item.results && item.results.length > 0 && (
-                <div className="mt-3">
-                  <AthenaResults results={item.results} portal={portal} />
+            ) : (
+              <article key={item.id} className="space-y-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-mono text-[10px] uppercase tracking-wider text-[#6b7280]">Athena</p>
+                  {item.state && <StateMark state={item.state} />}
                 </div>
-              )}
-            </article>
-          ))}
+                <p className="max-w-2xl whitespace-pre-wrap text-sm leading-relaxed text-[#e5e7eb]">{item.text}</p>
+                {item.results && item.results.length > 0 && (
+                  <div className="rounded-xl border border-[#d4af37]/15 bg-[#111315]/60 p-3 sm:p-4">
+                    <AthenaResults results={item.results} portal={portal} />
+                  </div>
+                )}
+              </article>
+            )
+          )}
 
-          {busy && phase === "preparing" && (
-            <p className="text-sm text-[#9ca3af]">Athena is working with authorized tools…</p>
+          {busy && livePhase && (
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-[#d4af37]">{livePhase}</p>
           )}
         </div>
 
+        <nav className="mt-3 flex gap-2 overflow-x-auto pb-1 lg:hidden" aria-label="Operate in the OS">
+          {links.map((link) => (
+            <Link key={link.href} href={link.href} className={`${ghostBtnCls} shrink-0`}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
         {available && modeAllowed ? (
-          <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <form onSubmit={onSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-end">
             <label className="sr-only" htmlFor="athena-composer">
               Message Athena
             </label>
@@ -342,7 +421,11 @@ export function AthenaWorkspace({
               rows={2}
               value={draft}
               disabled={busy}
-              placeholder="Ask about work, hiring, or the next action…"
+              placeholder={
+                portal === "candidate"
+                  ? "Tell Athena what you want to accomplish."
+                  : "Tell Athena what you need to get done."
+              }
               onChange={(e) => setDraft(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -351,31 +434,24 @@ export function AthenaWorkspace({
                 }
               }}
             />
-            <button type="submit" className={btnCls} disabled={busy || !draft.trim()}>
-              Send
+            <button type="submit" className={`${btnCls} sm:min-w-[6rem]`} disabled={busy || !draft.trim()}>
+              Ask
             </button>
           </form>
         ) : (
           <div className={`${cardCls} mt-4 border-[#d4af37]/25`}>
-            <p className="text-sm text-[#9ca3af]">
-              Live Athena is {providerStateLabel(status?.state ?? "not_configured").toLowerCase()}.
-              This screen will not simulate a conversation.
+            <p className="text-sm text-white">Athena intelligence is currently unavailable.</p>
+            <p className="mt-1 text-sm text-[#9ca3af]">
+              This screen will not simulate a conversation. Continue in the operating system.
             </p>
           </div>
         )}
       </section>
 
-      <aside className="w-full shrink-0 space-y-4 lg:w-72">
-        <section className={cardCls}>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#9ca3af]">Context</p>
-          <p className="mt-2 text-sm text-white">{from.replaceAll("-", " ")}</p>
-          <p className="mt-1 text-xs text-[#6b7280]">
-            Athena receives a professional digest from the backend. This page does not serialize extra personal data.
-          </p>
-        </section>
+      <aside className="hidden w-60 shrink-0 space-y-4 lg:block">
         <section className={cardCls}>
           <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#9ca3af]">Operate in the OS</p>
-          <ul className="mt-3 space-y-2 text-sm">
+          <ul className="mt-3 space-y-3 text-sm">
             {links.map((link) => (
               <li key={link.href}>
                 <Link href={link.href} className="text-[#d4af37] hover:underline">
@@ -387,8 +463,10 @@ export function AthenaWorkspace({
           </ul>
         </section>
         {tools.length > 0 && (
-          <section className={cardCls}>
-            <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#9ca3af]">Registered capabilities</p>
+          <details className={cardCls}>
+            <summary className="cursor-pointer font-mono text-[11px] uppercase tracking-[0.18em] text-[#9ca3af]">
+              Registered capabilities
+            </summary>
             <ul className="mt-3 space-y-2 text-xs text-[#9ca3af]">
               {tools.slice(0, 8).map((tool) => (
                 <li key={tool.name}>
@@ -397,7 +475,7 @@ export function AthenaWorkspace({
                 </li>
               ))}
             </ul>
-          </section>
+          </details>
         )}
       </aside>
 

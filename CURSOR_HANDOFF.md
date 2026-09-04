@@ -8,7 +8,7 @@ DEVELOPMENT READY
 STAGING READY LOCALLY
 CANDIDATE OS (WAVE 2) ACCEPTED
 EMPLOYER OS (WAVE 3) IMPLEMENTED
-ATHENA UI (WAVE 4) IMPLEMENTED
+ATHENA UI (WAVE 4) IMPLEMENTED + REFINED
 
 PHASE 19 COMPLETE
 WAVE 1 ACCEPTED
@@ -21,7 +21,7 @@ NO LIVE DATABASE WRITES PERFORMED
 
 - The canonical backend is **complete through Phase 19** plus one Wave 4 status route: 247 `/api/v1` routes, 80 canonical tables, migration head `0014`, RLS, RBAC, Athena, AI Interview, Commerce.
 - The live Supabase project (`zrvrjqwboylvvzusorry`) has **not been modified**. Owner confirmed the product is **pre-launch**. Waves 2 and 3 validated on **isolated sqlite**. See `CURSOR_WAVE_2_DB_CLASSIFICATION.md` and `CURSOR_WAVE_3_DB_CLASSIFICATION.md`.
-- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED**. Next: Wave 5 only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
+- Wave 1 is **ACCEPTED**. Wave 2 (Candidate OS) is **ACCEPTED**. Wave 3 (Employer OS) is **IMPLEMENTED**. Wave 4 (Athena UI) is **IMPLEMENTED** and later **refined** (workspace quality pass; no Wave 5). Next: Wave 5 only after a separate approval prompt. Read `CURSOR_DO_NOT_BREAK.md` first.
 
 **Where to start:** `CURSOR_WAVE_5_READINESS.md` + `CURSOR_WAVE_4_CLOSURE.md` + `CURSOR_ATHENA_DESIGN_DECISIONS.md` + `FRONTEND_GAP_REPORT.md` + `API_CONTRACT.md`. The public flagship site is a **separate** repo (`TheDotProtocol/trabaajowebsite`) — do not merge it into this application.
 

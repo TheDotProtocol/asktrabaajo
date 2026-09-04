@@ -8,6 +8,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import {
   ErrorBanner,
   LoadingState,
@@ -158,9 +159,12 @@ export default function WorkIdPage() {
         title="Work ID"
         subtitle="This is your persistent professional identity — not a job-board profile. Completeness improves matching. Verification is truthful."
         actions={
-          <Link href="/jobseeker/privacy" className={ghostBtnCls}>
-            Visibility
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <AthenaAskLink portal="candidate" from="work-id" />
+            <Link href="/jobseeker/privacy" className={ghostBtnCls}>
+              Visibility
+            </Link>
+          </div>
         }
       />
 

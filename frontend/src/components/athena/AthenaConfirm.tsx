@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
 import { btnCls, ghostBtnCls } from "@/components/candidate/ui";
-import { confirmButtonLabel } from "@/lib/athena/context";
+import { confirmButtonLabel, confirmConsequence, confirmCount } from "@/lib/athena/context";
 import { AthenaPendingConfirmation } from "@/lib/api/types";
 
 export function AthenaConfirm({
@@ -16,12 +16,26 @@ export function AthenaConfirm({
   onCancel: () => void;
 }) {
   const confirmRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const label = confirmButtonLabel(pending.tool, pending.action_summary);
+  const count = confirmCount(pending.action_summary);
 
   useEffect(() => {
     confirmRef.current?.focus();
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") onCancel();
+      if (event.key !== "Tab" || !panelRef.current) return;
+      const focusable = panelRef.current.querySelectorAll<HTMLElement>("button:not([disabled])");
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -30,24 +44,31 @@ export function AthenaConfirm({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center" role="presentation">
       <div
+        ref={panelRef}
         role="dialog"
         aria-modal="true"
         aria-labelledby="athena-confirm-title"
-        className="w-full max-w-lg rounded-xl border border-[#d4af37]/40 bg-[#0b0c0d] p-6 shadow-2xl"
+        aria-describedby="athena-confirm-consequence"
+        className="w-full max-w-lg rounded-xl border border-[#d4af37]/40 bg-[#0b0c0d] p-5 shadow-2xl sm:p-6"
       >
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-[#d4af37]">Confirmation required</p>
         <h2 id="athena-confirm-title" className="mt-2 text-xl font-semibold text-white">
-          Review this action before it runs
+          {label}
         </h2>
-        <p className="mt-3 text-sm leading-relaxed text-[#9ca3af]">
-          Athena proposed a high-risk action. The backend will re-check the exact scope, your
-          permissions, and a one-time confirmation. Vague approval is not enough.
+        <p id="athena-confirm-consequence" className="mt-3 text-sm leading-relaxed text-[#9ca3af]">
+          {confirmConsequence(pending.tool)}
         </p>
-        <dl className="mt-5 space-y-2 text-sm">
+        <dl className="mt-5 space-y-3 text-sm">
           <div className="flex justify-between gap-4">
-            <dt className="text-[#6b7280]">Action</dt>
+            <dt className="text-[#6b7280]">Exact action</dt>
             <dd className="text-right text-white">{pending.tool.replaceAll("_", " ")}</dd>
           </div>
+          {count > 0 && (
+            <div className="flex justify-between gap-4">
+              <dt className="text-[#6b7280]">Targets</dt>
+              <dd className="text-right text-white">{count}</dd>
+            </div>
+          )}
           <div>
             <dt className="text-[#6b7280]">Exact intended scope</dt>
             <dd className="mt-1 break-all rounded-md border border-[#23272a] bg-[#111315] p-3 font-mono text-xs text-[#e5e7eb]">
@@ -61,12 +82,18 @@ export function AthenaConfirm({
             </div>
           )}
         </dl>
-        <div className="mt-6 flex flex-wrap gap-2">
-          <button ref={confirmRef} type="button" className={btnCls} disabled={busy} onClick={onApprove}>
-            {busy ? "Confirming…" : label}
+        <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row">
+          <button type="button" className={`${ghostBtnCls} w-full sm:w-auto`} disabled={busy} onClick={onCancel}>
+            Cancel
           </button>
-          <button type="button" className={ghostBtnCls} disabled={busy} onClick={onCancel}>
-            Cancel this action
+          <button
+            ref={confirmRef}
+            type="button"
+            className={`${btnCls} w-full sm:w-auto`}
+            disabled={busy}
+            onClick={onApprove}
+          >
+            {busy ? "Executing action…" : label}
           </button>
         </div>
       </div>

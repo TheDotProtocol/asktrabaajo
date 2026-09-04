@@ -1,7 +1,7 @@
 # CURSOR WAVE 5 READINESS
 
 **Status:** PLAN ONLY. Do not implement until a separate Wave 5 approval prompt.  
-**Depends on:** Wave 4 closed.
+**Depends on:** Wave 4 closed (including the Athena refinement pass). The refinement did **not** start Wave 5.
 
 Likely Wave 5 (from the original UI integration plan): communications polish, governance/admin Figma, commerce polish — **not** Government citizen products, **not** hosted live migrate, **not** production deploy.
 

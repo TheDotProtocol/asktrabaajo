@@ -7,6 +7,7 @@
  */
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import { EmptyState, ErrorBanner, PageHeader, StatusPill, btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { Interview } from "@/lib/api/types";
@@ -51,7 +52,8 @@ export default function InterviewsPage() {
         title="Interviews"
         subtitle="Upcoming and past interviews. Rescheduling is limited by backend policy — this page cannot bypass it."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <AthenaAskLink portal="candidate" from="interviews" />
             <Link href="/jobseeker/ai-interview" className={ghostBtnCls}>AI Interview</Link>
             <Link href="/jobseeker/interview-prep" className={ghostBtnCls}>Interview prep</Link>
           </div>

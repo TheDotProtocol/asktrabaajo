@@ -71,3 +71,44 @@ Live chat requires `AI_PROVIDER=openai`. Session history is not a product featur
 ## 17. Wave 5 readiness
 
 See `CURSOR_WAVE_5_READINESS.md`. Do not start until a separate approval prompt.
+
+---
+
+## 18. Refinement pass (still Wave 4)
+
+Product-quality pass after Wave 4 was accepted. Architecture unchanged. No second AI service. No Wave 5.
+
+### UI refinements
+
+- Identity header uses the OS gold mark. Hierarchy is identity → context band → conversation → structured intelligence → actions → confirmation.
+- Context is a full-width band (`Ask Athena` / `Context: Career Advisor`), not a dominant rail.
+- Conversation is a work surface: user turns are quiet captions; Athena turns are intelligence blocks with state marks.
+- Result cards are native OS cards (role, company, match, strengths, gaps, next action).
+- First-use copy: Candidate “Tell Athena what you want to accomplish.” Employer “Tell Athena what you need to get done.” Four registered-tool starters each.
+- Degraded hero: “Athena intelligence is currently unavailable.” plus deterministic OS destinations (Career, Opportunities, Applications, Interview Prep, Work ID / Talent Graph, Pipeline, Interviews, Jobs).
+- Mobile: context band + conversation + horizontal OS chips. Rail is desktop-only. Confirmation is a full-width sheet.
+- Ask Athena entry points now include Applications, Interviews, Work ID, Jobs, and Employer Interviews, still using the allowlisted `?from=` only.
+
+### Design decisions
+
+- Athena is an OS layer, not a chat app. Results get the visual weight.
+- Processing copy is honest: Understanding request → Preparing results → Waiting for confirmation → Executing action. No claimed “checking career context” unless a tool result exists.
+- State marks are immediately distinct: Information / Recommendation / Proposed action / Confirmation required / Executing / Completed / Failed.
+- Confirmation title is the exact action (`Apply to 4 selected jobs`). Backend remains authoritative.
+- No new libraries, no WebGL, no fake replies.
+
+### Candidate vs Employer
+
+Same tokens. Candidate starters and destinations are career-oriented. Employer starters and destinations are hiring-oriented.
+
+### Contextual behaviour
+
+`parseAthenaFrom` still allowlists purpose. Labels are safe surface names only. No client PII digest.
+
+### Backend / database
+
+No backend change in this pass. Hosted database untouched. Isolated sqlite E2E.
+
+### Tests
+
+Wave 2 / 3 / 4 E2E plus `tsc` / lint / build / `pytest tests_phase3`. Confirmation security remains Phase 14 + Wave 4 E2E.

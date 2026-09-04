@@ -5,6 +5,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import {
   EmptyState,
   ErrorBanner,
@@ -102,6 +103,7 @@ export default function ApplicationsPage() {
         kicker="Pipeline"
         title="Applications"
         subtitle="One controlled lifecycle. Every status change is recorded on the timeline. The UI cannot invent a stage."
+        actions={<AthenaAskLink portal="candidate" from="applications" />}
       />
       {error && <ErrorBanner message={error} />}
 

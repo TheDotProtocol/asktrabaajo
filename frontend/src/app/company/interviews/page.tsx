@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import {
   EmptyState,
   ErrorBanner,
@@ -69,9 +70,12 @@ export default function CompanyInterviewsPage() {
         title="Interviews"
         subtitle="Schedule from the pipeline. Reschedule confirmation follows backend policy. AI Interview management is a separate human-review surface."
         actions={
-          <Link href="/employer/ai-interviews" className={ghostBtnCls}>
-            AI Interviews
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <AthenaAskLink portal="employer" from="interviews" />
+            <Link href="/employer/ai-interviews" className={ghostBtnCls}>
+              AI Interviews
+            </Link>
+          </div>
         }
       />
       {error && <ErrorBanner message={error} />}

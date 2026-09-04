@@ -8,6 +8,7 @@
   "wave_2": "ACCEPTED",
   "wave_3": "IMPLEMENTED",
   "wave_4": "IMPLEMENTED",
+  "wave_4_refinement": "IMPLEMENTED",
   "wave_1_commits": [
     "f092bb2",
     "28adbaf",

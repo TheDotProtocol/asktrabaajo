@@ -12,6 +12,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 4 update (2026-09-05):** Athena workspace is a real `/api/v1/athena/*` client for Candidate and Employer. No Athena Figma — designed from the OS design system. `GET /athena/status` drives honest degraded mode. High-risk actions use exact-scope confirmation. Session history is not an API. Hosted DB untouched — see `CURSOR_WAVE_4_CLOSURE.md`.
 
+**Wave 4 refinement (2026-09-05):** Athena workspace polish only — context band, first-use starters, native result cards, named confirmation, honest processing states, dedicated mobile layout, additional allowlisted Ask Athena links (Applications, Interviews, Work ID, Jobs). No Wave 5. No backend rewrite. See `CURSOR_ATHENA_DESIGN_DECISIONS.md` §18.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.

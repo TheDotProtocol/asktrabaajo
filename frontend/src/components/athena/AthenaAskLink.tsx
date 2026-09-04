@@ -14,7 +14,7 @@ export function AthenaAskLink({
 }) {
   const href = `${portal === "candidate" ? "/jobseeker/athena" : "/company/athena"}?from=${from}`;
   return (
-    <Link href={href} className={ghostBtnCls}>
+    <Link href={href} className={ghostBtnCls} aria-label={`${label} from ${from.replaceAll("-", " ")}`}>
       {label}
     </Link>
   );

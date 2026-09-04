@@ -11,6 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import Link from "next/link";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import { EmptyState, ErrorBanner, PageHeader, StatusPill, btnCls, cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { CompanyJob } from "@/lib/api/types";
@@ -161,7 +162,8 @@ export default function CompanyJobs() {
         title="Job management"
         subtitle="Draft, publish, pause, close. Publishing syncs into the canonical opportunity catalogue. There is no separate template API — clone an existing job as a draft instead."
         actions={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
+            <AthenaAskLink portal="employer" from="jobs" />
             <Link href="/company/jobs/new" className={btnCls}>Create job</Link>
             <button type="button" className={ghostBtnCls} onClick={() => setShowForm((v) => !v)}>
               {showForm ? "Hide quick form" : "Quick draft"}

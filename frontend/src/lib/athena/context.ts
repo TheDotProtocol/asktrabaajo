@@ -32,6 +32,24 @@ export function parseAthenaFrom(value: string | null): AthenaFrom {
   return "home";
 }
 
+const CONTEXT_LABEL: Record<AthenaFrom, string> = {
+  home: "Command center",
+  "work-id": "Work ID",
+  career: "Career Advisor",
+  opportunities: "Opportunities",
+  applications: "Applications",
+  interviews: "Interviews",
+  offers: "Offers",
+  pipeline: "Recruitment pipeline",
+  candidates: "Talent Graph",
+  jobs: "Jobs",
+  profile: "Company profile",
+};
+
+export function contextLabel(from: AthenaFrom): string {
+  return CONTEXT_LABEL[from];
+}
+
 export function sessionPurpose(portal: AthenaPortal, from: AthenaFrom): string {
   const surface = from.replaceAll("-", " ");
   if (portal === "candidate") {
@@ -48,48 +66,33 @@ export interface SuggestedPrompt {
 
 export function suggestedPrompts(portal: AthenaPortal, from: AthenaFrom): SuggestedPrompt[] {
   if (portal === "candidate") {
-    const bySurface: Partial<Record<AthenaFrom, SuggestedPrompt[]>> = {
-      career: [
-        { label: "Review my career direction", message: "Review my career direction using Career Advisor." },
-        { label: "What skills should I build next?", message: "What skills should I build next based on my Work ID?" },
-      ],
-      opportunities: [
-        { label: "Find my strongest matches", message: "Find my strongest job matches." },
-        { label: "Why am I a strong match?", message: "Why would I be a strong match for roles like these?" },
-      ],
-      applications: [
+    const core: SuggestedPrompt[] = [
+      { label: "Find my strongest job matches", message: "Find my strongest job matches." },
+      { label: "What skills should I build next?", message: "What skills should I build next?" },
+      { label: "Help me prepare for an interview", message: "Help me prepare for an interview." },
+      { label: "Review my career direction", message: "Review my career direction." },
+    ];
+    if (from === "applications") {
+      return [
         { label: "Why am I not getting interviews?", message: "Analyze my applications and tell me why I may not be getting interviews." },
-      ],
-      interviews: [
-        { label: "Help me prepare", message: "Help me prepare for my upcoming interviews." },
-      ],
-      "work-id": [
+        ...core.slice(0, 3),
+      ];
+    }
+    if (from === "work-id") {
+      return [
         { label: "Review my Work ID", message: "Summarize my Work ID and what is still incomplete." },
-      ],
-    };
-    return (
-      bySurface[from] ?? [
-        { label: "Find my strongest job matches", message: "Find my strongest job matches." },
-        { label: "What skills should I build next?", message: "What skills should I build next?" },
-        { label: "Review my career direction", message: "Review my career direction." },
-        { label: "Help me prepare for an interview", message: "Help me prepare for an interview." },
-      ]
-    );
+        ...core.slice(0, 3),
+      ];
+    }
+    return core;
   }
-  const bySurface: Partial<Record<AthenaFrom, SuggestedPrompt[]>> = {
-    pipeline: [{ label: "What needs attention?", message: "What applications need attention in our pipeline?" }],
-    candidates: [{ label: "Strongest candidates", message: "Show me the strongest discoverable candidates." }],
-    jobs: [{ label: "Which candidates match this job?", message: "Which candidates match our open jobs?" }],
-    interviews: [{ label: "Review upcoming interviews", message: "Help me review upcoming interviews." }],
-  };
-  return (
-    bySurface[from] ?? [
-      { label: "Show strongest candidates", message: "Show me the strongest discoverable candidates." },
-      { label: "What applications need attention?", message: "What applications need attention?" },
-      { label: "Review upcoming interviews", message: "Help me review upcoming interviews." },
-      { label: "Which candidates match our jobs?", message: "Which candidates match our open jobs?" },
-    ]
-  );
+  const core: SuggestedPrompt[] = [
+    { label: "Find the strongest candidates", message: "Show me the strongest discoverable candidates." },
+    { label: "What applications need attention?", message: "What applications need attention?" },
+    { label: "Review today's interviews", message: "Help me review upcoming interviews." },
+    { label: "Show candidates matching this role", message: "Which candidates match our open jobs?" },
+  ];
+  return core;
 }
 
 export function degradedLinks(portal: AthenaPortal): { href: string; label: string; body: string }[] {
@@ -97,8 +100,9 @@ export function degradedLinks(portal: AthenaPortal): { href: string; label: stri
     return [
       { href: "/jobseeker/career", label: "Career Advisor", body: "Deterministic paths, gaps, and matches from your Work ID." },
       { href: "/jobseeker/opportunities", label: "Opportunities", body: "Search the live catalogue and apply with confirmation." },
-      { href: "/id/work-id", label: "Work ID", body: "Keep the professional record Athena would use." },
+      { href: "/jobseeker/applications", label: "Applications", body: "Track the controlled application lifecycle." },
       { href: "/jobseeker/interview-prep", label: "Interview Prep", body: "Structured practice without a live model." },
+      { href: "/id/work-id", label: "Work ID", body: "Keep the professional record Athena would use." },
     ];
   }
   return [
@@ -109,15 +113,42 @@ export function degradedLinks(portal: AthenaPortal): { href: string; label: stri
   ];
 }
 
+export function confirmCount(summary: string): number {
+  return (summary.match(/[0-9a-f-]{36}/gi) || []).length;
+}
+
 export function confirmButtonLabel(tool: string, summary: string): string {
-  const count = (summary.match(/[0-9a-f-]{36}/gi) || []).length;
+  const count = confirmCount(summary);
   if (tool === "apply_to_opportunities") {
     return count > 0 ? `Apply to ${count} selected jobs` : "Apply to the selected jobs";
   }
   if (tool === "apply_to_opportunity") return "Apply to this opportunity";
   if (tool === "send_message") return "Send this message";
-  if (tool === "create_outreach") return "Send this outreach request";
+  if (tool === "create_outreach") {
+    return count > 0 ? `Send outreach to ${count} candidate${count === 1 ? "" : "s"}` : "Send this outreach request";
+  }
   return "Confirm this action";
+}
+
+export function confirmConsequence(tool: string): string {
+  if (tool === "apply_to_opportunity" || tool === "apply_to_opportunities") {
+    return "This creates real applications on your Work ID. The backend will apply only the exact opportunities in this confirmation.";
+  }
+  if (tool === "send_message") {
+    return "The message is sent through AskTrabaajo on an existing conversation. Raw personal contact details are not exposed.";
+  }
+  if (tool === "create_outreach") {
+    return "The candidate receives a request they can accept or decline. Nothing is sent around the platform.";
+  }
+  return "The backend will re-authorize this exact scope before anything runs.";
+}
+
+export function phaseLabel(phase: "idle" | "understanding" | "preparing" | "confirming" | "executing"): string {
+  if (phase === "understanding") return "Understanding request";
+  if (phase === "preparing") return "Preparing results";
+  if (phase === "confirming") return "Waiting for confirmation";
+  if (phase === "executing") return "Executing action";
+  return "";
 }
 
 export function providerStateLabel(state: string): string {
