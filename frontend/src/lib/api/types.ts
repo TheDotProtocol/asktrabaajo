@@ -1384,3 +1384,63 @@ export interface AiInterviewCandidateFeedback {
   preparation_areas: string[];
   note: string;
 }
+
+// --- Phase 17: Commerce / billing / entitlements -------------------------------
+
+export interface BillingPlan {
+  plan_id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  billing_interval: string;
+  currency: string;
+  price: string;
+  published: boolean;
+  seat_included: number;
+}
+
+export interface SubscriptionOut {
+  subscription_id: string;
+  organization_id: string;
+  plan_code: string | null;
+  plan_name: string | null;
+  status: string;
+  billing_interval: string;
+  currency: string;
+  price: string;
+  seat_count: number;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  usage?: Record<string, number>;
+}
+
+export interface EntitlementState {
+  limit: string | null;
+  used: number;
+  remaining: number | null;
+  unlimited: boolean;
+  within_limit: boolean;
+}
+
+export interface InvoiceOut {
+  invoice_id: string;
+  organization_id: string;
+  invoice_number: string;
+  currency: string;
+  subtotal: string;
+  tax: string;
+  total: string;
+  status: string;
+  items: Array<{ description: string; amount: string; quantity: number }>;
+  issued_at: string | null;
+  paid_at: string | null;
+}
+
+export interface BillingData {
+  plans: BillingPlan[];
+  subscription: SubscriptionOut | null;
+  entitlements: Record<string, EntitlementState>;
+  usage: Record<string, number>;
+  invoices: InvoiceOut[];
+}
