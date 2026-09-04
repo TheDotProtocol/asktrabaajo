@@ -16,6 +16,8 @@ Audit performed at the Phase 19 freeze by scanning `frontend/src` (no UI changes
 
 **Wave 5 update (2026-09-05):** Super Admin Figma shell (`AdminShell`) + platform command center, governance, enforcement, appeals, audit, teams, finance, support (honesty), operations, notifications, and settings are wired to canonical `/api/v1`. Least privilege in nav; backend remains authoritative. Figma People/Companies/Governments/Marketing directories and platform Athena tools were **not** fabricated. Hosted DB untouched — see `CURSOR_WAVE_5_CLOSURE.md` and `CURSOR_ADMIN_DESIGN_DECISIONS.md`.
 
+**Wave 6 update (2026-09-05):** Localhost QA. Isolated SQLite + Playwright opened every implemented portal. Login/register restyled to the Candidate Figma split-screen and removed from marketing chrome. Not pixel-perfect. Government still absent. See `CURSOR_WAVE_6_CLOSURE.md`.
+
 ## How the frontend is organized today
 
 - **Canonical client layer exists:** `src/lib/api/client.ts` (`ApiClient` — base `NEXT_PUBLIC_API_URL + /api/v1`, bearer token, error envelope), `session.ts` (localStorage tokens `asktrabaajo_at`/`asktrabaajo_rt`, `api` singleton, `fetchMe`, `login`, `logout`), `types.ts`. **29 page files already import `lib/api`** and call real canonical endpoints.
