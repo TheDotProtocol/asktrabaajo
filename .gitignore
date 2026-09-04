@@ -1,8 +1,40 @@
+# Dependencies / build artifacts
 node_modules/
 .next/
-.env.local
-.env.production
-.DS_Store
-*.log
+.next-wave6-build/
+.venv/
 dist/
 build/
+
+# Environment files — never commit real values
+.env
+.env.local
+.env.production
+env.production
+
+# Databases (dev/test/generated)
+*.db
+*.sqlite
+*.sqlite3
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Runtime data
+backend/uploads/
+
+# OS / editor
+.DS_Store
+*.log
+
+# Wave 6 visual QA artifacts (local screenshots + Playwright)
+wave6-qa/node_modules/
+wave6-qa/localhost/
+wave6-qa/figma/
+wave6-qa/package-lock.json
+wave6-qa/package.json
