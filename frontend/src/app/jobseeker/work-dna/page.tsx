@@ -9,18 +9,14 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, btnCls, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { DnaProfile, DnaQuestion } from "@/lib/api/types";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-4 py-2 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
 const optionCls = (selected: boolean) =>
   `block w-full rounded-lg border px-4 py-2.5 text-left text-sm transition ${
     selected
-      ? "border-amber-500 bg-amber-50 dark:bg-amber-950/30"
-      : "border-neutral-200 hover:border-amber-400 dark:border-neutral-700"
+      ? "border-[#d4af37] bg-[#d4af37]/10 text-white"
+      : "border-[#23272a] hover:border-[#d4af37]/50"
   }`;
 
 export default function WorkDnaPage() {
@@ -65,24 +61,20 @@ export default function WorkDnaPage() {
 
   return (
     <div className="space-y-8">
-      <section>
-        <h1 className="text-2xl font-semibold tracking-tight">Work DNA</h1>
-        <p className="mt-1 max-w-2xl text-sm text-neutral-500 dark:text-neutral-400">
-          A structured understanding of how you work, learn, lead, and decide.
-          Answer honestly — this shapes your matches and your Career Advisor,
-          and it is yours alone.
-        </p>
-      </section>
+      <PageHeader
+        kicker="Professional characteristics"
+        title="Work DNA"
+        subtitle="An evolving understanding of how you work — not a personality test, and never an inference about protected characteristics."
+      />
 
-      {notice && (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          {notice}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <ErrorBanner message={error} />}
+
+      {!profile && questions.length === 0 && (
+        <EmptyState
+          title="Work DNA is not available yet"
+          body="Questions come from the canonical API. When they load, answer honestly — results stay yours."
+        />
       )}
 
       {/* Current profile */}
