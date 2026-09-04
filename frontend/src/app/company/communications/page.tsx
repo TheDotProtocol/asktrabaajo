@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   CompanyApplication,
@@ -17,8 +18,6 @@ import {
   OutreachRequestRow,
 } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const primaryBtn =
   "rounded bg-indigo-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-600 disabled:opacity-40";
 const ghostBtn =
@@ -206,48 +205,33 @@ export default function CompanyCommunicationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Communications</h1>
-          <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-            Controlled candidate conversations — through AskTrabaajo, never
-            around it.
-          </p>
-        </div>
-        <div className="flex items-center gap-3 text-sm">
-          {live && (
-            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />
-              Updated
-            </span>
-          )}
-          <div className="rounded-lg border border-neutral-200 px-3 py-1.5 dark:border-neutral-800">
-            <span className="font-medium">{outreach.length}</span>{" "}
-            <span className="text-neutral-400">outreach</span>
+      <PageHeader
+        kicker="Messages"
+        title="Communications"
+        subtitle="Outreach and conversations only exist after a legitimate relationship. Raw personal contact details are never shown here."
+        actions={
+          <div className="flex items-center gap-3 text-sm">
+            {live && (
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-800 px-2.5 py-1 text-xs text-emerald-400">
+                Updated
+              </span>
+            )}
+            <span className="rounded-lg border border-[#23272a] px-3 py-1.5">{outreach.length} outreach</span>
+            <span className="rounded-lg border border-[#23272a] px-3 py-1.5">{activeConversations.length} active</span>
+            <span className="rounded-lg border border-[#23272a] px-3 py-1.5">{unreadTotal} unread</span>
           </div>
-          <div className="rounded-lg border border-neutral-200 px-3 py-1.5 dark:border-neutral-800">
-            <span className="font-medium">{activeConversations.length}</span>{" "}
-            <span className="text-neutral-400">active</span>
-          </div>
-          <div className="rounded-lg border border-amber-200 px-3 py-1.5 dark:border-amber-900">
-            <span className="font-medium text-amber-600 dark:text-amber-400">
-              {unreadTotal}
-            </span>{" "}
-            <span className="text-neutral-400">unread</span>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {!orgId && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900 dark:bg-amber-950 dark:text-amber-300">
-          No organization selected — choose one on the Company home page first.
-        </div>
+        <EmptyState
+          title="Select an organization"
+          body="Communications are tenant-scoped."
+          actionHref="/company"
+          actionLabel="Command center"
+        />
       )}
 
       {/* Outreach requests sent by this organization */}
