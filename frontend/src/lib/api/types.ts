@@ -1444,3 +1444,88 @@ export interface BillingData {
   usage: Record<string, number>;
   invoices: InvoiceOut[];
 }
+
+export interface PersonDocumentOut {
+  id: string;
+  name: string;
+  doc_type: string;
+  storage_key: string | null;
+  mime_type: string | null;
+  size_bytes: number | null;
+  verification_status: string;
+  created_at: string;
+}
+
+export interface DocumentGrantOut {
+  id: string;
+  document_id: string;
+  grantee_user_id: string | null;
+  grantee_organization_id: string | null;
+  purpose: string | null;
+  granted_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+}
+
+export interface PrivacySettingsOut {
+  settings: Record<string, string>;
+  allowed_values: string[];
+  scopes: string[];
+}
+
+export interface CareerAdvisorRecItem {
+  opportunity_id: string;
+  title: string;
+  company: string;
+  location?: string | null;
+  country?: string | null;
+  work_mode?: string | null;
+  seniority?: string | null;
+  percent: number;
+  strengths: string[];
+  missing_skills: string[];
+  career_signal?: { signals: string[] } | null;
+}
+
+export interface CareerAdvisorOpportunities {
+  mode: string;
+  count: number;
+  items: CareerAdvisorRecItem[];
+  note: string;
+  disclaimer: string;
+}
+
+export interface CareerAdvisorDigest {
+  professional_summary?: string;
+  current_position?: { title: string | null; company: string | null };
+  experience_summary?: { roles_held: number; years_experience: number };
+  strongest_skills?: string[];
+  disclaimer?: string;
+}
+
+export interface CareerAdvisorGaps {
+  target?: { kind?: string; title?: string | null; target_role?: string | null };
+  matched_skills?: { skill: string; level?: string }[];
+  partial_skills?: { skill: string; related_skills?: string[]; note?: string }[];
+  missing_skills?: { skill: string; note?: string }[];
+  disclaimer?: string;
+}
+
+export interface CareerAdvisorPath {
+  path?: string;
+  title?: string;
+  classification?: string;
+  target_role?: string | null;
+  note?: string;
+}
+
+export interface CareerAdvisorPaths {
+  anchor?: string | null;
+  paths?: CareerAdvisorPath[];
+  note?: string;
+}
+
+export interface CareerAdvisorActionPlan {
+  actions?: { type: string; title: string; detail?: string | null; target_week?: number }[];
+  disclaimer?: string;
+}
