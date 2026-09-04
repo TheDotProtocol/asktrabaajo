@@ -10,6 +10,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   ApplicationReview,
@@ -18,9 +19,6 @@ import {
   DocumentRequestRow,
 } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-
 const LIVE_STATUSES = new Set([
   "applied",
   "application_received",
@@ -182,14 +180,7 @@ export default function CompanyPipeline() {
   }
 
   if (error && apps.length === 0) {
-    return (
-      <div className="rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-        {error} —{" "}
-        <button onClick={() => load(orgId)} className="underline">
-          retry
-        </button>
-      </div>
-    );
+    return <ErrorBanner message={error} onRetry={() => void load(orgId)} />;
   }
 
   const inputCls =
@@ -202,20 +193,18 @@ export default function CompanyPipeline() {
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="text-sm text-neutral-400">Applications across your jobs</p>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-            Candidate pipeline
-          </h1>
-        </div>
-        <div className="flex items-center gap-2 text-sm">
-          <span className="text-neutral-400">Filter</span>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="rounded-lg border border-neutral-300 bg-white px-3 py-1.5 text-sm dark:border-neutral-700 dark:bg-neutral-900"
-          >
+      <PageHeader
+        kicker="Recruitment pipeline"
+        title="Applications"
+        subtitle="Stage movement uses canonical decision actions only. Document access stays grant-based."
+        actions={
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-[#9ca3af]">Filter</span>
+            <select
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+              className="rounded-lg border border-[#23272a] bg-[#111315] px-3 py-1.5 text-sm"
+            >
             <option value="">All statuses</option>
             {[
               "applied",
@@ -233,24 +222,24 @@ export default function CompanyPipeline() {
                 {s.replace("_", " ")}
               </option>
             ))}
-          </select>
-        </div>
-      </section>
+            </select>
+          </div>
+        }
+      />
 
-      {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {error && <ErrorBanner message={error} />}
 
       {apps.length === 0 && (
-        <div className={cardCls}>
-          <p className="text-sm text-neutral-400">
-            {filter
-              ? "No applications in this status."
-              : "No applications yet. Published jobs appear to jobseekers and matching is automatic."}
-          </p>
-        </div>
+        <EmptyState
+          title={filter ? "No applications in this status" : "No applications yet"}
+          body={
+            filter
+              ? "Clear the filter to see the full pipeline."
+              : "Publish a job so candidates can apply. This list stays empty until the backend records one."
+          }
+          actionHref="/company/jobs"
+          actionLabel="Open jobs"
+        />
       )}
 
       <section className="space-y-2">
