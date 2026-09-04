@@ -1,11 +1,24 @@
 "use client";
 /**
- * Work ID proof flow — profile + education/skills/experience/credentials/
- * employment/documents through the canonical API. Functional validation
- * only; no visual polish (Figma is the visual source of truth).
+ * Work ID — the persistent professional identity.
+ * All writes go to canonical /work-id/* and /documents. Verification
+ * states are rendered truthfully; nothing is shown as verified unless
+ * the backend says so.
  */
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  ErrorBanner,
+  LoadingState,
+  PageHeader,
+  StatusPill,
+  btnCls,
+  cardCls,
+  ghostBtnCls,
+  inputCls,
+  labelCls,
+} from "@/components/candidate/ui";
 import { api, fetchMe } from "@/lib/api/session";
 import {
   CompletionOut,
@@ -14,25 +27,13 @@ import {
   EmploymentOut,
   ExperienceOut,
   MeResponse,
+  PersonDocumentOut,
   ProfileOut,
   UserSkillOut,
   WorkIdSummary,
 } from "@/lib/api/types";
 
-const inputCls =
-  "w-full rounded border border-neutral-300 px-3 py-2 text-sm focus:border-amber-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-amber-500 px-3 py-1.5 text-sm font-medium text-black hover:bg-amber-400 disabled:opacity-50";
-const subBtnCls =
-  "rounded border border-neutral-300 px-2 py-1 text-xs dark:border-neutral-700";
-const rowCls = "rounded-lg border border-neutral-200 p-4 dark:border-neutral-800";
-const labelCls = "mb-1 block text-xs font-medium text-neutral-500";
-
 type WSection = "experience" | "education" | "employment" | "credential" | "skill";
-
-interface AddForm {
-  section: WSection | null;
-}
 
 export default function WorkIdPage() {
   const [me, setMe] = useState<MeResponse | null>(null);
@@ -40,7 +41,7 @@ export default function WorkIdPage() {
   const [completion, setCompletion] = useState<CompletionOut | null>(null);
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
-  const [add, setAdd] = useState<AddForm>({ section: null });
+  const [add, setAdd] = useState<WSection | null>(null);
 
   const refresh = useCallback(async () => {
     const current = await fetchMe();
@@ -55,7 +56,7 @@ export default function WorkIdPage() {
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   async function saveProfile(fields: Partial<ProfileOut>) {
@@ -66,10 +67,11 @@ export default function WorkIdPage() {
         phone: fields.phone ?? undefined,
         summary: fields.summary ?? undefined,
       };
-      await api.put<ProfileOut>("/work-id/profile", Object.fromEntries(
-        Object.entries(body).filter(([, v]) => v !== undefined)
-      ));
-      setNotice("Profile saved.");
+      await api.put<ProfileOut>(
+        "/work-id/profile",
+        Object.fromEntries(Object.entries(body).filter(([, v]) => v !== undefined))
+      );
+      setNotice("Profile saved. Employers only see what your privacy settings allow.");
       await refresh();
     } catch (e) {
       setError(String((e as Error).message ?? e));
@@ -79,11 +81,10 @@ export default function WorkIdPage() {
   async function submitAdd(ev: React.FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     setError("");
-    const form = ev.currentTarget;
-    const fd = new FormData(form);
+    const fd = new FormData(ev.currentTarget);
     const value = (name: string) => String(fd.get(name) ?? "");
     try {
-      if (add.section === "experience") {
+      if (add === "experience") {
         await api.post("/work-id/experiences", {
           company_name: value("company_name"),
           title: value("title"),
@@ -92,14 +93,14 @@ export default function WorkIdPage() {
           start_date: value("start_date"),
           is_current: true,
         });
-      } else if (add.section === "education") {
+      } else if (add === "education") {
         await api.post("/work-id/educations", {
           institution: value("institution"),
           level: value("level") || undefined,
           degree: value("degree") || undefined,
           field_of_study: value("field_of_study") || undefined,
         });
-      } else if (add.section === "employment") {
+      } else if (add === "employment") {
         await api.post("/work-id/employments", {
           company_name: value("company_name"),
           title: value("title"),
@@ -108,20 +109,20 @@ export default function WorkIdPage() {
           start_date: value("start_date"),
           is_current: true,
         });
-      } else if (add.section === "credential") {
+      } else if (add === "credential") {
         await api.post("/work-id/credentials", {
           name: value("name"),
           issuer: value("issuer") || undefined,
           credential_type: "certification",
         });
-      } else if (add.section === "skill") {
+      } else if (add === "skill") {
         await api.put("/work-id/skills", {
           skill_name: value("skill_name"),
           level: value("level") || "intermediate",
         });
       }
-      setAdd({ section: null });
-      setNotice("Saved.");
+      setAdd(null);
+      setNotice("Saved to your Work ID.");
       await refresh();
     } catch (e) {
       setError(String((e as Error).message ?? e));
@@ -144,108 +145,92 @@ export default function WorkIdPage() {
   }
 
   if (!me || !work) {
-    return (
-      <main className="mx-auto max-w-2xl px-6 py-12">
-        <p>Sign in first — <a className="underline" href="/id">go to identity</a>.</p>
-      </main>
-    );
+    return <LoadingState label="Opening your Work ID…" />;
   }
 
+  const percent = completion?.percent ?? 0;
+  const missing = completion?.missing ?? [];
+
   return (
-    <main className="mx-auto max-w-3xl px-6 py-10">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">Work ID</h1>
-          <p className="text-sm text-neutral-500">
-            The persistent professional identity of {me.full_name}
+    <div className="space-y-8">
+      <PageHeader
+        kicker="Professional identity"
+        title="Work ID"
+        subtitle="This is your persistent professional identity — not a job-board profile. Completeness improves matching. Verification is truthful."
+        actions={
+          <Link href="/jobseeker/privacy" className={ghostBtnCls}>
+            Visibility
+          </Link>
+        }
+      />
+
+      {error && <ErrorBanner message={error} onRetry={() => void refresh()} />}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+
+      <section className={`${cardCls} grid gap-6 lg:grid-cols-3`}>
+        <div className="lg:col-span-2">
+          <p className={labelCls}>Identity</p>
+          <h2 className="mt-2 text-2xl font-semibold">{me.full_name}</h2>
+          <p className="mt-1 text-sm text-[#9ca3af]">
+            {work.person.headline || "Add a headline so employers understand who you are."}
+          </p>
+          <p className="mt-2 text-xs text-[#6b7280]">
+            {work.person.city || "Location not set"} · {me.email}
           </p>
         </div>
-        <a className="text-sm text-neutral-500 underline" href="/id">
-          Back to identity
-        </a>
-      </div>
-
-      {completion && (
-        <p className="mb-4 text-sm">
-          Profile completion:{" "}
-          <strong>{completion.percent}%</strong>
-          {completion.missing.length > 0 && (
-            <span className="text-neutral-500">
-              {" "}
-              — missing: {completion.missing.join(", ")}
-            </span>
+        <div>
+          <p className={labelCls}>Completeness</p>
+          <p className="mt-2 text-4xl font-semibold">{percent}%</p>
+          <div className="mt-3 h-1.5 overflow-hidden rounded bg-[#0b0c0d]">
+            <div className="h-full bg-[#d4af37]" style={{ width: `${percent}%` }} />
+          </div>
+          {missing.length > 0 ? (
+            <p className="mt-3 text-xs text-[#9ca3af]">Still needed: {missing.join(", ")}</p>
+          ) : (
+            <p className="mt-3 text-xs text-emerald-400">Record is in good shape.</p>
           )}
-        </p>
-      )}
-      {notice && <p className="mb-3 text-sm text-emerald-700">{notice}</p>}
-      {error && <p className="mb-3 text-sm text-red-600">{error}</p>}
-
-      {/* Profile */}
-      <section className={`${rowCls} mb-4`}>
-        <h2 className="mb-3 font-medium">Profile</h2>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className={labelCls}>Headline</label>
-            <input
-              className={inputCls}
-              defaultValue={work.person.headline ?? ""}
-              name="headline"
-              placeholder="e.g. Platform Engineer"
-            />
-          </div>
-          <div>
-            <label className={labelCls}>City</label>
-            <input
-              className={inputCls}
-              defaultValue={work.person.city ?? ""}
-              name="city"
-            />
-          </div>
-        </div>
-        <div className="mt-2">
-          <label className={labelCls}>Summary</label>
-          <textarea
-            className={inputCls}
-            defaultValue={work.person.summary ?? ""}
-            name="summary"
-            rows={2}
-          />
-        </div>
-        <div className="mt-2">
-          <label className={labelCls}>Phone (private)</label>
-          <input
-            className={inputCls}
-            defaultValue={work.person.phone ?? ""}
-            name="phone"
-          />
-        </div>
-        <div className="mt-3">
-          <button
-            className={btnCls}
-            onClick={() =>
-              saveProfile({
-                headline:
-                  (document.querySelector('[name="headline"]') as HTMLInputElement)
-                    ?.value ?? work.person.headline ?? "",
-                city: (document.querySelector('[name="city"]') as HTMLInputElement)
-                  ?.value ?? undefined,
-                summary:
-                  (document.querySelector('[name="summary"]') as HTMLTextAreaElement)
-                    ?.value ?? undefined,
-                phone: (document.querySelector('[name="phone"]') as HTMLInputElement)
-                  ?.value ?? undefined,
-              })
-            }
-          >
-            Save profile
-          </button>
         </div>
       </section>
 
-      {/* Add forms */}
-      <section className={`${rowCls} mb-4`}>
-        <h2 className="mb-2 font-medium">Add to Work ID</h2>
-        <div className="mb-3 flex flex-wrap gap-2">
+      <section className={cardCls}>
+        <h2 className="text-sm font-semibold">Profile</h2>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Headline</label>
+            <input className={inputCls} defaultValue={work.person.headline ?? ""} name="headline" placeholder="e.g. Platform Engineer" />
+          </div>
+          <div>
+            <label className={labelCls}>City</label>
+            <input className={inputCls} defaultValue={work.person.city ?? ""} name="city" />
+          </div>
+        </div>
+        <div className="mt-3">
+          <label className={labelCls}>Summary</label>
+          <textarea className={inputCls} defaultValue={work.person.summary ?? ""} name="summary" rows={3} />
+        </div>
+        <div className="mt-3">
+          <label className={labelCls}>Phone (private — never shown to employers automatically)</label>
+          <input className={inputCls} defaultValue={work.person.phone ?? ""} name="phone" />
+        </div>
+        <button
+          type="button"
+          className={`${btnCls} mt-4`}
+          onClick={() =>
+            saveProfile({
+              headline: (document.querySelector('[name="headline"]') as HTMLInputElement)?.value ?? work.person.headline ?? "",
+              city: (document.querySelector('[name="city"]') as HTMLInputElement)?.value ?? undefined,
+              summary: (document.querySelector('[name="summary"]') as HTMLTextAreaElement)?.value ?? undefined,
+              phone: (document.querySelector('[name="phone"]') as HTMLInputElement)?.value ?? undefined,
+            })
+          }
+        >
+          Save profile
+        </button>
+      </section>
+
+      <section className={cardCls}>
+        <h2 className="text-sm font-semibold">Add to Work ID</h2>
+        <div className="mt-3 flex flex-wrap gap-2">
           {(
             [
               ["experience", "Experience"],
@@ -257,17 +242,17 @@ export default function WorkIdPage() {
           ).map(([key, label]) => (
             <button
               key={key}
-              className={subBtnCls}
-              onClick={() => setAdd({ section: add.section === key ? null : key })}
+              type="button"
+              className={add === key ? btnCls : ghostBtnCls}
+              onClick={() => setAdd(add === key ? null : key)}
             >
               + {label}
             </button>
           ))}
         </div>
-
-        {add.section && (
-          <form onSubmit={submitAdd} className="grid grid-cols-2 gap-3">
-            {add.section === "experience" && (
+        {add && (
+          <form onSubmit={submitAdd} className="mt-4 grid gap-3 sm:grid-cols-2">
+            {add === "experience" && (
               <>
                 <Field label="Company" name="company_name" />
                 <Field label="Title" name="title" />
@@ -276,7 +261,7 @@ export default function WorkIdPage() {
                 <Field label="Start date" name="start_date" type="date" />
               </>
             )}
-            {add.section === "education" && (
+            {add === "education" && (
               <>
                 <Field label="Institution" name="institution" />
                 <Field label="Level" name="level" optional placeholder="undergraduate" />
@@ -284,7 +269,7 @@ export default function WorkIdPage() {
                 <Field label="Field of study" name="field_of_study" optional />
               </>
             )}
-            {add.section === "employment" && (
+            {add === "employment" && (
               <>
                 <Field label="Company" name="company_name" />
                 <Field label="Title" name="title" />
@@ -292,19 +277,19 @@ export default function WorkIdPage() {
                 <Field label="Start date" name="start_date" type="date" />
               </>
             )}
-            {add.section === "credential" && (
+            {add === "credential" && (
               <>
                 <Field label="Credential name" name="name" />
                 <Field label="Issuer" name="issuer" optional />
               </>
             )}
-            {add.section === "skill" && (
+            {add === "skill" && (
               <>
                 <Field label="Skill" name="skill_name" />
                 <Field label="Level" name="level" optional placeholder="advanced" />
               </>
             )}
-            <div className="col-span-2">
+            <div className="sm:col-span-2">
               <button className={btnCls} type="submit">
                 Save
               </button>
@@ -313,96 +298,98 @@ export default function WorkIdPage() {
         )}
       </section>
 
-      {/* Sections */}
       <div className="grid gap-4 md:grid-cols-2">
         <Section title="Experience">
-          <ul className="space-y-2">
-            {work.experiences.length === 0 && <Empty />}
-            {work.experiences.map((x: ExperienceOut) => (
-              <li key={x.id} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {x.title} @ {x.company_name}
-                  {x.verification_status !== "unverified" && " ✓"}
-                </span>
-                <button className="text-xs text-red-600" onClick={() => remove("experience", x.id)}>
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          {work.experiences.length === 0 ? (
+            <Empty hint="Add roles you have actually held." />
+          ) : (
+            <ul className="space-y-3">
+              {work.experiences.map((x: ExperienceOut) => (
+                <li key={x.id} className="flex items-start justify-between gap-3 text-sm">
+                  <div>
+                    <p className="font-medium">{x.title} @ {x.company_name}</p>
+                    <StatusPill status={x.verification_status ?? "unverified"} />
+                  </div>
+                  <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("experience", x.id)}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
-
         <Section title="Education">
-          <ul className="space-y-2">
-            {work.educations.length === 0 && <Empty />}
-            {work.educations.map((x: EducationOut) => (
-              <li key={x.id} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {x.degree || x.level || "Study"} @ {x.institution}
-                </span>
-                <button className="text-xs text-red-600" onClick={() => remove("education", x.id)}>
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          {work.educations.length === 0 ? (
+            <Empty hint="Degrees and programmes belong here." />
+          ) : (
+            <ul className="space-y-3">
+              {work.educations.map((x: EducationOut) => (
+                <li key={x.id} className="flex justify-between gap-3 text-sm">
+                  <span>{x.degree || x.level || "Study"} @ {x.institution}</span>
+                  <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("education", x.id)}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
-
         <Section title="Employment">
-          <ul className="space-y-2">
-            {work.employments.length === 0 && <Empty />}
-            {work.employments.map((x: EmploymentOut) => (
-              <li key={x.id} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {x.title} @ {x.company_name}
-                </span>
-                <button className="text-xs text-red-600" onClick={() => remove("employment", x.id)}>
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          {work.employments.length === 0 ? (
+            <Empty hint="Formal employment records, separate from experience notes." />
+          ) : (
+            <ul className="space-y-3">
+              {work.employments.map((x: EmploymentOut) => (
+                <li key={x.id} className="flex justify-between gap-3 text-sm">
+                  <span>{x.title} @ {x.company_name}</span>
+                  <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("employment", x.id)}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
-
         <Section title="Skills">
-          <ul className="space-y-2">
-            {work.skills.length === 0 && <Empty />}
-            {work.skills.map((x: UserSkillOut) => (
-              <li key={x.id} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {x.name} <span className="text-neutral-500">({x.level})</span>
-                </span>
-                <button
-                  className="text-xs text-red-600"
-                  onClick={() => remove("skill", x.id, x.skill_id)}
-                >
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          {work.skills.length === 0 ? (
+            <Empty hint="Skills feed matching and Career Advisor." />
+          ) : (
+            <ul className="space-y-3">
+              {work.skills.map((x: UserSkillOut) => (
+                <li key={x.id} className="flex justify-between gap-3 text-sm">
+                  <span>
+                    {x.name} <span className="text-[#6b7280]">({x.level})</span>
+                  </span>
+                  <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("skill", x.id, x.skill_id)}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
-
         <Section title="Credentials">
-          <ul className="space-y-2">
-            {work.credentials.length === 0 && <Empty />}
-            {work.credentials.map((x: CredentialOut) => (
-              <li key={x.id} className="flex justify-between gap-2 text-sm">
-                <span>
-                  {x.name}
-                  <span className="ml-1 text-neutral-500">[{x.status}]</span>
-                </span>
-                <button className="text-xs text-red-600" onClick={() => remove("credential", x.id)}>
-                  remove
-                </button>
-              </li>
-            ))}
-          </ul>
+          {work.credentials.length === 0 ? (
+            <Empty hint="Licences and certificates. Status is never invented." />
+          ) : (
+            <ul className="space-y-3">
+              {work.credentials.map((x: CredentialOut) => (
+                <li key={x.id} className="flex items-start justify-between gap-3 text-sm">
+                  <div>
+                    <p className="font-medium">{x.name}</p>
+                    <StatusPill status={x.status} />
+                  </div>
+                  <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("credential", x.id)}>
+                    remove
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </Section>
-
         <DocumentsSection refresh={refresh} remove={remove} />
       </div>
-    </main>
+    </div>
   );
 }
 
@@ -422,30 +409,24 @@ function Field({
   return (
     <div>
       <label className={labelCls}>
-        {label} {optional && <span className="font-normal">(optional)</span>}
+        {label} {optional && <span className="font-normal text-[#6b7280]">(optional)</span>}
       </label>
       <input className={inputCls} name={name} type={type} placeholder={placeholder} />
     </div>
   );
 }
 
-function Section({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className={`${rowCls}`}>
-      <h2 className="mb-2 font-medium">{title}</h2>
+    <section className={cardCls}>
+      <h2 className="mb-3 text-sm font-semibold">{title}</h2>
       {children}
     </section>
   );
 }
 
-function Empty() {
-  return <li className="text-sm text-neutral-400">Nothing yet.</li>;
+function Empty({ hint }: { hint: string }) {
+  return <p className="text-sm text-[#6b7280]">{hint}</p>;
 }
 
 function DocumentsSection({
@@ -455,20 +436,18 @@ function DocumentsSection({
   refresh: () => Promise<void>;
   remove: (kind: string, id: string, skillId?: string) => Promise<void>;
 }) {
-  const [docs, setDocs] = useState<
-    { id: string; name: string; doc_type: string }[]
-  >([]);
+  const [docs, setDocs] = useState<PersonDocumentOut[]>([]);
 
   const load = useCallback(async () => {
     try {
-      setDocs(await api.get("/documents"));
+      setDocs(await api.get<PersonDocumentOut[]>("/documents"));
     } catch {
       setDocs([]);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    void load();
   }, [load]);
 
   async function addDoc(ev: React.FormEvent<HTMLFormElement>) {
@@ -484,31 +463,42 @@ function DocumentsSection({
   }
 
   return (
-    <section className={rowCls}>
-      <h2 className="mb-2 font-medium">Documents</h2>
-      <form className="mb-2 flex gap-2" onSubmit={addDoc}>
+    <section className={cardCls}>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-sm font-semibold">Documents</h2>
+        <Link href="/jobseeker/documents" className="text-xs text-[#d4af37] hover:underline">
+          Full vault
+        </Link>
+      </div>
+      <p className="mb-3 text-xs text-[#6b7280]">
+        Files stay private until you grant access. Registering a record does not share it.
+      </p>
+      <form className="mb-3 grid gap-2 sm:grid-cols-[1fr_1fr_auto]" onSubmit={addDoc}>
         <input className={inputCls} name="name" placeholder="Document name" />
-        <input className={inputCls} name="doc_type" placeholder="type (resume…)" />
+        <input className={inputCls} name="doc_type" placeholder="resume, certificate…" />
         <button className={btnCls} type="submit">
           Add
         </button>
       </form>
-      <ul className="space-y-2">
-        {docs.length === 0 && <Empty />}
-        {docs.map((d) => (
-          <li key={d.id} className="flex justify-between gap-2 text-sm">
-            <span>
-              {d.name} <span className="text-neutral-500">({d.doc_type})</span>
-            </span>
-            <button
-              className="text-xs text-red-600"
-              onClick={() => remove("documents", d.id)}
-            >
-              archive
-            </button>
-          </li>
-        ))}
-      </ul>
+      {docs.length === 0 ? (
+        <Empty hint="No documents registered." />
+      ) : (
+        <ul className="space-y-2">
+          {docs.map((d) => (
+            <li key={d.id} className="flex items-center justify-between gap-2 text-sm">
+              <span>
+                {d.name} <span className="text-[#6b7280]">({d.doc_type})</span>
+              </span>
+              <div className="flex items-center gap-2">
+                <StatusPill status={d.verification_status} />
+                <button type="button" className="text-xs text-[#9ca3af] hover:text-red-300" onClick={() => void remove("documents", d.id)}>
+                  archive
+                </button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
