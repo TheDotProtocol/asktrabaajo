@@ -8,6 +8,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { cardCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   CommunicationsInbox,
@@ -16,14 +17,10 @@ import {
   OutreachRequestRow,
 } from "@/lib/api/types";
 
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
 const primaryBtn =
   "rounded bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-40";
 const ghostBtn =
   "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-amber-500 dark:border-neutral-700 dark:text-neutral-300";
-const inputCls =
-  "w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm dark:border-neutral-700 dark:bg-neutral-900";
 
 const statusStyle: Record<string, string> = {
   sent: "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300",
@@ -172,7 +169,7 @@ export default function JobseekerCommunicationsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-semibold tracking-tight">Messages</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">Messages</h1>
         {live && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-500" />

@@ -6,15 +6,9 @@
  */
 import { useCallback, useEffect, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, StatusPill, btnCls, cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import { Offer } from "@/lib/api/types";
-
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500";
-const declineCls =
-  "rounded border border-neutral-300 px-4 py-2 text-sm text-neutral-600 hover:border-red-400 hover:text-red-500 dark:border-neutral-700 dark:text-neutral-300";
 
 export default function OffersPage() {
   const [offers, setOffers] = useState<Offer[]>([]);
@@ -47,31 +41,22 @@ export default function OffersPage() {
 
   return (
     <div className="space-y-6">
-      <section>
-        <h1 className="text-2xl font-semibold tracking-tight">Offers</h1>
-        <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-          Review terms and respond explicitly. Accepting an offer updates your
-          application lifecycle and career timeline.
-        </p>
-      </section>
+      <PageHeader
+        kicker="Decisions"
+        title="Offers"
+        subtitle="Review terms and respond explicitly. Accepting updates your application lifecycle. This page never generates a binding letter."
+      />
 
-      {notice && (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          {notice}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <ErrorBanner message={error} />}
 
       {offers.length === 0 && (
-        <div className={cardCls}>
-          <p className="text-center text-sm text-neutral-400">
-            No offers yet. They appear here when a company makes you one.
-          </p>
-        </div>
+        <EmptyState
+          title="No offers yet"
+          body="When a company extends an offer on an application, it will appear here with the real terms from the backend."
+          actionHref="/jobseeker/applications"
+          actionLabel="View applications"
+        />
       )}
 
       <div className="grid gap-4 lg:grid-cols-2">
@@ -83,17 +68,7 @@ export default function OffersPage() {
                   ? `${offer.salary_currency ?? "USD"} ${offer.salary_amount.toLocaleString()}`
                   : "Offer"}
               </h2>
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-xs capitalize ${
-                  offer.status === "accepted"
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400"
-                    : offer.status === "declined"
-                      ? "bg-neutral-100 text-neutral-500 dark:bg-neutral-800 dark:text-neutral-400"
-                      : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-400"
-                }`}
-              >
-                {offer.status}
-              </span>
+              <StatusPill status={offer.status} />
             </div>
 
             <dl className="mt-3 space-y-1.5 text-sm">
@@ -136,7 +111,7 @@ export default function OffersPage() {
                 <button type="button" className={btnCls} onClick={() => decide(offer.id, "accepted")}>
                   Accept offer
                 </button>
-                <button type="button" className={declineCls} onClick={() => decide(offer.id, "declined")}>
+                <button type="button" className={ghostBtnCls} onClick={() => decide(offer.id, "declined")}>
                   Decline
                 </button>
               </div>
