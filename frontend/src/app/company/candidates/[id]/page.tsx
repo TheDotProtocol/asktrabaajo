@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { cardCls, ghostBtnCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   CandidateProfile,
@@ -18,10 +19,6 @@ import {
   OutreachRequestRow,
 } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const ghostBtnCls =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
 const modeStyle: Record<string, string> = {
   strong: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
   potential: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",

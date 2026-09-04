@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { EmptyState, ErrorBanner, PageHeader, btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
   CandidateSearchItem,
@@ -20,14 +21,6 @@ import {
   TalentPool,
 } from "@/lib/api/types";
 import { useOrg } from "@/context/OrgContext";
-const cardCls =
-  "rounded-xl border border-neutral-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900";
-const inputCls =
-  "rounded border border-neutral-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900";
-const btnCls =
-  "rounded bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500 disabled:opacity-50";
-const ghostBtnCls =
-  "rounded border border-neutral-300 px-3 py-1.5 text-sm text-neutral-600 hover:border-indigo-400 dark:border-neutral-700 dark:text-neutral-300";
 const modeStyle: Record<string, string> = {
   strong: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400",
   potential: "bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300",
@@ -207,55 +200,41 @@ export default function CompanyCandidatesPage() {
 
   if (!orgId) {
     return (
-      <div className={cardCls}>
-        <p className="text-center text-sm text-neutral-400">
-          Pick an organization on the{" "}
-          <Link href="/company" className="text-indigo-600 hover:underline">
-            company home
-          </Link>{" "}
-          first.
-        </p>
-      </div>
+      <EmptyState
+        title="Select an organization"
+        body="Talent Graph search is organization-scoped."
+        actionHref="/company"
+        actionLabel="Command center"
+      />
     );
   }
 
   return (
     <div className="space-y-6">
-      <section className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Candidate discovery</h1>
-          <p className="mt-1 max-w-2xl text-sm text-neutral-500 dark:text-neutral-400">
-            Search the talent graph over PUBLIC professional data. Hidden sections
-            are never probed, and every result explains what it is based on.
-          </p>
-        </div>
-        <nav className="flex gap-1 rounded-lg border border-neutral-200 p-1 text-sm dark:border-neutral-800">
-          {(["search", "saved", "pools", "matches"] as Tab[]).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`rounded-md px-3 py-1.5 capitalize ${
-                tab === t
-                  ? "bg-indigo-600 text-white"
-                  : "text-neutral-600 hover:bg-neutral-100 dark:text-neutral-300 dark:hover:bg-neutral-800"
-              }`}
-            >
-              {t === "matches" ? "Ranked matches" : t}
-            </button>
-          ))}
-        </nav>
-      </section>
+      <PageHeader
+        kicker="Talent Graph"
+        title="Candidate discovery"
+        subtitle="Public professional data only. Hidden Work ID sections are never probed. Matching modes stay canonical."
+        actions={
+          <nav className="flex gap-1 rounded-lg border border-[#23272a] p-1 text-sm">
+            {(["search", "saved", "pools", "matches"] as Tab[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setTab(t)}
+                className={`rounded-md px-3 py-1.5 capitalize ${
+                  tab === t ? btnCls : ghostBtnCls
+                }`}
+              >
+                {t === "matches" ? "Ranked matches" : t}
+              </button>
+            ))}
+          </nav>
+        }
+      />
 
-      {notice && (
-        <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-          {notice}
-        </div>
-      )}
-      {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-2 text-sm text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-300">
-          {error}
-        </div>
-      )}
+      {notice && <p className="text-sm text-emerald-400">{notice}</p>}
+      {error && <ErrorBanner message={error} />}
 
       {/* Search */}
       {tab === "search" && (
