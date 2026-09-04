@@ -12,7 +12,7 @@ from __future__ import annotations
 import uuid
 from typing import Iterable, Optional
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, event, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import get_settings
@@ -26,6 +26,29 @@ if settings.database_url.startswith("sqlite"):
     _engine_kwargs["connect_args"] = {"check_same_thread": False}
 
 engine = create_engine(settings.database_url, **_engine_kwargs)
+
+
+def _force_utc_session(dbapi_connection, connection_record) -> None:
+    """Every PostgreSQL connection runs in UTC.
+
+    Canonical code stores naive-UTC datetimes (see ``app.core.timeutil``).
+    PostgreSQL interprets naive values in the session TimeZone, so a server
+    whose default zone is not UTC (e.g. Asia/Kolkata) would silently shift
+    every stored instant by its offset and make expiry/window comparisons
+    wrong. Pin the session zone so the naive-write -> aware-read round trip
+    is exact and identical to the SQLite test frame.
+    """
+    if engine.dialect.name == "postgresql":
+        cursor = dbapi_connection.cursor()
+        try:
+            cursor.execute("SET TIME ZONE 'UTC'")
+        finally:
+            cursor.close()
+
+
+if engine.dialect.name == "postgresql":
+    event.listen(engine, "connect", _force_utc_session)
+
 SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False, future=True)
 
 
