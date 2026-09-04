@@ -1,79 +1,50 @@
-'use client';
+"use client";
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState } from "react";
 
-import { PageHeader, cardCls } from '@/components/candidate/ui';
-import { useCanonicalAuth } from '@/context/AuthContext';
-import { governmentMemberships } from '@/lib/api/portal';
-import { api } from '@/lib/api/session';
-import { AthenaStatus } from '@/lib/api/types';
+import { ErrorBanner, LoadingState, PageHeader } from "@/components/candidate/ui";
+import { BucketList, FilterBar, MetricCard, PrivacyNote } from "@/components/government/IntelligenceUI";
+import { GovernmentFilters, IntelligenceEnvelope, governmentApi } from "@/lib/api/government";
 
-export default function GovernmentFoundationPage() {
-  const { me } = useCanonicalAuth();
-  const memberships = governmentMemberships(me);
-  const [status, setStatus] = useState<AthenaStatus | null>(null);
-  const [modes, setModes] = useState<string[]>([]);
+export default function GovernmentCommandCenter() {
+  const [data, setData] = useState<IntelligenceEnvelope | null>(null);
+  const [error, setError] = useState("");
+  const [filters, setFilters] = useState<GovernmentFilters>({});
 
   useEffect(() => {
-    api.get<AthenaStatus>('/athena/status').then(setStatus).catch(() => setStatus(null));
-    api.get<string[]>('/athena/modes').then(setModes).catch(() => setModes([]));
-  }, []);
+    setError("");
+    governmentApi
+      .overview(filters)
+      .then(setData)
+      .catch((e) => setError(String((e as Error).message ?? e)));
+  }, [filters]);
 
   return (
     <div className="space-y-8">
       <PageHeader
-        kicker="Government · foundation"
-        title="Workforce intelligence is not implemented"
-        subtitle="AskTrabaajo government access is aggregate-only by architecture. This page does not invent citizen records, ministry integrations, or fake labour-market statistics."
+        kicker="Government · Command Center"
+        title="Workforce intelligence"
+        subtitle="Aggregate, anonymized platform signals. This is not a citizen database."
       />
-
-      <div className={cardCls}>
-        <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-[#d4af37]">
-          Membership
-        </p>
-        {memberships.length === 0 ? (
-          <p className="mt-3 text-sm text-[#9ca3af]">No government organization on this account.</p>
-        ) : (
-          <ul className="mt-3 space-y-2 text-sm text-[#e5e7eb]">
-            {memberships.map((row) => (
-              <li key={row.organization_id}>
-                {row.organization_name} · {row.role.replaceAll('_', ' ')}
-                <span className="ml-2 font-mono text-[10px] uppercase text-[#6b7280]">DEV</span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      <div className={cardCls}>
-        <p className="text-xl font-semibold text-white">What exists today</p>
-        <ul className="mt-4 space-y-2 text-sm text-[#9ca3af]">
-          <li>Canonical roles <code className="text-[#e5e7eb]">government_admin</code> and <code className="text-[#e5e7eb]">government_user</code>.</li>
-          <li>Permission <code className="text-[#e5e7eb]">workforce.aggregates.read</code> — catalog only. No aggregate API is registered.</li>
-          <li>
-            Athena government mode is eligible
-            {modes.includes('government') ? ' for this account' : ''}
-            {status?.available ? '' : ' and remains architecture-only (no tools, no fabricated replies).'}
-          </li>
-        </ul>
-      </div>
-
-      <div className={cardCls}>
-        <p className="text-xl font-semibold text-white">Deliberately not built</p>
-        <ul className="mt-4 space-y-2 text-sm text-[#9ca3af]">
-          <li>Citizen lookup, employment records, or individual Work ID access for government.</li>
-          <li>Country / state / city intelligence dashboards.</li>
-          <li>Skill-shortage charts, investment views, or ministry workflows.</li>
-        </ul>
-        <p className="mt-4 text-sm text-[#6b7280]">
-          Those Figma frames remain design. Wave 7 only makes this foundation visible.
-        </p>
-      </div>
-
-      <Link href="/portals" className="inline-block text-sm text-[#d4af37] hover:underline">
-        Back to portals
-      </Link>
+      <PrivacyNote data={data} />
+      <FilterBar onApply={setFilters} />
+      {error && <ErrorBanner message={error} onRetry={() => setFilters({ ...filters })} />}
+      {!data && !error && <LoadingState label="Calculating aggregates…" />}
+      {data?.status === "insufficient_cohort" && (
+        <p className="text-sm text-[#9ca3af]">{data.message || "INSUFFICIENT_COHORT"}</p>
+      )}
+      {data?.cards && (
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard title="Registered workforce" cell={data.cards.registered_workforce} />
+          <MetricCard title="Current employment records" cell={data.cards.current_employment_records} />
+          <MetricCard title="Active employers" cell={data.cards.active_employers} />
+          <MetricCard title="Open opportunities" cell={data.cards.open_opportunities} />
+        </div>
+      )}
+      <BucketList title="Top skills (supply)" buckets={data?.top_skills?.buckets} />
+      {data?.emerging_skills && (
+        <p className="text-sm text-[#6b7280]">{data.emerging_skills.message}</p>
+      )}
     </div>
   );
 }
