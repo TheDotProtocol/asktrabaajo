@@ -10,6 +10,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import { EmptyState, ErrorBanner, PageHeader, cardCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
@@ -198,6 +199,8 @@ export default function CompanyPipeline() {
         title="Applications"
         subtitle="Stage movement uses canonical decision actions only. Document access stays grant-based."
         actions={
+          <div className="flex flex-wrap items-center gap-3">
+            <AthenaAskLink portal="employer" from="pipeline" />
           <div className="flex items-center gap-2 text-sm">
             <span className="text-[#9ca3af]">Filter</span>
             <select
@@ -223,6 +226,7 @@ export default function CompanyPipeline() {
               </option>
             ))}
             </select>
+          </div>
           </div>
         }
       />

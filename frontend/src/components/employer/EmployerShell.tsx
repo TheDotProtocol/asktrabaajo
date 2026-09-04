@@ -36,7 +36,7 @@ type NavItem = {
 
 const WORKSPACE: NavItem[] = [
   { href: '/company', label: 'Command Center', icon: Home },
-  { href: '/company/athena', label: 'Athena HR', icon: Cpu, coming: true },
+  { href: '/company/athena', label: 'Athena HR', icon: Cpu },
   { href: '/company/members', label: 'Workforce', icon: Users, permission: 'members.read' },
   { href: '/company/profile', label: 'Planning', icon: Activity },
   { href: '/company/jobs', label: 'Jobs', icon: Briefcase, permission: 'jobs.view' },

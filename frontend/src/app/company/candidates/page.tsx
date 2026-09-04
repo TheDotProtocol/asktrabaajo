@@ -10,6 +10,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { AthenaAskLink } from "@/components/athena/AthenaAskLink";
 import { EmptyState, ErrorBanner, PageHeader, btnCls, cardCls, ghostBtnCls, inputCls } from "@/components/candidate/ui";
 import { api } from "@/lib/api/session";
 import {
@@ -216,6 +217,8 @@ export default function CompanyCandidatesPage() {
         title="Candidate discovery"
         subtitle="Public professional data only. Hidden Work ID sections are never probed. Matching modes stay canonical."
         actions={
+          <div className="flex flex-wrap items-center gap-3">
+            <AthenaAskLink portal="employer" from="candidates" />
           <nav className="flex gap-1 rounded-lg border border-[#23272a] p-1 text-sm">
             {(["search", "saved", "pools", "matches"] as Tab[]).map((t) => (
               <button
@@ -230,6 +233,7 @@ export default function CompanyCandidatesPage() {
               </button>
             ))}
           </nav>
+          </div>
         }
       />
 
