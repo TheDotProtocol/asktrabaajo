@@ -17,7 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "AskTrabaajo — The Operating System for the World of Work",
   description:
-    "AskTrabaajo is the operating system for the world of work — connecting jobseekers, employers and government workforce intelligence through one live platform.",
+    "AskTrabaajo is the operating system for the world of work — connecting jobseekers, employers, recruiters, institutions and government through Work ID, the Talent Graph and Athena.",
   icons: {
     icon: [{ url: "/brand/asktrabaajo-logo.webp", type: "image/webp" }],
     apple: [{ url: "/brand/asktrabaajo-logo.webp" }],

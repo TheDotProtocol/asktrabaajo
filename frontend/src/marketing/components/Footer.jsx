@@ -10,6 +10,7 @@ const COLS = [
     links: [
       { label: "Jobseekers", href: SITE.pages.jobseekers },
       { label: "Employers", href: SITE.pages.companies },
+      { label: "Recruiters", href: SITE.pages.recruiters },
       { label: "Government", href: SITE.pages.governments },
       { label: "Work ID", href: "/#work-id" },
       { label: "Athena", href: "/#athena" },
@@ -23,6 +24,7 @@ const COLS = [
       { label: "About", href: SITE.pages.about },
       { label: "Contact", href: SITE.pages.contact },
       { label: "Careers", href: `${SITE.pages.contact}#careers` },
+      { label: "Partners", href: SITE.pages.institutions },
     ],
   },
   {

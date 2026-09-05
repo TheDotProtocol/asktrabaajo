@@ -30,7 +30,7 @@ export const CompanyOS = () => (
             index="04"
             eyebrow="For Companies & HR"
             title={"HIRING BECOMES\nA SYSTEM."}
-            copy="The Employer OS manages the workforce acquisition journey — organizations, jobs, candidates, pipelines, outreach, interviews, offers and employment workflows — as one coherent system instead of twelve disconnected tools."
+            copy="Employer OS is the operating system for hiring — organizations, jobs, Talent Graph discovery, pipelines, outreach, AI interviews, offers, onboarding, analytics and billing — as one coherent system instead of twelve disconnected tools."
             testId="company-os-header"
           />
           <Reveal delay={0.2}>

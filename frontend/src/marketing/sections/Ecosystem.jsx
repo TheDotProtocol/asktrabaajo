@@ -13,15 +13,15 @@ const LEGEND = [
   { name: "Work ID" },
   { name: "Talent Graph" },
   { name: "Athena" },
+  { name: "Jobseeker OS" },
   { name: "Employer OS" },
-  { name: "Opportunities" },
-  { name: "Communication" },
+  { name: "Recruiter Network" },
   { name: "AI Interviews" },
-  { name: "Credentials" },
   { name: "Career Advisor" },
+  { name: "Institutional Credentials" },
+  { name: "Gov. Intelligence" },
+  { name: "Commerce" },
   { name: "Governance" },
-  { name: "Workforce Intelligence" },
-  { name: "Billing" },
 ];
 
 const ringNodes = (items, radiusPct, duration, reverse) =>
@@ -60,7 +60,7 @@ export const Ecosystem = () => {
           index="13"
           eyebrow="The AskTrabaajo Ecosystem"
           title={"ONE SYSTEM.\nEVERY PART OF WORK."}
-          copy="The AskTrabaajo platform is one operating system — identity, talent, hiring, intelligence and trust in a single coherent universe, not a bundle of disconnected tools."
+          copy="The complete AskTrabaajo ecosystem — identity, talent, hiring, recruiter networks, credentials, career intelligence, government insight, commerce and trust — as one operating system, not a bundle of tools."
           align="center"
           testId="ecosystem-header"
         />

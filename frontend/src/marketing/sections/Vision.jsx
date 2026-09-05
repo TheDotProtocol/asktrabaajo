@@ -28,7 +28,7 @@ export const Vision = () => (
         index="15"
         eyebrow="The AskTrabaajo Platform"
         title={"THE OPERATING SYSTEM\nFOR THE WORLD OF WORK."}
-        copy="AskTrabaajo is a live employment operating system. Jobseekers, employers and government institutions use one platform for identity, hiring, career intelligence and privacy-preserving workforce insight."
+        copy="AskTrabaajo is one employment operating system. Jobseekers, employers, recruiters, institutions and governments share Work ID, the Talent Graph and Athena — from professional identity to opportunity, employment and continuous growth."
         testId="platform-header"
       />
 

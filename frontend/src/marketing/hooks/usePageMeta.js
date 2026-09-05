@@ -4,7 +4,7 @@ import { useEffect } from "react";
 
 const DEFAULT_TITLE = "AskTrabaajo — The Operating System for the World of Work";
 const DEFAULT_DESCRIPTION =
-  "AskTrabaajo is the operating system for the world of work — connecting jobseekers, employers and government workforce intelligence through one live platform.";
+  "AskTrabaajo is the operating system for the world of work — connecting jobseekers, employers, recruiters, institutions and government through Work ID, the Talent Graph and Athena.";
 
 export function usePageMeta({ title, description } = {}) {
   useEffect(() => {

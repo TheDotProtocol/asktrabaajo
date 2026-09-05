@@ -1,7 +1,7 @@
 "use client";
 
 import { Link } from "@/marketing/compat/router";
-import { UserRound, Building2, Landmark, ArrowUpRight } from "lucide-react";
+import { UserRound, Building2, Handshake, Landmark, GraduationCap, ArrowUpRight } from "lucide-react";
 import SectionHeader from "@/marketing/components/common/SectionHeader";
 import Reveal from "@/marketing/components/common/Reveal";
 import { SITE } from "@/marketing/config/site";
@@ -22,11 +22,25 @@ const AUDIENCES = [
     id: "hiring",
   },
   {
+    icon: Handshake,
+    title: "I'm a recruiter",
+    copy: "Work with verified talent through structured, consent-based pipelines.",
+    href: SITE.pages.recruiters,
+    id: "recruiter",
+  },
+  {
     icon: Landmark,
-    title: "I work in government",
+    title: "I'm a government / institution",
     copy: "Understand your labour market through privacy-preserving aggregate intelligence.",
     href: SITE.pages.governments,
     id: "government",
+  },
+  {
+    icon: GraduationCap,
+    title: "I'm an institution / partner",
+    copy: "Issue credentials that travel with people — verifiable, revocable, trusted.",
+    href: SITE.pages.institutions,
+    id: "institution",
   },
 ];
 
@@ -36,11 +50,11 @@ export const Audiences = () => (
       <SectionHeader
         index="14"
         eyebrow="Who It Is For"
-        title={"ONE PLATFORM.\nTHREE OPERATING SYSTEMS."}
+        title={"FIVE DOORS.\nONE PLATFORM."}
         testId="audiences-header"
       />
 
-      <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-3" data-testid="audiences-grid">
+      <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-5 gap-3" data-testid="audiences-grid">
         {AUDIENCES.map((a, i) => (
           <Reveal key={a.id} delay={i * 0.05}>
             <Link

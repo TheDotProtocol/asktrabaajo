@@ -14,19 +14,23 @@ const CHAPTERS = [
 ];
 
 const PLATFORM = [
-  { title: "Jobseeker OS", copy: "Manage your professional life — Work ID, documents, credentials, career, opportunities, applications, interviews, offers, messages and Athena." },
-  { title: "Employer OS", copy: "Manage hiring — company profile, members, jobs, talent, pipeline, interviews, offers, outreach, analytics and billing." },
-  { title: "Government Workforce Intelligence", copy: "Privacy-preserving, aggregate insight into workforce, skills, geography, employment, industries, opportunities and companies. No individual citizen records." },
-  { title: "Work ID", copy: "A persistent professional identity connecting a person's verified professional journey, with consent-controlled disclosure." },
-  { title: "Athena", copy: "AskTrabaajo's intelligent interface for jobseekers, employers and government — natural language into controlled platform tools." },
-  { title: "Talent Graph", copy: "Connects skills, people, opportunities, companies and career pathways so discovery is more than keyword search." },
+  { title: "Jobseeker OS", copy: "The operating system for a professional life — Work ID, documents, credentials, Work DNA, assessments, career, learning, opportunities, applications, interviews, offers and communications." },
+  { title: "Employer / Job Giver OS", copy: "The operating system for hiring — company profile, jobs, talent discovery, pipeline, AI interviews, outreach, offers, onboarding, analytics, billing and workforce operations." },
+  { title: "Government Workforce Intelligence", copy: "Privacy-preserving, aggregate intelligence across workforce, skills, geography, industries, opportunities, companies and reports. Governments see the market, never the private person." },
+  { title: "Work ID", copy: "The professional identity layer — a persistent record of history, skills, credentials and consent-controlled disclosure." },
+  { title: "Athena", copy: "Intelligence for the world of work — a conversational interface across Jobseeker, Employer and Government, through controlled platform tools." },
+  { title: "Talent Graph", copy: "Connects people, skills, opportunities, companies and career pathways so matching is comprehension, not keyword search." },
+  { title: "Recruiter Network", copy: "Independent recruiters work with verified talent, consent-based outreach, shared pipelines and a portable professional reputation." },
+  { title: "Institutional Credentials", copy: "Education, certifications, employment and achievements issued to Work ID — with explicit states from VERIFIED to REVOKED." },
+  { title: "AI Interview & Career Advisor", copy: "Structured first interviews and career guidance across pathways, skill gaps and professional development — humans remain in control of decisions." },
+  { title: "Communications, Commerce & Governance", copy: "Controlled messaging, offers, billing, permissions, audit, enforcement and appeals — trust as infrastructure for the employment journey." },
 ];
 
 export const AboutPage = () => {
   usePageMeta({
     title: "About",
     description:
-      "AskTrabaajo is the operating system for the world of work — connecting people, employers and government workforce intelligence through one Work ID.",
+      "AskTrabaajo is the operating system for the world of work — connecting jobseekers, employers, recruiters, institutions and government through one Work ID, Talent Graph and Athena.",
   });
 
   return (
@@ -34,7 +38,7 @@ export const AboutPage = () => {
       <PageHero
         eyebrow="About AskTrabaajo"
         title={"THE OPERATING SYSTEM\nFOR THE WORLD OF WORK."}
-        copy="AskTrabaajo is a live employment operating system. It connects people, employers, government, skills, opportunities, credentials, career development and AI assistance through a unified work identity."
+        copy="AskTrabaajo is the operating system for the world of work. One platform for professional identity, hiring, recruiter networks, institutional credentials, career intelligence and privacy-preserving government workforce insight."
       >
         <div className="mt-10 flex flex-wrap items-center gap-4">
           <GoldButton href={SITE.urls.app} testId="about-enter-cta">
