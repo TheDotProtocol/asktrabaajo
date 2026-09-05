@@ -44,8 +44,9 @@ localhost:3001  →  public website
 - **Vercel variables:** YES — see `CURSOR_WAVE_9_VERCEL_ENV_AUDIT.md`. Redeploy after adding them.
 - **Supabase push:** **NO**
 - **GitHub:** `TheDotProtocol/asktrabaajo` `main`  
-  Pushed commit: `7907e97` (`7907e974b8b5629615569d3140486521f1645f18`)  
-  Previous remote tip: `88a4a97`
+  Wave 9 product SHA: `7907e97`  
+  Follow-up: Next.js `15.5.24` security patch (Vercel blocked `15.5.4` after a successful compile)  
+  Previous remote tip before Wave 9: `88a4a97`
 
 ## Verification
 

@@ -88,9 +88,17 @@ Backup/PITR is **not verified** — do not push or reset.
 
 ### GitHub
 
-**Pushed.** Repository `TheDotProtocol/asktrabaajo`, branch `main`, commit `7907e97`.
+**Pushed.** Repository `TheDotProtocol/asktrabaajo`, branch `main`.
 
-This published local Waves 1–9 to the existing production repository. If the connected Vercel project deploys `main`, a production build will start. Vercel CLI was not available, so a separate Preview deployment was not created first. Redeploy after adding the required environment variables.
+Wave 9 content SHA: `7907e97`. Latest includes the Next.js security patch required by Vercel.
+
+Vercel **compiled** the unified app (homepage, login, portals, Super Admin) then **rejected the deploy** with: `Vulnerable version of Next.js detected`. The project was on `next@15.5.4`; Wave 9 upgrades it to `next@15.5.24` (August 2026 security release).
+
+Vercel CLI dashboard values were not fully readable. After this patch lands, confirm the Production deployment in:
+
+https://vercel.com/the-dot-protocol-co-ltds-projects/asktrabaajo
+
+Redeploy after adding the required environment variables. A separate Preview was not created first because Vercel CLI inspect/auth for a dedicated Preview project was not available.
 
 The sibling repo `TheDotProtocol/trabaajowebsite` remains a **reference** of the original CRA website. It is not the production deployment source.
 

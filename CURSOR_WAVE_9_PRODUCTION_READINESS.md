@@ -22,7 +22,7 @@ Hosted database: **UNTOUCHED**
 | MONITORING | **PARTIAL** | `/health` + structured request logs exist. No production uptime/error product configured. |
 | RATE LIMITING | **PARTIAL** | Registry exists. Default store `memory`. Multi-instance must set `RATE_LIMIT_STORE=db` (or Redis later). |
 | GITHUB | **READY** | Pushed `main` @ `7907e97` to `TheDotProtocol/asktrabaajo`. |
-| VERCEL | **PARTIAL** | Existing project is connected to this repo. Root directory must be `frontend`. Env audit is incomplete without dashboard access. |
+| VERCEL | **PARTIAL** | Project `asktrabaajo` is connected and Root Directory is already `frontend` (build compiled `/`, `/login`, `/admin`). Production deploys of `7907e97`/`5fba629` failed after a successful build: Vercel blocked `next@15.5.4`. Patched to `15.5.24`. Env vars still required. |
 | DOMAIN | **BLOCKED** | `PRODUCTION DOMAIN REQUIRED`. Website source mentions `www.asktrabaajo.com` as intended canonical; live DNS not verified here. |
 | SSL | **PARTIAL** | Vercel provides TLS when a domain is attached. Not verified. |
 | CORS | **READY** (local) | `CORS_ORIGINS` already includes `http://localhost:3001`. Production must add the real origin. |
