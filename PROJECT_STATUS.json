@@ -1,8 +1,9 @@
 {
   "phase": 19,
   "status": "PASS_WITH_LIMITATIONS",
-  "git_head": "ad0396f",
+  "git_head": "ddc3c70",
   "git_head_wave8": "ad0396f",
+  "git_head_wave9": "ddc3c70",
   "git_head_phase19_freeze": "43176d9",
   "branch": "main",
   "wave_1": "ACCEPTED",
@@ -87,6 +88,6 @@
     "AI/payment/email/voice-video providers not provisioned (mock/none safe defaults)",
     "Legacy anon/service keys stale (operator rotation when legacy REST re-enabled)",
     "No production monitoring/uptime/error-tracking stack (PHASE_18_OBSERVABILITY)",
-    "Public website production origin still needs REACT_APP_CANONICAL_APP_URL when deployed; local CTAs now point at localhost:3000"
+    "Public website is unified on localhost:3001; production origin still required on Vercel (PRODUCTION DOMAIN REQUIRED)"
   ]
 }
