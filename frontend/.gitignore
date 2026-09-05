@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-wave8/
+/.next-wave9/
 /out/
 
 # production

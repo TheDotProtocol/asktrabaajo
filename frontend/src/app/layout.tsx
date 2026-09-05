@@ -15,12 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AskTrabaajo - AI-Powered HRTech Platform",
-  description: "Resume-free, AI-based recruitment engine with video interviews and blockchain security",
+  title: "AskTrabaajo — The Operating System for the World of Work",
+  description:
+    "AskTrabaajo is building an intelligent employment ecosystem connecting people, companies, recruiters and governments across the world of work.",
   icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: '32x32', type: 'image/x-icon' },
-    ],
+    icon: [{ url: "/brand/asktrabaajo-logo.webp", type: "image/webp" }],
+    apple: [{ url: "/brand/asktrabaajo-logo.webp" }],
   },
 };
 
@@ -45,6 +45,12 @@ export default function RootLayout({
     <html lang="en" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-black text-gray-900 dark:text-white`}>
         <Providers>

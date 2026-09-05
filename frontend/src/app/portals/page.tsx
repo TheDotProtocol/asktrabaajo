@@ -15,9 +15,8 @@ const COPY: Record<string, { kicker: string; body: string; limit?: string }> = {
     body: 'Company workspace, jobs, talent, pipeline, interviews, and Athena HR.',
   },
   government: {
-    kicker: 'Government · foundation',
-    body: 'Aggregate-only architecture. No citizen records and no workforce APIs yet.',
-    limit: 'BACKEND-LIMITED',
+    kicker: 'Government OS',
+    body: 'Privacy-protected workforce intelligence. Aggregates only — no citizen records.',
   },
   admin: {
     kicker: 'Super Admin',

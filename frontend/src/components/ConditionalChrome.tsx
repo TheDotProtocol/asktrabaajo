@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation'
 import Header from '@/components/Header'
 import Link from 'next/link'
 import Logo from '@/components/Logo'
+import { MarketingShell } from '@/marketing/MarketingShell'
 
 function SiteFooter() {
   return (
@@ -42,6 +43,19 @@ function SiteFooter() {
   )
 }
 
+const MARKETING_EXACT = new Set([
+  '/',
+  '/about',
+  '/contact',
+  '/privacy',
+  '/terms',
+  '/jobseekers',
+  '/companies',
+  '/recruiters',
+  '/governments',
+  '/institutions',
+])
+
 const STANDALONE_PREFIXES = [
   '/careers',
   '/dashboard/candidate',
@@ -61,6 +75,9 @@ const STANDALONE_PREFIXES = [
 
 export default function ConditionalChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  if (MARKETING_EXACT.has(pathname)) {
+    return <MarketingShell>{children}</MarketingShell>
+  }
   const standalone = STANDALONE_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`)
   )
