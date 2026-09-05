@@ -21,7 +21,7 @@ Hosted database: **UNTOUCHED**
 | NOTIFICATIONS | **PARTIAL** | In-app notifications exist. Email notifications need SMTP. |
 | MONITORING | **PARTIAL** | `/health` + structured request logs exist. No production uptime/error product configured. |
 | RATE LIMITING | **PARTIAL** | Registry exists. Default store `memory`. Multi-instance must set `RATE_LIMIT_STORE=db` (or Redis later). |
-| GITHUB | **READY** to push | Production repo is `TheDotProtocol/asktrabaajo`. |
+| GITHUB | **READY** | Pushed `main` @ `7907e97` to `TheDotProtocol/asktrabaajo`. |
 | VERCEL | **PARTIAL** | Existing project is connected to this repo. Root directory must be `frontend`. Env audit is incomplete without dashboard access. |
 | DOMAIN | **BLOCKED** | `PRODUCTION DOMAIN REQUIRED`. Website source mentions `www.asktrabaajo.com` as intended canonical; live DNS not verified here. |
 | SSL | **PARTIAL** | Vercel provides TLS when a domain is attached. Not verified. |

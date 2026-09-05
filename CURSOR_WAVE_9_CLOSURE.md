@@ -44,7 +44,8 @@ localhost:3001  →  public website
 - **Vercel variables:** YES — see `CURSOR_WAVE_9_VERCEL_ENV_AUDIT.md`. Redeploy after adding them.
 - **Supabase push:** **NO**
 - **GitHub:** `TheDotProtocol/asktrabaajo` `main`  
-  Local HEAD before push: `ddc3c70`
+  Pushed commit: `7907e97` (`7907e974b8b5629615569d3140486521f1645f18`)  
+  Previous remote tip: `88a4a97`
 
 ## Verification
 

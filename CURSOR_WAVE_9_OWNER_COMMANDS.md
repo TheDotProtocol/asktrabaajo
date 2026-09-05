@@ -88,7 +88,9 @@ Backup/PITR is **not verified** — do not push or reset.
 
 ### GitHub
 
-Cursor pushes `main` to `https://github.com/TheDotProtocol/asktrabaajo` after Wave 9 validation. That push is the first publication of local Waves 1–9. If the existing Vercel project deploys `main`, it will start a production build. Vercel CLI was not available, so a separate Preview deployment was not created first.
+**Pushed.** Repository `TheDotProtocol/asktrabaajo`, branch `main`, commit `7907e97`.
+
+This published local Waves 1–9 to the existing production repository. If the connected Vercel project deploys `main`, a production build will start. Vercel CLI was not available, so a separate Preview deployment was not created first. Redeploy after adding the required environment variables.
 
 The sibling repo `TheDotProtocol/trabaajowebsite` remains a **reference** of the original CRA website. It is not the production deployment source.
 
