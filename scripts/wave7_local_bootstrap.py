@@ -347,14 +347,30 @@ def main() -> None:
                 created_by=inspector.id,
             )
         )
+        platform = Organization(
+            name="AskTrabaajo DEV Platform",
+            slug="asktrabaajo-dev-platform",
+            kind="platform",
+            created_by=inspector.id,
+        )
+        db.add(platform)
+        db.flush()
+        db.add(
+            Membership(
+                user_id=inspector.id,
+                organization_id=platform.id,
+                role_code="super_admin",
+                created_by=inspector.id,
+            )
+        )
         db.commit()
 
     print(f"WAVE7 LOCAL DB: {DB_PATH}")
     print(f"Wave 7 DEV email: {WAVE7_EMAIL}")
     print(f"Wave 7 password written to gitignored {CREDS_PATH}")
     print("Wave 6 accounts unchanged (candidate / employer / admin).")
-    print("Memberships: jobseeker identity + employer org_admin + government_user.")
-    print("Not super_admin. Hosted database untouched.")
+    print("Memberships: jobseeker + employer org_admin + government_user + local super_admin.")
+    print("Local Super Admin only. Hosted database untouched.")
 
 
 if __name__ == "__main__":
