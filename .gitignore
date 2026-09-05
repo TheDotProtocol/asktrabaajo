@@ -45,3 +45,14 @@ wave7-qa/node_modules/
 wave7-qa/localhost/
 wave7-qa/package-lock.json
 wave7-qa/package.json
+
+# Internal development reports and local QA — not production website source
+CURSOR_*.md
+PHASE_*.md
+AUDIT_REPORT.md
+PROJECT_STATUS.json
+.freebuff/
+wave6-qa/
+wave7-qa/
+wave8-qa/
+wave9-qa/

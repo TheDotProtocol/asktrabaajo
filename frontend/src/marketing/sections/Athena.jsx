@@ -54,7 +54,7 @@ const AthenaPanel = () => {
           </span>
           <div>
             <p className="font-display text-sm tracking-[0.18em] text-slate-100">ATHENA</p>
-            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-faint">AskTrabaajo AI layer · concept preview</p>
+            <p className="font-mono text-[9px] uppercase tracking-[0.2em] text-faint">AskTrabaajo AI layer · live interface</p>
           </div>
         </div>
         <div className="flex gap-1.5" aria-hidden="true">
@@ -113,7 +113,7 @@ export const Athena = () => (
           </Reveal>
           <Reveal delay={0.1}>
             <p className="mt-5 font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
-              Concept preview — Athena is in development. Responses shown are illustrative.
+              Examples of how Athena is used. Live answers come from the platform after you sign in.
             </p>
           </Reveal>
         </div>
@@ -121,9 +121,8 @@ export const Athena = () => (
           <SectionHeader
             index="05"
             eyebrow="Trabaajo / Athena"
-            status="OUR VISION"
-            title={"THE INTERFACE\nIS INTELLIGENT."}
-            copy="Athena is the future AI operating layer of AskTrabaajo — not a chatbot bolted on, but a conversational interface into the entire employment platform. Ask in natural language; Athena works through controlled platform tools, permissions and consent."
+            title={"INTELLIGENCE FOR\nTHE WORLD OF WORK."}
+            copy="Athena is AskTrabaajo's intelligent interface — a conversational layer into the employment operating system. Jobseekers, employers and government users ask in natural language. Athena works through controlled platform tools, permissions and consent."
             testId="athena-header"
           />
           <Reveal delay={0.2}>

@@ -10,7 +10,6 @@ const COLS = [
     links: [
       { label: "Jobseekers", href: SITE.pages.jobseekers },
       { label: "Employers", href: SITE.pages.companies },
-      { label: "Recruiters", href: SITE.pages.recruiters },
       { label: "Government", href: SITE.pages.governments },
       { label: "Work ID", href: "/#work-id" },
       { label: "Athena", href: "/#athena" },
@@ -24,17 +23,16 @@ const COLS = [
       { label: "About", href: SITE.pages.about },
       { label: "Contact", href: SITE.pages.contact },
       { label: "Careers", href: `${SITE.pages.contact}#careers` },
-      { label: "Partners", href: SITE.pages.institutions },
     ],
   },
   {
     title: "Trust",
     links: [
       { label: "Privacy", href: SITE.pages.privacy },
-      { label: "Security", href: `${SITE.pages.privacy}#security` },
       { label: "Terms", href: SITE.pages.terms },
-      { label: "Responsible AI", href: `${SITE.pages.privacy}#responsible-ai` },
-      { label: "Accessibility", href: `${SITE.pages.privacy}#accessibility` },
+      { label: "Payment Policy", href: SITE.pages.paymentPolicy },
+      { label: "Refund Policy", href: SITE.pages.refundPolicy },
+      { label: "Security", href: `${SITE.pages.privacy}#security` },
     ],
   },
 ];
@@ -91,8 +89,8 @@ export const Footer = () => {
               className="h-8 w-auto brightness-110"
             />
             <p className="mt-6 max-w-sm text-sm text-mist leading-relaxed">
-              An intelligent employment ecosystem connecting people, companies,
-              recruiters and governments — one interface for the world of work.
+              The operating system for the world of work — connecting people,
+              employers and government workforce intelligence through one platform.
             </p>
             <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-faint">
               Trust is infrastructure.
@@ -103,9 +101,9 @@ export const Footer = () => {
             >
               {SITE.contact.general}
             </a>
-            <div className="mt-8 flex items-center gap-3">
-              {SOCIAL.map(({ icon: Icon, href, label, id }) =>
-                href ? (
+            {SOCIAL.some((s) => s.href) && (
+              <div className="mt-8 flex items-center gap-3">
+                {SOCIAL.filter((s) => s.href).map(({ icon: Icon, href, label, id }) => (
                   <a
                     key={id}
                     href={href}
@@ -115,19 +113,9 @@ export const Footer = () => {
                   >
                     <Icon className="w-4 h-4" />
                   </a>
-                ) : (
-                  <span
-                    key={id}
-                    data-testid={`footer-social-${id}`}
-                    aria-label={`${label} profile coming soon`}
-                    title={`${label} — coming soon`}
-                    className="w-9 h-9 border border-white/10 rounded-sm flex items-center justify-center text-faint/50 cursor-not-allowed"
-                  >
-                    <Icon className="w-4 h-4" />
-                  </span>
-                )
-              )}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {COLS.map((col) => (

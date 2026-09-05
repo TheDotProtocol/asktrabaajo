@@ -53,9 +53,8 @@ export const TalentGraph = () => {
         <SectionHeader
           index="03"
           eyebrow="The Talent Graph"
-          status="IN DEVELOPMENT"
           title={"STOP SEARCHING RESUMES.\nSTART UNDERSTANDING TALENT."}
-          copy="AskTrabaajo is being built to understand the relationships between people, skills, experience, credentials, jobs, companies and career paths — so matching becomes comprehension, not keyword filtering."
+          copy="The Talent Graph connects people, skills, experience, credentials, jobs, companies and career paths — so matching is comprehension, not keyword filtering. Jobseekers see opportunities and pathways. Employers discover talent and run pipelines."
           testId="talent-graph-header"
         />
 
@@ -81,7 +80,7 @@ export const TalentGraph = () => {
                 ))}
               </div>
               <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-faint">
-                Conceptual visualization
+                How the graph is read
               </span>
             </div>
 

@@ -5,7 +5,6 @@ import { Link } from "@/marketing/compat/router";
 import { motion, useReducedMotion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import Reveal from "@/marketing/components/common/Reveal";
-import StatusPill from "@/marketing/components/common/StatusPill";
 import { GoldButton, GhostButton } from "@/marketing/components/common/Buttons";
 import { AUDIENCE_PAGES, AUDIENCE_ORDER } from "./content";
 import { usePageMeta } from "@/marketing/hooks/usePageMeta";
@@ -63,7 +62,6 @@ const AudiencePage = ({ data }) => {
             className="flex items-center gap-4 flex-wrap"
           >
             <span className="eyebrow">{data.eyebrow}</span>
-            <StatusPill status={data.status} />
           </motion.div>
 
           <HeroLines title={data.title} />

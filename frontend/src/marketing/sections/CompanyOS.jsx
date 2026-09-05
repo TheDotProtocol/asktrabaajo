@@ -29,9 +29,8 @@ export const CompanyOS = () => (
           <SectionHeader
             index="04"
             eyebrow="For Companies & HR"
-            status="IN DEVELOPMENT"
             title={"HIRING BECOMES\nA SYSTEM."}
-            copy="The Company Employment OS is being built to manage the entire workforce acquisition journey — organizations, jobs, candidates, pipelines, outreach, interviews, document requests, offers and employment workflows — as one coherent system instead of twelve disconnected tools."
+            copy="The Employer OS manages the workforce acquisition journey — organizations, jobs, candidates, pipelines, outreach, interviews, offers and employment workflows — as one coherent system instead of twelve disconnected tools."
             testId="company-os-header"
           />
           <Reveal delay={0.2}>

@@ -23,9 +23,8 @@ export const CareerAdvisor = () => (
       <SectionHeader
         index="07"
         eyebrow="Career Advisor"
-        status="OUR VISION"
         title={"YOUR NEXT CAREER MOVE\nSHOULD NOT BE A GUESS."}
-        copy="By combining Work ID, the Talent Graph, opportunity intelligence and real career pathways, AskTrabaajo is designed to help people see where they are, what they can do, where they can go — and what to learn next. Guidance, never promises."
+        copy="Career Advisor uses Work ID, skills, opportunities and career pathways so people can see where they are, what they can do, where they can go — and what to learn next. Guidance, never promises."
         testId="career-advisor-header"
       />
 

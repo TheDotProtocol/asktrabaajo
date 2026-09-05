@@ -18,9 +18,8 @@ export const Communication = () => (
       <SectionHeader
         index="11"
         eyebrow="Communication Layer"
-        status="IN DEVELOPMENT"
         title={"THE CONVERSATION BETWEEN\nTALENT AND EMPLOYERS."}
-        copy="AskTrabaajo provides a controlled communication layer: Company → AskTrabaajo → Candidate. No unnecessary exposure of private contact information — outreach, messages, interviews, offers and notifications flow as one continuous workflow."
+        copy="AskTrabaajo provides a controlled communication layer: Company → AskTrabaajo → Candidate. Outreach, messages, interviews, offers and notifications run as one continuous workflow without unnecessary exposure of private contact details."
         testId="communication-header"
       />
 

@@ -49,6 +49,8 @@ const MARKETING_EXACT = new Set([
   '/contact',
   '/privacy',
   '/terms',
+  '/payment-policy',
+  '/refund-policy',
   '/jobseekers',
   '/companies',
   '/recruiters',

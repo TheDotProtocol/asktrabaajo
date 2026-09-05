@@ -23,7 +23,6 @@ export const Governance = () => (
           <SectionHeader
             index="12"
             eyebrow="Governance & Trust"
-            status="LIVE"
             title={"AN EMPLOYMENT PLATFORM\nNEEDS A CONSCIENCE."}
             testId="governance-header"
           />
@@ -32,8 +31,8 @@ export const Governance = () => (
               Trust is infrastructure.
             </p>
             <p className="mt-5 text-sm sm:text-base text-mist leading-relaxed">
-              These principles govern how AskTrabaajo is designed and built — today,
-              not as a future promise.
+              These principles govern how AskTrabaajo is designed and operated —
+              permissions, consent, audit, enforcement, appeals and tenant isolation.
             </p>
           </Reveal>
         </div>

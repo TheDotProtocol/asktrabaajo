@@ -119,16 +119,15 @@ export const WorldMap = () => (
           <SectionHeader
             index="09"
             eyebrow="The Global Workforce Map"
-            status="OUR VISION"
             title={"THE WORLD OF WORK,\nMAPPED."}
-            copy="A future where AskTrabaajo understands how countries, cities, industries, skills, talent and opportunities move — globally, and always in aggregate."
+            copy="Government Workforce Intelligence reads geography, industries, skills and opportunity as aggregate signals — how countries, cities and sectors relate to talent and work, never as a view of a private person."
             testId="world-map-header"
           />
           <Reveal delay={0.18}>
             <p className="mt-8 font-mono text-[10px] uppercase tracking-[0.2em] text-faint leading-relaxed">
-              Conceptual visualization.
+              Geographic lens of the platform.
               <br />
-              No real-time statistics are shown or implied.
+              This map is illustrative. It does not publish live statistics.
             </p>
           </Reveal>
         </div>

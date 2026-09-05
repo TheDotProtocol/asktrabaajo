@@ -10,18 +10,18 @@ import { usePageMeta } from "@/marketing/hooks/usePageMeta";
 import { SITE, mailto, scrollToId } from "@/marketing/config/site";
 
 const TOPICS = [
-  { id: "general", label: "General", email: SITE.contact.general, subject: "Hello AskTrabaajo" },
-  { id: "access", label: "Platform access", email: SITE.contact.access, subject: "Exploring AskTrabaajo" },
-  { id: "partnerships", label: "Partnerships", email: SITE.contact.partnerships, subject: "Partnership enquiry" },
+  { id: "general", label: "General enquiries", email: SITE.contact.general, subject: "Hello AskTrabaajo" },
+  { id: "jobseekers", label: "Jobseekers", email: SITE.contact.access, subject: "Jobseeker enquiry" },
+  { id: "employers", label: "Employers", email: SITE.contact.access, subject: "Employer enquiry" },
   { id: "government", label: "Government", email: SITE.contact.government, subject: "Government enquiry" },
-  { id: "press", label: "Press", email: SITE.contact.press, subject: "Press enquiry" },
-  { id: "careers", label: "Careers", email: SITE.contact.general, subject: "Careers enquiry" },
+  { id: "partnerships", label: "Partnerships", email: SITE.contact.partnerships, subject: "Partnership enquiry" },
+  { id: "investors", label: "Investors", email: SITE.contact.general, subject: "Investor enquiry" },
 ];
 
 const CHANNELS = [
   { label: "General", email: SITE.contact.general, note: "The public contact address." },
-  { label: "Access", email: SITE.contact.access, note: "Questions about entering the platform." },
-  { label: "Partnerships", email: SITE.contact.partnerships, note: "Institutions and issuers." },
+  { label: "Jobseekers & employers", email: SITE.contact.access, note: "Questions about entering the platform." },
+  { label: "Partnerships", email: SITE.contact.partnerships, note: "Collaboration and institutional conversations." },
   { label: "Government", email: SITE.contact.government, note: "Public-institution conversations." },
   { label: "Press", email: SITE.contact.press, note: "Editorial and media requests." },
 ];
@@ -29,7 +29,7 @@ const CHANNELS = [
 export const ContactPage = () => {
   usePageMeta({
     title: "Contact",
-    description: "Contact AskTrabaajo at hello@asktrabaajo.com. Official email channels for access, partnerships, government and press.",
+    description: "Contact AskTrabaajo for general, jobseeker, employer, government, partnership and investor enquiries.",
   });
 
   const [name, setName] = useState("");
@@ -95,7 +95,7 @@ export const ContactPage = () => {
             ))}
             <p className="text-sm text-faint leading-relaxed">
               Phone numbers and office locations are not published because they are
-              not officially confirmed for this site. Social profiles are not live yet.
+              not officially confirmed for this site.
             </p>
           </div>
 

@@ -21,7 +21,7 @@ import Governance from "@/marketing/sections/Governance";
 import Ecosystem from "@/marketing/sections/Ecosystem";
 import Audiences from "@/marketing/sections/Audiences";
 import Philosophy from "@/marketing/sections/Philosophy";
-import Vision from "@/marketing/sections/Vision";
+import Platform from "@/marketing/sections/Vision";
 import FinalCTA from "@/marketing/sections/FinalCTA";
 
 export default function HomePage() {
@@ -53,7 +53,7 @@ export default function HomePage() {
       <Ecosystem />
       <Audiences />
       <Philosophy />
-      <Vision />
+      <Platform />
       <FinalCTA />
     </main>
   );

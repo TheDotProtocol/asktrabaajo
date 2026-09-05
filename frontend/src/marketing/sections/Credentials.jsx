@@ -6,10 +6,10 @@ import SectionHeader from "@/marketing/components/common/SectionHeader";
 import Reveal from "@/marketing/components/common/Reveal";
 
 const CREDENTIALS = [
-  { icon: GraduationCap, type: "EDUCATION", title: "B.Sc. Computer Science", issuer: "University partner network", status: "VERIFIED", detail: "Cryptographically attested by the issuing institution. Designed for direct institutional integrations." },
-  { icon: Award, type: "CERTIFICATION", title: "Cloud Solutions Architect", issuer: "Certification authority", status: "PENDING", detail: "Verification in progress with the issuing authority. Status updates automatically on resolution." },
-  { icon: Briefcase, type: "EMPLOYMENT", title: "Senior Engineer, 4 yrs", issuer: "Employer attestation", status: "VERIFIED", detail: "Employment tenure confirmed through employer-side attestation inside the platform." },
-  { icon: Trophy, type: "ACHIEVEMENT", title: "National Design Award", issuer: "Awards body", status: "UNVERIFIED", detail: "Self-declared achievement awaiting third-party confirmation. Clearly labelled as such." },
+  { icon: GraduationCap, type: "EDUCATION", title: "B.Sc. Computer Science", issuer: "Education record", status: "VERIFIED", detail: "Education records sit on Work ID with an explicit trust state. Verified only when verification is recorded." },
+  { icon: Award, type: "CERTIFICATION", title: "Cloud Solutions Architect", issuer: "Certification record", status: "PENDING", detail: "Certification records can sit in pending state until verification is complete." },
+  { icon: Briefcase, type: "EMPLOYMENT", title: "Senior Engineer, 4 yrs", issuer: "Employment record", status: "VERIFIED", detail: "Employment history is part of the professional record — visible according to the person's consent." },
+  { icon: Trophy, type: "ACHIEVEMENT", title: "National Design Award", issuer: "Achievement record", status: "UNVERIFIED", detail: "Self-declared achievements stay labelled as unverified until confirmed." },
 ];
 
 const STATUS_STYLES = {
@@ -29,9 +29,8 @@ export const Credentials = () => {
         <SectionHeader
           index="10"
           eyebrow="Verified Credentials"
-          status="IN DEVELOPMENT"
           title={"TRUST SHOULD TRAVEL\nWITH THE PERSON."}
-          copy="AskTrabaajo is designed to support verified professional credentials — education, certifications, employment and achievements — with clear states from VERIFIED to REVOKED. Institutional verification arrives through future integrations; we never claim a credential is verified when it isn't."
+          copy="Work ID holds professional credentials — education, certifications, employment and achievements — with explicit states from VERIFIED to REVOKED. A credential is only shown as verified when it is verified. Nothing is labelled verified by default."
           testId="credentials-header"
         />
 
@@ -91,9 +90,9 @@ export const Credentials = () => {
               </ul>
               <div className="mt-8 pt-6 border-t border-white/[0.07]">
                 <p className="text-sm text-faint leading-relaxed">
-                  Designed to support education, certification, employment and achievement
-                  records. Universal verification depends on institutional integrations
-                  now in development.
+                  Education, certification, employment and achievement records live
+                  on Work ID. Trust states stay explicit so a record is never implied
+                  to be verified when it is not.
                 </p>
               </div>
             </div>

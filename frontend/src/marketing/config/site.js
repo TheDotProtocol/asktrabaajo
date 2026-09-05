@@ -38,6 +38,8 @@ export const SITE = {
     contact: "/contact",
     privacy: "/privacy",
     terms: "/terms",
+    paymentPolicy: "/payment-policy",
+    refundPolicy: "/refund-policy",
     jobseekers: "/jobseekers",
     companies: "/companies",
     recruiters: "/recruiters",

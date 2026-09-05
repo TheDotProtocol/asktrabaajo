@@ -110,13 +110,12 @@ export const WorkId = () => {
             <SectionHeader
               index="02"
               eyebrow="Work ID"
-              status="IN DEVELOPMENT"
               title={"YOUR PROFESSIONAL LIFE.\nONE PLACE."}
-              copy="Work ID is designed to become your persistent professional identity — connecting history, education, skills, credentials, employment and goals into one living record that travels with you. You control what is disclosed, to whom, and when. Nothing moves without consent."
+              copy="Work ID is your persistent professional identity — connecting history, education, skills, credentials, employment and goals into one living record that travels with you. You control what is disclosed, to whom, and when. Nothing moves without consent."
               testId="work-id-header"
             />
             <Reveal delay={0.2}>
-              <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Preview credential states">
+              <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Credential states">
                 {STATUSES.map((s) => (
                   <button
                     key={s}

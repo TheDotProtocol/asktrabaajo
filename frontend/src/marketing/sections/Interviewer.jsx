@@ -25,9 +25,8 @@ export const Interviewer = () => (
       <SectionHeader
         index="06"
         eyebrow="AI Interviews"
-        status="OUR VISION"
         title={"THE FIRST INTERVIEW\nCAN BE INTELLIGENT."}
-        copy="A future AI interview layer for structured, role-specific first interviews — adaptive questions, competency assessment and clear summaries. No pseudoscience, no 'lie detection', no emotion scoring. Human HR remains in control of every final decision."
+        copy="AI Interview runs structured, role-specific first interviews — adaptive questions, competency assessment and clear summaries. No pseudoscience, no lie detection, no emotion scoring. Human hiring teams remain in control of every final decision."
         testId="ai-interviews-header"
       />
 
@@ -63,7 +62,7 @@ export const Interviewer = () => (
           <div className="card-surface overflow-hidden h-full" data-testid="ai-interview-panel">
             <div className="px-6 py-4 border-b border-white/[0.07] flex items-center justify-between">
               <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-faint">
-                Structured interview · concept environment
+                Structured interview · example session
               </p>
               <span className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 node-pulse" />

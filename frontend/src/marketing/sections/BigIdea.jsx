@@ -28,7 +28,7 @@ export const BigIdea = () => {
           index="01"
           eyebrow="The Big Idea"
           title={"WE DIDN'T BUILD\nANOTHER JOB BOARD."}
-          copy="Traditional platforms fight over a single moment — the application. We're building the infrastructure around the entire journey through work: every transition, every credential, every next chapter."
+          copy="Traditional platforms fight over a single moment — the application. AskTrabaajo is the infrastructure around the entire journey through work: every transition, every credential, every next chapter."
           testId="big-idea-header"
         />
 

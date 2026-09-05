@@ -75,7 +75,7 @@ export const VoiceAssistant = () => {
 
             <div className="mt-6 p-3 sm:p-4 bg-[#D4AF37]/10 border border-[#D4AF37]/30 rounded-lg">
               <p className="text-gray-700 dark:text-white/70 text-xs">
-                💡 <strong>Note:</strong> This is a demo interface. Full voice integration coming soon with real-time AI responses.
+                💡 <strong>Note:</strong> Voice runs when a media provider is configured for this environment.
               </p>
             </div>
           </div>

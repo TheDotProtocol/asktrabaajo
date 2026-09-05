@@ -1,9 +1,8 @@
 "use client";
 
 import Reveal from "./Reveal";
-import StatusPill from "./StatusPill";
 
-export const SectionHeader = ({ index, eyebrow, title, copy, status, align = "left", testId }) => (
+export const SectionHeader = ({ index, eyebrow, title, copy, align = "left", testId }) => (
   <div className={`max-w-3xl ${align === "center" ? "mx-auto text-center" : ""}`} data-testid={testId}>
     <Reveal>
       <div className={`flex items-center gap-4 ${align === "center" ? "justify-center" : ""}`}>
@@ -12,7 +11,6 @@ export const SectionHeader = ({ index, eyebrow, title, copy, status, align = "le
         )}
         <span className="h-px w-10 bg-gold/40" aria-hidden="true" />
         <span className="eyebrow">{eyebrow}</span>
-        {status && <StatusPill status={status} />}
       </div>
     </Reveal>
     <Reveal delay={0.08}>

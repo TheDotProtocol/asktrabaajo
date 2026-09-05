@@ -2,7 +2,6 @@
 
 import SectionHeader from "@/marketing/components/common/SectionHeader";
 import Reveal from "@/marketing/components/common/Reveal";
-import StatusPill from "@/marketing/components/common/StatusPill";
 
 const RING_INNER = ["WORK ID", "TALENT GRAPH", "ATHENA", "COMPANY OS"];
 const RING_OUTER = [
@@ -11,18 +10,18 @@ const RING_OUTER = [
 ];
 
 const LEGEND = [
-  { name: "Work ID", status: "IN DEVELOPMENT" },
-  { name: "Talent Graph", status: "IN DEVELOPMENT" },
-  { name: "Athena AI", status: "OUR VISION" },
-  { name: "Company OS", status: "IN DEVELOPMENT" },
-  { name: "Opportunities", status: "COMING" },
-  { name: "Communication", status: "IN DEVELOPMENT" },
-  { name: "AI Interviews", status: "OUR VISION" },
-  { name: "Credentials", status: "IN DEVELOPMENT" },
-  { name: "Career Advisor", status: "OUR VISION" },
-  { name: "Governance", status: "LIVE" },
-  { name: "Gov. Intelligence", status: "OUR VISION" },
-  { name: "Payments", status: "COMING" },
+  { name: "Work ID" },
+  { name: "Talent Graph" },
+  { name: "Athena" },
+  { name: "Employer OS" },
+  { name: "Opportunities" },
+  { name: "Communication" },
+  { name: "AI Interviews" },
+  { name: "Credentials" },
+  { name: "Career Advisor" },
+  { name: "Governance" },
+  { name: "Workforce Intelligence" },
+  { name: "Billing" },
 ];
 
 const ringNodes = (items, radiusPct, duration, reverse) =>
@@ -60,9 +59,8 @@ export const Ecosystem = () => {
         <SectionHeader
           index="13"
           eyebrow="The AskTrabaajo Ecosystem"
-          status="OUR VISION"
           title={"ONE SYSTEM.\nEVERY PART OF WORK."}
-          copy="Twelve capabilities orbiting one core — designed as a single coherent universe, not a bundle of features."
+          copy="The AskTrabaajo platform is one operating system — identity, talent, hiring, intelligence and trust in a single coherent universe, not a bundle of disconnected tools."
           align="center"
           testId="ecosystem-header"
         />
@@ -90,7 +88,6 @@ export const Ecosystem = () => {
               <Reveal key={l.name} delay={i * 0.03}>
                 <div className="flex flex-col gap-1.5 border border-white/[0.07] bg-white/[0.02] rounded-sm px-3.5 py-3 hover:border-gold/30 transition-colors duration-300">
                   <span className="text-xs sm:text-sm text-slate-200">{l.name}</span>
-                  <StatusPill status={l.status} className="!px-2 !py-0 !text-[8px] self-start" />
                 </div>
               </Reveal>
             ))}

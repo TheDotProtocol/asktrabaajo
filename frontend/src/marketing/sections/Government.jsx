@@ -37,9 +37,8 @@ export const Government = () => (
       <SectionHeader
         index="08"
         eyebrow="Government & Public Institutions"
-        status="OUR VISION"
         title={"SEE THE LABOUR MARKET.\nNOT THE PRIVATE PERSON."}
-        copy="The Government Employment Intelligence layer is designed to give public institutions privacy-preserving, aggregate workforce intelligence — skill shortages, employment flows, training needs — without ever exposing individual professional identities."
+        copy="Government Workforce Intelligence gives public institutions privacy-preserving, aggregate insight into skills, employment, geography, industries, opportunities and companies — without exposing individual professional identities, private Work IDs, applications, documents or messages."
         testId="government-header"
       />
 
@@ -107,7 +106,7 @@ export const Government = () => (
               <EyeOff className="w-6 h-6 text-gold-soft shrink-0 mt-1" />
               <div>
                 <p className="font-display text-lg sm:text-xl text-slate-100 leading-snug">
-                  "AskTrabaajo is designed to provide workforce intelligence without
+                  "AskTrabaajo provides workforce intelligence without
                   exposing individual professional identities."
                 </p>
                 <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2">
