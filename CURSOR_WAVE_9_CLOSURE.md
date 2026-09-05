@@ -44,9 +44,12 @@ localhost:3001  →  public website
 - **Vercel variables:** YES — see `CURSOR_WAVE_9_VERCEL_ENV_AUDIT.md`. Redeploy after adding them.
 - **Supabase push:** **NO**
 - **GitHub:** `TheDotProtocol/asktrabaajo` `main`  
+  Latest pushed commit: `77e38b4`  
   Wave 9 product SHA: `7907e97`  
-  Follow-up: Next.js `15.5.24` security patch (Vercel blocked `15.5.4` after a successful compile)  
-  Previous remote tip before Wave 9: `88a4a97`
+  Previous remote tip before Wave 9: `88a4a97`  
+  **Vercel Production:** Ready after `next@15.5.24`  
+  Deployment: https://vercel.com/the-dot-protocol-co-ltds-projects/asktrabaajo/BKXap5z8vPFcN1KKR1mggS8VFHVa  
+  Discovered aliases (not invented): `https://www.asktrabaajo.com`, `https://asktrabaajo.com`, `https://asktrabaajo.vercel.app`
 
 ## Verification
 

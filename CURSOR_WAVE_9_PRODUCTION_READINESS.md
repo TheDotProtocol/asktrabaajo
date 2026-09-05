@@ -22,9 +22,9 @@ Hosted database: **UNTOUCHED**
 | MONITORING | **PARTIAL** | `/health` + structured request logs exist. No production uptime/error product configured. |
 | RATE LIMITING | **PARTIAL** | Registry exists. Default store `memory`. Multi-instance must set `RATE_LIMIT_STORE=db` (or Redis later). |
 | GITHUB | **READY** | Pushed `main` @ `7907e97` to `TheDotProtocol/asktrabaajo`. |
-| VERCEL | **PARTIAL** | Project `asktrabaajo` is connected and Root Directory is already `frontend` (build compiled `/`, `/login`, `/admin`). Production deploys of `7907e97`/`5fba629` failed after a successful build: Vercel blocked `next@15.5.4`. Patched to `15.5.24`. Env vars still required. |
-| DOMAIN | **BLOCKED** | `PRODUCTION DOMAIN REQUIRED`. Website source mentions `www.asktrabaajo.com` as intended canonical; live DNS not verified here. |
-| SSL | **PARTIAL** | Vercel provides TLS when a domain is attached. Not verified. |
+| VERCEL | **PARTIAL** | Production deploy of `77e38b4` is **Ready**. Root Directory is `frontend`. First Wave 9 deploys failed on `next@15.5.4`; patched to `15.5.24`. Env vars still required for API/providers. |
+| DOMAIN | **PARTIAL** | Vercel aliases already include `www.asktrabaajo.com` and `asktrabaajo.com` (discovered from the successful production deploy). API CORS/origin still must include that host. |
+| SSL | **READY** | `https://www.asktrabaajo.com` returned HTTP 200 over TLS after the production deploy. |
 | CORS | **READY** (local) | `CORS_ORIGINS` already includes `http://localhost:3001`. Production must add the real origin. |
 | SECURITY | **PARTIAL** | Secret scan of tracked files: no API keys / JWT blobs / DEV password. Public repo — keep secrets in Vercel/host env only. |
 | BACKUPS | **BLOCKED** | Hosted backup/PITR not verified. |

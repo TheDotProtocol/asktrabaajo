@@ -44,9 +44,15 @@ The canonical API is FastAPI on port 8000 locally. If the API is deployed elsewh
 | `RLS_SESSION_CONTEXT` | false on sqlite | true only with `asktrabaajo_app` | true only with `asktrabaajo_app` | when RLS is on | no | |
 | `AI_STT_PROVIDER` / `AI_TTS_PROVIDER` | `none` | `none` | `none` until provisioned | no | no | Voice/video BLOCKED |
 
-## PRODUCTION DOMAIN REQUIRED
+## PRODUCTION DOMAIN (discovered, not invented)
 
-Do not invent the live hostname. Attach the real AskTrabaajo domain in Vercel, then add that origin to `CORS_ORIGINS` and `NEXT_PUBLIC_API_URL`’s sibling API host.
+The connected Vercel project already aliases:
+
+- `https://www.asktrabaajo.com`
+- `https://asktrabaajo.com`
+- `https://asktrabaajo.vercel.app`
+
+Add those origins to API `CORS_ORIGINS`. Set frontend `NEXT_PUBLIC_API_URL` to the public canonical API origin (VALUE REQUIRED FROM OWNER — the API host is not this Next.js deploy).
 
 ## Vercel project settings to verify in the dashboard
 

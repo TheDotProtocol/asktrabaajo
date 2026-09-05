@@ -88,17 +88,19 @@ Backup/PITR is **not verified** — do not push or reset.
 
 ### GitHub
 
-**Pushed.** Repository `TheDotProtocol/asktrabaajo`, branch `main`.
+**Pushed.** Repository `TheDotProtocol/asktrabaajo`, branch `main`, latest commit `77e38b4`.
 
-Wave 9 content SHA: `7907e97`. Latest includes the Next.js security patch required by Vercel.
+Wave 9 product SHA: `7907e97`. Security follow-up: `next@15.5.24`.
 
-Vercel **compiled** the unified app (homepage, login, portals, Super Admin) then **rejected the deploy** with: `Vulnerable version of Next.js detected`. The project was on `next@15.5.4`; Wave 9 upgrades it to `next@15.5.24` (August 2026 security release).
+**Vercel Production is Ready** (target `production`):
 
-Vercel CLI dashboard values were not fully readable. After this patch lands, confirm the Production deployment in:
+https://vercel.com/the-dot-protocol-co-ltds-projects/asktrabaajo/BKXap5z8vPFcN1KKR1mggS8VFHVa
 
-https://vercel.com/the-dot-protocol-co-ltds-projects/asktrabaajo
+Discovered production aliases: `https://www.asktrabaajo.com`, `https://asktrabaajo.com`, `https://asktrabaajo.vercel.app`.
 
-Redeploy after adding the required environment variables. A separate Preview was not created first because Vercel CLI inspect/auth for a dedicated Preview project was not available.
+The first two Wave 9 deploys failed after a successful compile because Vercel blocked `next@15.5.4`. The patched commit deployed successfully. Homepage HTML on the live aliases contains the new website copy and same-origin `/login` (no `localhost:3000`).
+
+The live site still needs API/provider environment variables before login/portals work against production. After adding them, **redeploy**. A dedicated Preview was not created first.
 
 The sibling repo `TheDotProtocol/trabaajowebsite` remains a **reference** of the original CRA website. It is not the production deployment source.
 
